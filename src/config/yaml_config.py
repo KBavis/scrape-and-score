@@ -12,6 +12,15 @@ class YamlConfig:
       with open(file_path, 'r') as file:
          return yaml.safe_load(file)    
    
-   # Fetch all listed websites to scrape 
-   def get_websites(self):
-      return self._config['website']['urls']
+   # Fetch relevant URLs for Pro Football Reference 
+   def get_pro_football_reference_urls(self):
+      return self._config['website']['pro-football-reference']['urls']
+   
+   # Fetch all NFL Teams 
+   def get_nfl_teams(self):
+      return self._config['nfl']['teams']
+   
+   # Fetch current year of NFL Season
+   def get_current_year(self):
+      return self._config['nfl']['current-year']
+   
