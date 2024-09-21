@@ -1,3 +1,74 @@
 website:
-   urls:
-      - "https://www.pro-football-reference.com/"
+   pro-football-reference:
+      urls:
+         home-page: "https://www.pro-football-reference.com/"
+         team-metrics: "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
+         player-metrics: "https://www.pro-football-reference.com/players/{LAST_NAME_INITAL}/{HASHED_NAME}.htm" #Determine How HASHED_NAME is constructed by PFR
+
+nfl:
+   current-year: "2024"
+   teams:
+      - name: Arizona Cardinals
+        acronym: crd
+      - name: Atlanta Falcons
+        acronym: atl
+      - name: Baltimore Ravens
+        acronym: rav
+      - name: Buffalo Bills
+        acronym: buf
+      - name: Carolina Panthers
+        acronym: car
+      - name: Chicago Bears
+        acronym: chi
+      - name: Cincinnati Bengals
+        acronym: cin
+      - name: Cleveland Browns
+        acronym: cle
+      - name: Dallas Cowboys
+        acronym: dal
+      - name: Denver Broncos
+        acronym: den
+      - name: Detroit Lions
+        acronym: det
+      - name: Green Bay Packers
+        acronym: gnb
+      - name: Houston Texans
+        acronym: htx
+      - name: Indianapolis Colts
+        acronym: clt
+      - name: Jacksonville Jaguars
+        acronym: jax
+      - name: Kansas City Chiefs
+        acronym: kan
+      - name: Las Vegas Raiders
+        acronym: rai
+      - name: Los Angeles Chargers
+        acronym: sdg
+      - name: Los Angeles Rams
+        acronym: ram
+      - name: Miami Dolphins
+        acronym: mia
+      - name: Minnesota Vikings
+        acronym: min
+      - name: New England Patriots
+        acronym: nwe
+      - name: New Orleans Saints
+        acronym: nor
+      - name: New York Giants
+        acronym: nyg
+      - name: New York Jets
+        acronym: nyj
+      - name: Philadelphia Eagles
+        acronym: phi
+      - name: Pittsburgh Steelers
+        acronym: pit
+      - name: San Francisco 49ers
+        acronym: sfo
+      - name: Seattle Seahawks
+        acronym: sea
+      - name: Tampa Bay Buccaneers
+        acronym: tam
+      - name: Tennessee Titans
+        acronym: oti
+      - name: Washington Commanders
+        acronym: was
