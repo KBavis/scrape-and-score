@@ -1,7 +1,7 @@
 import logging
 from config.yaml_config import YamlConfig
-from scraping.scraping_utility import ScrapingUtility
 from config.logger_config import LoggerConfig
+from scraping.pro_football_reference_scraper import ProFootballReferenceScraper
 
 '''
    Main entry point of our application that will initate web scraping, cleaning of data, 
@@ -15,11 +15,9 @@ def main():
    logConfig = LoggerConfig(logging.INFO, "%(asctime)s - %(levelname)s - %(message)s")
    log = logConfig.get_logger()
    
-   #Scrape for each URL 
-   scrapingUtility = ScrapingUtility()
-   for url in config.get_websites(): 
-      log.info(f"Fetching HTML content for the following URL: {url}")
-      htmlText = scrapingUtility.fetchPage(url);
+   #Initiate Scraping for Team/Player Metrics
+   pfrScraper = ProFootballReferenceScraper(config.get_nfl_teams(), config.get_pro_football_reference_urls(), config.get_current_year())
+   pfrScraper.scrape()
    
 
 
