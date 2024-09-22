@@ -8,7 +8,7 @@ scraping each individual website
 '''
 class ScrapingUtil: 
    
-   '''Functionality to fetch the HTMLL Content from the specified URL'''
+   #Functionality to fetch the HTML Content from the specified URL
    def fetchPage(self, url):   
       try:
          logging.info(f"Fetching HTML Content from the URL {url}")
