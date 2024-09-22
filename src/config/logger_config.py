@@ -8,6 +8,3 @@ class LoggerConfig:
    
    def configure_logger(self):
       logging.basicConfig(level=self._level, format=self._format)
-      
-   def get_logger(self):
-      return logging.getLogger(__name__)
