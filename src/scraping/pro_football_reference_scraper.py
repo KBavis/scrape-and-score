@@ -1,11 +1,15 @@
-from scraping.scraping_util import ScrapingUtil
 import logging
 import time
+from pro_football_reference_web_scraper import player_game_log as p 
+from pro_football_reference_web_scraper import team_game_log as t 
+
 
 '''
 Module to handle all functionality regarding specifically scraping the 
 pro-football-reference (https://pro-football-reference.com) pages for 
-relevant team and player metrics 
+relevant team and player metrics. We will utilize the following library 
+(https://github.com/mjk2244/pro-football-reference-web-scraper) to not 
+duplicate the effort needed to scrape the site. 
 '''
 class ProFootballReferenceScraper: 
    def __init__(self, teams, urls, year): 
@@ -16,28 +20,10 @@ class ProFootballReferenceScraper:
        
    # Iniate scraping and construction of raw datasets regarding player and team metrics 
    def scrape(self): 
-      home_page = self._urls["home-page"]
-      scraping_util = ScrapingUtil() 
-      logging.info(f"Beginning inital scraping process for the website Pro Football Reference ({home_page})")
-      team_metrics_html = self.fetch_team_metrics(scraping_util)   
-      logging.info(f"Team Metrics Size: {len(team_metrics_html)}")
-      
-      
-   # Functionality to fetch raw HTML from each NFL Team Page 
-   def fetch_team_metrics(self, scraping_util): 
-      team_metrics_html = []
-      for team in self._teams: 
-         team_url = self.construct_team_url(self._urls['team-metrics'], team['acronym'])  
-         logging.info(f"Fetching metrics for NFL Team {team['name']} via the URL {team_url}")     
-         raw_html = scraping_util.fetchPage(team_url)   
-         team_metrics_html.append(raw_html)  
-      return team_metrics_html     
-         
-     
-     
-   # Functionality to construct proper NFL Team URL to fetch metrics from
-   def construct_team_url(self, url, team_acronym): 
-      return url.replace("{TEAM_ACRONYM}", team_acronym).replace("{CURRENT_YEAR}", self._year)
+      josh_allen_player_game_log = p.get_player_game_log(player = 'Josh Allen', position = 'QB', season = 2024)
+      print(josh_allen_player_game_log)
+
+
          
    
 
