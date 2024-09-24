@@ -16,6 +16,7 @@ def main():
 
    
    #Initiate Scraping for Team/Player Metrics
+   #TODO (FFM-24): Instead of making object, simply utilize module functionality 
    pfrScraper = ProFootballReferenceScraper(config.get_nfl_teams(), config.get_pro_football_reference_urls(), config.get_current_year())
    pfrScraper.scrape()
    
