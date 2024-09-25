@@ -1,20 +1,24 @@
 import requests
-from bs4 import BeautifulSoup
 import logging 
 
 '''
-Class to contain all the generic scraping functionality that we will need to utilize when 
-scraping each individual website 
+Functionality to fetch the raw HTML corresponding to a particular URL 
+
+Args:
+   url - the URL we want to extract the raw HTML from
+
+Returns:
+   raw HTML corresponding to specified URL   
 '''
-class ScrapingUtil: 
+def fetch_page(url):
+   try:
+      logging.info(f"Fetching HTML Content from the following URL: {url}")
+      response = requests.get(url)
+      response.raise_for_status()
+      return response.text
+   except requests.RequestException as e:
+      print(f"Error while fetching HTML content from the following URL {url} : {e}")
+      return None 
    
-   #Functionality to fetch the HTML Content from the specified URL
-   def fetchPage(self, url):   
-      try:
-         logging.info(f"Fetching HTML Content from the URL {url}")
-         response = requests.get(url)
-         response.raise_for_status()
-         return response.text
-      except requests.RequestException as e:
-         print(f"Error fetching HTML Content from URL {url}: {e}")
-         return None
+   
+   
