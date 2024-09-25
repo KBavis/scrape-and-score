@@ -1,7 +1,8 @@
 import logging
-from config.yaml_config import YamlConfig
-from config.logger_config import LoggerConfig
-from scraping.pro_football_reference_scraper import ProFootballReferenceScraper
+from config import configure_logging
+from scraping import scrape_fantasy_pros
+from scraping import fetch_metrics
+
 
 '''
    Main entry point of our application that will initate web scraping, cleaning of data, 
@@ -9,18 +10,13 @@ from scraping.pro_football_reference_scraper import ProFootballReferenceScraper
 '''
 def main():
    #Set Up Global Logger Configurations
-   logConfig = LoggerConfig(logging.INFO, "%(asctime)s - %(levelname)s - %(message)s")
+   configure_logging()
    
-   #Load Configurations
-   config = YamlConfig("./config/application.yaml")
-
+   #Fetch relevant NFL teams & players
+   team_data = scrape_fantasy_pros("https://www.fantasypros.com/nfl/depth-charts.php")
    
-   #Initiate Scraping for Team/Player Metrics
-   #TODO (FFM-24): Instead of making object, simply utilize module functionality 
-   pfrScraper = ProFootballReferenceScraper(config.get_nfl_teams(), config.get_pro_football_reference_urls(), config.get_current_year())
-   pfrScraper.scrape()
-   
-
+   #Fetch relevant team and player metrics 
+   fetch_metrics(team_data)
 
 # Entry point for the script
 if __name__ == "__main__":
