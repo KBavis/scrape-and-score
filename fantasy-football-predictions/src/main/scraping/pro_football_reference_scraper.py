@@ -2,6 +2,7 @@ import logging
 import time
 from pro_football_reference_web_scraper import player_game_log as p 
 from pro_football_reference_web_scraper import team_game_log as t 
+from nfl_data_py import import_depth_charts as roster
 
 
 '''
@@ -31,6 +32,10 @@ class ProFootballReferenceScraper:
       #EX: TODO: Update me
       josh_allen_player_game_log = p.get_player_game_log(player = 'Josh Allen', position = 'QB', season = 2024)
       print(josh_allen_player_game_log)
+      
+      
+      
+      r
       
    
    '''
