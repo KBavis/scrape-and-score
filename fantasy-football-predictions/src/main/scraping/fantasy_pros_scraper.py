@@ -4,7 +4,7 @@ from .scraping_util import fetch_page
 
 
 
-def scrape(url): 
+def scrape(url: str): 
    logging.info(f"Attempting to scrape the following URL: {url}")
      
    #Fetch Raw HTMl corresponding to Fantasy Pros site 
@@ -28,7 +28,7 @@ Returns:
    depth_chart (list of dictionaries) - each player corresponding to team 
 '''
 
-def fetch_team_data(soup): 
+def fetch_team_data(soup: BeautifulSoup): 
    logging.info(f"Fetching all relevant WR/RB/QB/TEs corresponding to each NFL team")
    
    team_data = []

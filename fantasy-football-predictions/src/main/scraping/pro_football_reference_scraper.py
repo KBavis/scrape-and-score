@@ -28,7 +28,7 @@ Args:
 Returns:
     pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player     
 ''' 
-def fetch_team_metrics(team):
+def fetch_team_metrics(team: str):
     logging.info("Fetching metrics for each NFL team")   
     return None
 

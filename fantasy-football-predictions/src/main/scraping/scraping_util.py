@@ -10,7 +10,7 @@ Args:
 Returns:
    raw HTML corresponding to specified URL   
 '''
-def fetch_page(url):
+def fetch_page(url: str):
    try:
       logging.info(f"Fetching HTML Content from the following URL: {url}")
       response = requests.get(url)
