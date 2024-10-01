@@ -1,36 +1,43 @@
 import logging
-import time
-from pro_football_reference_web_scraper import player_game_log as p 
-from pro_football_reference_web_scraper import team_game_log as t 
+from datetime import date, datetime
+import pandas as pd
+from bs4 import BeautifulSoup
+from data import team_hrefs, months, locations, cities 
+from scraping import fetch_page
+from haversine import haversine, Unit
 
 '''
 Module to handle all functionality regarding specifically scraping the 
 pro-football-reference (https://pro-football-reference.com) pages for 
-relevant team and player metrics. We will utilize the following library 
-(https://github.com/mjk2244/pro-football-reference-web-scraper) to not 
-duplicate the effort needed to scrape the site. 
+relevant team and player metrics.
 '''       
 
 # Fetch metrics for all players and NFL teams in current seasons
-def fetch_metrics(team_data): 
-    for team in team_data: 
-       print(team)
-        # josh_allen_player_game_log = p.get_player_game_log(player='Josh Allen', position='QB', season=2024)
-        # print(josh_allen_player_game_log)
+def fetch_metrics(team_and_player_data, year, config): 
+    logging.info(f"Attempting to fetch the relevant player and team metrics for the year {year}")
+    
+    #Extract Unique Teams 
+    unique_teams = {team['team'] for team in team_and_player_data}
+    
+    #Extract Relevant Metrics for Each Team  
+    for team_name in unique_teams:
+        # get raw html
+        raw_html = get_team_metrics_html(team_name, year, config['website']['pro-football-reference']['urls']['team-metrics'])
+        
+        # create BeautifulSoup instance 
+        soup = BeautifulSoup(raw_html, "html.parser")
+        
+        # fetch relevant team metrics 
+        team_data = collect_team_data(soup, year, team_name)
+        
+    
+    
+    for player in team_and_player_data:
+        print(player)
+        #TODO: Finish me!
         
 
-'''
-Functionality to fetch relevant metrics corresponding to a specific NFL team
-   
-Args: 
-    team (str) - NFL team full name
-      
-Returns:
-    pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player     
-''' 
-def fetch_team_metrics(team: str):
-    logging.info("Fetching metrics for each NFL team")   
-    return None
+
 
 '''
 Functionality to fetch the relevant metrics to a specific player
@@ -45,9 +52,229 @@ def fetch_player_metrics(name: str):
     return None
 
 
-         
-   
 
-            
-         
-         
+'''
+Functionality to generate URL and fetch raw HTML for NFL Team
+
+Args: 
+    team_name (str) - NFL team full name
+    year (int) - year to fetch raw HTML for
+    url (str) - template URL to fetch HTML from
+      
+Returns:
+    str - raw HTML from web page 
+''' 
+def get_team_metrics_html(team_name, year, url):
+   url = url.replace("{TEAM_ACRONYM}", team_hrefs[team_name]).replace("{CURRENT_YEAR}", str(year))
+   return fetch_page(url)
+
+
+'''
+Functionality to fetch relevant metrics corresponding to a specific NFL team
+
+All credit for the following code in this function goes to the developer https://github.com/mjk2244. 
+The code within their created library (https://github.com/mjk2244/pro-football-reference-web-scraper) 
+contains a bug, which I have fixed and added an issue for their library. 
+   
+Args: 
+    team (str) - NFL team full name
+      
+Returns:
+    pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player     
+''' 
+def collect_team_data(soup: BeautifulSoup, season: int, team: str):
+    
+    #Configure Pandas DF 
+    data = {
+        'week': [],
+        'day': [],
+        'rest_days': [],
+        'home_team': [],
+        'distance_travelled': [],
+        'opp': [],
+        'result': [],
+        'points_for': [],
+        'points_allowed': [],
+        'tot_yds': [],
+        'pass_yds': [],
+        'rush_yds': [],
+        'opp_tot_yds': [],
+        'opp_pass_yds': [],
+        'opp_rush_yds': [],
+    }
+    df = pd.DataFrame(data)
+
+    #loading game data
+    games = soup.find_all('tbody')[1].find_all('tr')
+
+    # remove playoff games
+    j = 0
+    while j < len(games) and games[j].find('td', {'data-stat': 'game_date'}).text != 'Playoffs':
+        j += 1
+    for k in range(j, len(games)):
+        games.pop()
+
+    # remove bye weeks
+    bye_weeks = []
+    for j in range(len(games)):
+        if games[j].find('td', {'data-stat': 'opp'}).text == 'Bye Week':
+            bye_weeks.append(j)
+
+    if len(bye_weeks) > 1:
+        games.pop(bye_weeks[0])
+        games.pop(bye_weeks[1] - 1)
+
+    elif len(bye_weeks) == 1:
+        games.pop(bye_weeks[0])
+
+    # remove canceled games 
+    to_delete = []
+    for j in range(len(games)):
+        if games[j].find('td', {'data-stat': 'boxscore_word'}).text == 'canceled':
+            to_delete.append(j)
+    for k in to_delete:
+        games.pop(k)
+    
+    # remove games that have yet to be played  
+    to_delete = []
+    current_date = date.today()
+    for j in range(len(games)):
+        game_date = get_game_date(games[j], current_date)    
+        if game_date > current_date:
+            to_delete.append(j)
+    for k in reversed(to_delete): #reverse order to prevent shifting issue 
+        games.pop(k)
+      
+
+    # gathering data for each game
+    for i in range(len(games)):
+        week = int(games[i].find('th', {'data-stat': 'week_num'}).text)
+        day = games[i].find('td', {'data-stat': 'game_day_of_week'}).text
+        if i > 0:
+            if games[i - 1].find('td', {'data-stat': 'opp'}).text == 'Bye Week':
+                date1 = games[i - 2].find('td', {'data-stat': 'game_date'}).text.split(' ')
+                date2 = games[i].find('td', {'data-stat': 'game_date'}).text.split(' ')
+            else:
+                date1 = games[i - 1].find('td', {'data-stat': 'game_date'}).text.split(' ')
+                date2 = games[i].find('td', {'data-stat': 'game_date'}).text.split(' ')
+            if date1[0] == 'January':
+                rest_days = date(season + 1, months[date2[0]], int(date2[1])) - date(
+                    season + 1, months[date1[0]], int(date1[1])
+                )
+            elif date2[0] == 'January':
+                rest_days = date(season + 1, months[date2[0]], int(date2[1])) - date(
+                    season, months[date1[0]], int(date1[1])
+                )
+            else:
+                rest_days = date(season + 1, months[date2[0]], int(date2[1])) - date(
+                    season + 1, months[date1[0]], int(date1[1])
+                )
+        else:
+            rest_days = date(2022, 7, 11) - date(2022, 7, 1)  # setting first game as 10 rest days
+
+        opp = games[i].find('td', {'data-stat': 'opp'}).text
+
+        if games[i].find('td', {'data-stat': 'game_location'}).text == '@':
+            home_team = False
+            distance_travelled = calculate_distance(locations[cities[team]], locations[cities[opp]])
+        else:
+            home_team = True
+            distance_travelled = 0
+
+        result = games[i].find('td', {'data-stat': 'game_outcome'}).text
+        points_for = int(games[i].find('td', {'data-stat': 'pts_off'}).text)
+        points_allowed = int(games[i].find('td', {'data-stat': 'pts_def'}).text)
+        tot_yds = (
+            int(games[i].find('td', {'data-stat': 'yards_off'}).text)
+            if games[i].find('td', {'data-stat': 'yards_off'}).text != ''
+            else 0
+        )
+        pass_yds = (
+            int(games[i].find('td', {'data-stat': 'pass_yds_off'}).text)
+            if games[i].find('td', {'data-stat': 'pass_yds_off'}).text != ''
+            else 0
+        )
+        rush_yds = (
+            int(games[i].find('td', {'data-stat': 'rush_yds_off'}).text)
+            if games[i].find('td', {'data-stat': 'rush_yds_off'}).text != ''
+            else 0
+        )
+        opp_tot_yds = (
+            int(games[i].find('td', {'data-stat': 'yards_def'}).text)
+            if games[i].find('td', {'data-stat': 'yards_def'}).text != ''
+            else 0
+        )
+        opp_pass_yds = (
+            int(games[i].find('td', {'data-stat': 'pass_yds_def'}).text)
+            if games[i].find('td', {'data-stat': 'pass_yds_def'}).text != ''
+            else 0
+        )
+        opp_rush_yds = (
+            int(games[i].find('td', {'data-stat': 'rush_yds_def'}).text)
+            if games[i].find('td', {'data-stat': 'pass_yds_def'}).text != ''
+            else 0
+        )
+
+        # add row to data frame
+        df.loc[len(df.index)] = [
+            week,
+            day,
+            rest_days,
+            home_team,
+            distance_travelled,
+            opp,
+            result,
+            points_for,
+            points_allowed,
+            tot_yds,
+            pass_yds,
+            rush_yds,
+            opp_tot_yds,
+            opp_pass_yds,
+            opp_rush_yds,
+        ]
+
+    return df           
+
+
+'''
+Functionality to calculate the distance between two cities 
+
+All credit for the following code in this function goes to the developer https://github.com/mjk2244. 
+The code within their created library (https://github.com/mjk2244/pro-football-reference-web-scraper) 
+contains a bug, which I have fixed and added an issue for their library. 
+
+   
+Args: 
+    city1 (dict) - dictionary containing a cities latitude & longitude 
+    city2 (dict) - dictionary containing a cities latitude & longitude 
+      
+Returns:
+    double: value corresponding to the distance between the two cities  
+
+'''
+def calculate_distance(city1: dict, city2: dict):
+    coordinates1 = (city1['latitude'], city1['longitude'])
+    coordinates2 = (city2['latitude'], city2['longitude'])
+    return haversine(coordinates1, coordinates2, unit=Unit.MILES)
+
+
+
+'''
+Functionality to fetch the game date for a game 
+
+Args:
+    game (BeautifulSoup): BeautifulSoup object containing relevant game data 
+    current_date (date) : the current date the application is being run 
+
+Returns:
+    game_date (date) : The date corresponding to the game day    
+'''
+def get_game_date(game: BeautifulSoup, current_date: date): 
+    game_date_str = game.find('td', {'data-stat': 'game_date'}).text
+    month_date = datetime.strptime(game_date_str, "%B %d").date() #convert to date time object
+    if month_date.month == 1: 
+        game_year = current_date.year + 1 #date corresponds to next year [TODO: determine how to fix this logic when we run this applicaiton in January?]
+    else: 
+        game_year = current_date.year #date corresponds to this year 
+    return date(game_year, month_date.month, month_date.day)    
