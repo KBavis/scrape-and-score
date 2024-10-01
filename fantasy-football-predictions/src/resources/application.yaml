@@ -3,10 +3,13 @@ website:
       urls:
          home-page: "https://www.pro-football-reference.com/"
          team-metrics: "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
-         player-metrics: "https://www.pro-football-reference.com/players/{LAST_NAME_INITAL}/{HASHED_NAME}.htm" #TODO (FFM-19): Determine How HASHED_NAME is constructed by PFR
+         player-metrics: "https://www.pro-football-reference.com/players/{LAST_NAME_INITAL}/{HASHED_NAME}.htm"
+   fantasy-pros:
+      urls:
+         depth-chart: "https://www.fantasypros.com/nfl/depth-charts.php"
 
 nfl:
-   current-year: "2024"
+   current-year: 2024
    teams:
       - name: Arizona Cardinals
         acronym: crd
