@@ -6,4 +6,4 @@ matplotlib
 seaborn
 sklearn
 PyYAML
-pro-football-reference-web-scraper
+haversine
