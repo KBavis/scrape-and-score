@@ -12,7 +12,7 @@ Returns:
 '''
 def fetch_page(url: str):
    try:
-      logging.info(f"Fetching HTML Content from the following URL: {url}")
+      logging.info(f"Fetching raw HTML from the following URL: {url}")
       response = requests.get(url)
       response.raise_for_status()
       return response.text
