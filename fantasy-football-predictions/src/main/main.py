@@ -1,7 +1,6 @@
-import logging
 from config import configure_logging
 from scraping import scrape_fantasy_pros
-from scraping import fetch_metrics
+from scraping import scrape_pro_football_reference
 from config import load_configs
 
 
@@ -17,10 +16,10 @@ def main():
    config = load_configs("../resources/application.yaml") 
    
    #Fetch relevant NFL teams & players
-   team_data = scrape_fantasy_pros(config['website']['fantasy-pros']['urls']['depth-chart'])
+   teams_and_players = scrape_fantasy_pros(config['website']['fantasy-pros']['urls']['depth-chart'])
    
    #Fetch relevant team and player metrics 
-   fetch_metrics(team_data, config['nfl']['current-year'], config)
+   team_metrics, player_metrics = scrape_pro_football_reference(teams_and_players, config['nfl']['current-year'], config)
 
 # Entry point for the script
 if __name__ == "__main__":
