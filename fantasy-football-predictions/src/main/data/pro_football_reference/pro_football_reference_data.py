@@ -1,3 +1,5 @@
+valid_positions = ['QB', 'RB', 'WR', 'TE']
+
 team_hrefs = {
     'Arizona Cardinals': 'crd',
     'Baltimore Colts': 'clt',
