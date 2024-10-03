@@ -62,13 +62,12 @@ def fetch_team_data(soup: BeautifulSoup):
          #Loop through each player and extract player name 
          for player in players:
             player_name = player['fp-player-name']
-            
-         #Append Extract Data to Output 
-         team_data.append({
-            'team': team_name, 
-            'position': position_abrv,
-            'player_name': player_name
-         })   
+            #Append Extract Data to Output 
+            team_data.append({
+               'team': team_name, 
+               'position': position_abrv,
+               'player_name': player_name
+            })   
    
    return team_data 
 
