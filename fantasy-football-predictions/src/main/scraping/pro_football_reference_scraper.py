@@ -2,27 +2,40 @@ import logging
 from datetime import date, datetime
 import pandas as pd
 from bs4 import BeautifulSoup
-from data import team_hrefs, months, locations, cities 
+from pro_football_reference_web_scraper import player_game_log as p
+from data import team_hrefs, months, locations, cities, valid_positions
 from scraping import fetch_page
 from haversine import haversine, Unit
 
-'''
-Module to handle all functionality regarding specifically scraping the 
-pro-football-reference (https://pro-football-reference.com) pages for 
-relevant team and player metrics.
-'''       
 
-# Fetch metrics for all players and NFL teams in current seasons
+'''
+Functionality to fetch metrics for all relevant players and teams for 
+the specified NFL season via pro-football-reference
+   
+Args:
+    team_and_player_data (list[dict]): every relevant fantasy NFL player corresponding to specified NFL season
+    year (int): specified NFL season
+    config (obj): object storing all YAML configurations
+   
+Returns:
+    tuple(list[pandas.DataFrame]): A tuple containing two lists of pandas.DataFrame; one for players data and one for team data
+'''
 def fetch_metrics(team_and_player_data, year, config): 
     logging.info(f"Attempting to fetch the relevant player and team metrics for the year {year}")
     
     #Extract Unique Teams 
     unique_teams = {team['team'] for team in team_and_player_data}
     
-    #Extract Relevant Metrics for Each Team  
+    #Extract Relevant Metrics for Each Team
+    team_metrics = []  
     for team_name in unique_teams:
+        logging.info(f"Extracting team metrics for the NFL Team \'{team_name}\'")
         # get raw html
         raw_html = get_team_metrics_html(team_name, year, config['website']['pro-football-reference']['urls']['team-metrics'])
+        
+        if(raw_html == None):
+            logging.error(f'An error occured while fetching raw HTML for the team \'{team_name}\'')
+            raise Exception(f"Unable to extract raw HTML for the NFL Team \'{team_name}\'")
         
         # create BeautifulSoup instance 
         soup = BeautifulSoup(raw_html, "html.parser")
@@ -30,17 +43,41 @@ def fetch_metrics(team_and_player_data, year, config):
         # fetch relevant team metrics 
         team_data = collect_team_data(soup, year, team_name)
         
+        # add to list 
+        team_metrics.append(team_data)
     
     
+    #Extract Relevant Metrics for Each Player
+    player_metrics = []
+    to_delete = [] # list to store players not containing relevant metrics for current season
     for player in team_and_player_data:
-        print(player)
-        #TODO: Finish me!
+        
+        # fetch player metrics 
+        player_data = collect_player_data(player['player_name'], player['position'], year)
+        
+        # note that the player should be removed if no available metrics
+        if(player_data == None):
+            to_delete.append(player)
+            continue
+        
+        #logging.info(f'Player metrics: {str(team_data)}')
+        
+        # add to list
+        player_metrics.append(player_data)
+    
+    #Remove Extraneous Players With No Metrics Availabhle
+    for player in to_delete:
+        team_and_player_data.remove(player)    
+    
+    return team_metrics,player_metrics    
         
 
 
 
 '''
 Functionality to fetch the relevant metrics to a specific player
+
+
    
 Args:
     player (str): NFL player's full name
@@ -48,8 +85,14 @@ Args:
 Returns:
     pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player
 '''
-def fetch_player_metrics(name: str):
-    return None
+def collect_player_data(name: str, position: str, season: int):
+    try: 
+        logging.info(f"Attempting to collect player metrics for player \'{name}\'")
+        p.get_player_game_log(name, position, season)
+    except Exception as e:
+        logging.error(f"An error occured while fetching metrics for player \'{name}\': {str(e)}") 
+        return None
+           
 
 
 
