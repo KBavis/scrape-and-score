@@ -12,6 +12,7 @@ Returns:
 '''
 def fetch_page(url: str):
    try:
+      #TODO: Implement Rotating Proxy Logic (FFM-12)
       logging.info(f"Fetching raw HTML from the following URL: {url}")
       response = requests.get(url)
       response.raise_for_status()
