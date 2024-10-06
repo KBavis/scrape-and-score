@@ -18,7 +18,7 @@ def fetch_page(url: str):
    try:
       #TODO: Implement Rotating Proxy Logic (FFM-12)
       logging.info(f"Fetching raw HTML from the following URL: {url}")
-      time.sleep(5)
+      time.sleep(3)
       response = session.get(url, proxies=get_proxy(), headers={"User-Agent":"PostmanRuntime/7.42.0"})
       response.raise_for_status()
       return response.text

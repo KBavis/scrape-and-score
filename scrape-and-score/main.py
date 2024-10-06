@@ -14,7 +14,7 @@ def main():
    configure_logging()
    
    #Load Configurations from YAML file
-   config = load_configs("../resources/application.yaml") 
+   config = load_configs("./resources/application.yaml") 
    
    #Fetch relevant NFL teams & players
    teams_and_players = scrape_fantasy_pros(config['website']['fantasy-pros']['urls']['depth-chart'])
