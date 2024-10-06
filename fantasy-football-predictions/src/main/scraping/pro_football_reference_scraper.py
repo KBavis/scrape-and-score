@@ -6,6 +6,7 @@ from pro_football_reference_web_scraper import player_game_log as p
 from data import team_hrefs, months, locations, cities, valid_positions
 from scraping import fetch_page
 from haversine import haversine, Unit
+from .player_game_log import get_player_game_log
 
 
 '''
@@ -18,7 +19,8 @@ Args:
     config (obj): object storing all YAML configurations
    
 Returns:
-    tuple(list[pandas.DataFrame]): A tuple containing two lists of pandas.DataFrame; one for players data and one for team data
+    tuple(list[dict(str, pandas.DataFrame)]): A tuple (one for players and one for teams) containing two lists of a dictionary, 
+    with each dictionary containing a string and pandas.DataFrame
 '''
 def fetch_metrics(team_and_player_data, year, config): 
     logging.info(f"Attempting to fetch the relevant player and team metrics for the year {year}")
@@ -33,6 +35,7 @@ def fetch_metrics(team_and_player_data, year, config):
         # get raw html
         raw_html = get_team_metrics_html(team_name, year, config['website']['pro-football-reference']['urls']['team-metrics'])
         
+        
         if(raw_html == None):
             logging.error(f'An error occured while fetching raw HTML for the team \'{team_name}\'')
             raise Exception(f"Unable to extract raw HTML for the NFL Team \'{team_name}\'")
@@ -44,30 +47,23 @@ def fetch_metrics(team_and_player_data, year, config):
         team_data = collect_team_data(soup, year, team_name)
         
         # add to list 
-        team_metrics.append(team_data)
+        team_metrics.append({"team_name": team_name, "team_metrics": team_data})
     
     
     #Extract Relevant Metrics for Each Player
     player_metrics = []
-    to_delete = [] # list to store players not containing relevant metrics for current season
     for player in team_and_player_data:
         
         # fetch player metrics 
         player_data = collect_player_data(player['player_name'], player['position'], year)
         
-        # note that the player should be removed if no available metrics
+        # note that the player should be removed if unable to fetch metrics
         if(player_data == None):
-            to_delete.append(player)
             continue
         
-        #logging.info(f'Player metrics: {str(team_data)}')
-        
         # add to list
-        player_metrics.append(player_data)
-    
-    #Remove Extraneous Players With No Metrics Availabhle
-    for player in to_delete:
-        team_and_player_data.remove(player)    
+        player_metrics.append({"player_name": player["player_name"], "player_metrics": player_data})
+
     
     return team_metrics,player_metrics    
         
@@ -88,7 +84,7 @@ Returns:
 def collect_player_data(name: str, position: str, season: int):
     try: 
         logging.info(f"Attempting to collect player metrics for player \'{name}\'")
-        p.get_player_game_log(name, position, season)
+        return get_player_game_log(name, position, season)
     except Exception as e:
         logging.error(f"An error occured while fetching metrics for player \'{name}\': {str(e)}") 
         return None
@@ -183,7 +179,7 @@ def collect_team_data(soup: BeautifulSoup, season: int, team: str):
     current_date = date.today()
     for j in range(len(games)):
         game_date = get_game_date(games[j], current_date)    
-        if game_date > current_date:
+        if game_date >= current_date:
             to_delete.append(j)
     for k in reversed(to_delete): #reverse order to prevent shifting issue 
         games.pop(k)
