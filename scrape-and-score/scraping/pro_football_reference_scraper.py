@@ -58,7 +58,7 @@ def fetch_metrics(team_and_player_data, year, config):
         player_data = collect_player_data(player['player_name'], player['position'], year)
         
         # note that the player should be removed if unable to fetch metrics
-        if(player_data == None):
+        if(player_data.empty):
             continue
         
         # add to list
@@ -87,7 +87,7 @@ def collect_player_data(name: str, position: str, season: int):
         return get_player_game_log(name, position, season)
     except Exception as e:
         logging.error(f"An error occured while fetching metrics for player \'{name}\': {str(e)}") 
-        return None
+        return pd.DataFrame()
            
 
 
