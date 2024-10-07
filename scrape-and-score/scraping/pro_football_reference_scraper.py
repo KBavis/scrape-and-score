@@ -3,7 +3,7 @@ from datetime import date, datetime
 import pandas as pd
 from bs4 import BeautifulSoup
 from pro_football_reference_web_scraper import player_game_log as p
-from data import team_hrefs, months, locations, cities, valid_positions
+from constants import team_hrefs, months, locations, cities, valid_positions
 from scraping import fetch_page
 from haversine import haversine, Unit
 from .player_game_log import get_player_game_log
