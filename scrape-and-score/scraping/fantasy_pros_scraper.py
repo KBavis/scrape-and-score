@@ -1,6 +1,6 @@
 import logging 
 from bs4 import BeautifulSoup
-from .scraping_util import fetch_page
+from .util import fetch_page
 
 
 
