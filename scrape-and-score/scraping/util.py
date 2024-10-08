@@ -18,7 +18,7 @@ def fetch_page(url: str):
    try:
       logging.info(f"Fetching raw HTML from the following URL: {url}")
       
-      time.sleep(3)
+      time.sleep(3) #TODO: Make this value configurable 
       response = session.get(url, proxies=proxy.get_proxy())
       response.raise_for_status()
       return response.text
