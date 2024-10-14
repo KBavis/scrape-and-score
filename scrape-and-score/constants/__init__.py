@@ -1,3 +1,3 @@
-from .constants import team_hrefs, months, locations, cities, valid_positions
+from .constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES, VALID_POSITIONS
 
-__all__ = ['team_hrefs', 'months', 'locations', 'cities', 'valid_positions']
+__all__ = ['TEAM_HREFS', 'MONTHS', 'LOCATIONS', 'CIITES', 'VALID_POSITIONS']

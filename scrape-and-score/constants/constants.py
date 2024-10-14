@@ -1,6 +1,6 @@
-valid_positions = ['QB', 'RB', 'WR', 'TE']
+VALID_POSITIONS = ['QB', 'RB', 'WR', 'TE']
 
-team_hrefs = {
+TEAM_HREFS = {
     'Arizona Cardinals': 'crd',
     'Baltimore Colts': 'clt',
     'St. Louis Cardinals': 'crd',
@@ -48,9 +48,9 @@ team_hrefs = {
     'Boston Patriots': 'nwe',
 }
 
-months = {"September": 9, "October": 10, "November": 11, "December": 12, "January": 1}
+MONTHS = {"September": 9, "October": 10, "November": 11, "December": 12, "January": 1}
 
-locations = {
+LOCATIONS = {
     'Boston': {'latitude': 42.3656, 'longitude': 71.0096, 'airport': 'BOS'},
     'Phoenix': {'latitude': 33.4352, 'longitude': 112.0101, 'airport': 'PHX'},
     'Chicago': {'latitude': 41.9803, 'longitude': 87.9090, 'airport': 'ORD'},
@@ -87,7 +87,7 @@ locations = {
     'St. Louis': {'latitude': 38.7499, 'longitude': 90.3748, 'airport': 'STL'},
 }
 
-cities = {
+CITIES = {
     'Arizona Cardinals': 'Phoenix',
     'Chicago Bears': 'Chicago',
     'Green Bay Packers': 'Green Bay',
