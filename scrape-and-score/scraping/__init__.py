@@ -1,3 +1,2 @@
-from .scraping_util import fetch_page 
+from .util import fetch_page 
 from .fantasy_pros_scraper import scrape as scrape_fantasy_pros
-from .pro_football_reference_scraper import fetch_metrics as scrape_pro_football_reference
