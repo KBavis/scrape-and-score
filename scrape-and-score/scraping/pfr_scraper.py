@@ -20,7 +20,7 @@ Returns:
       - metrics for both players and teams
 '''
 def scrape(team_and_player_data: list, year:int):
-   # TODO (FFM-31): Create logic to determine if new player/team data avaialable 
+   # TODO (FFM-31): Create logic to determine if new player/team data avaialable. If no new team data available, skip fetching metrics and utilize persisted metrics. If no new player data available, skip fetching metrics for player.
    
    # fetch configs 
    configs = props.load_configs()
@@ -30,7 +30,7 @@ def scrape(team_and_player_data: list, year:int):
    teams = {team['team'] for team in team_and_player_data}
 
    # fetch relevant team metrics 
-#    team_metrics = fetch_team_metrics(teams, team_template_url, year)
+   team_metrics = fetch_team_metrics(teams, team_template_url, year)
    
    # order players by last name inital 
    ordered_players = order_players_by_last_name(team_and_player_data)
