@@ -37,8 +37,6 @@ def scrape(team_and_player_data: list):
        
    # construct each players metrics link 
    players_urls = get_player_urls(ordered_players, year)
-   for url in players_urls:
-       logging.info(f'URL: {url}')
    
    # fetch metrics for each player 
    
