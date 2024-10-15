@@ -13,18 +13,18 @@ Functionality to scrape relevant NFL teams and player data
 
 Args:
    team_and_player_data (list[dict]): every relevant fantasy NFL player corresponding to specified NFL season
-   teams (list(str)) - list of team names to fetch metrics for 
 
 Returns:
    data (tuple(list[pd.DataFrame], list[pd.DataFrame])) 
       - metrics for both players and teams
 '''
-def scrape(team_and_player_data: list, year:int):
+def scrape(team_and_player_data: list):
    # TODO (FFM-31): Create logic to determine if new player/team data avaialable. If no new team data available, skip fetching metrics and utilize persisted metrics. If no new player data available, skip fetching metrics for player.
    
    # fetch configs 
    configs = props.load_configs()
    team_template_url = configs['website']['pro-football-reference']['urls']['team-metrics']
+   year = configs['nfl']['current-year']
    
    # extract unique teams
    teams = {team['team'] for team in team_and_player_data}
@@ -36,12 +36,14 @@ def scrape(team_and_player_data: list, year:int):
    ordered_players = order_players_by_last_name(team_and_player_data)
        
    # construct each players metrics link 
-   players_urls = get_player_urls(ordered_players)
+   players_urls = get_player_urls(ordered_players, year)
+   for url in players_urls:
+       logging.info(f'URL: {url}')
    
    # fetch metrics for each player 
    
    # return metrics 
-   return team_metrics, []
+   return team_metrics, [] #TODO: Update this to be player metrics and team metrics 
 
 
 '''
@@ -320,7 +322,7 @@ Args:
 Returns:
     ordered_players(dict) : dictionary that orders players (i.e 'A': [{<player_data>}, {<player_data>}, ...])
 '''
-def order_players_by_last_name(player_data): 
+def order_players_by_last_name(player_data: dict): 
     logging.info("Ordering retrieved players by their last name's first initial")
     
     ordered_players = {
@@ -333,9 +335,88 @@ def order_players_by_last_name(player_data):
     }
 
     for player in player_data:
-       logging.info(f"Attempting to order the following player: {player['player_name']}")
        last_name = player["player_name"].split()[1]
        inital = last_name[0].upper()
        ordered_players[inital].append(player)
     
     return ordered_players   
+
+
+
+'''
+Functionality to fetch all relevant player URLs needed to extract new player metrics 
+
+Args:
+    ordered_players(dict): players ordered by their last name inital, allowing us to construct 
+                            player URLs in bulk rather than one by one
+    year(int): season to fetch players for 
+    
+Returns:
+    urls(list) : list of URLs pertaining to players to fetch metrics 
+'''
+def get_player_urls(ordered_players: dict, year: int): 
+    base_url = "https://www.pro-football-reference.com%s/gamelog/%s"
+    urls = [] 
+    
+    for inital, player_list in ordered_players.items(): 
+        logging.info(f"Constructing player URLs for players with the inital \'{inital}\'")
+        
+        # fetch players list based on last name inital 
+        player_list_url = "https://www.pro-football-reference.com/players/%s/" % (inital)
+        soup = BeautifulSoup(fetch_page(player_list_url), "html.parser") # soup containing players hrefs
+        
+        # for each player in the corresponding inital, construct player URLs
+        for player in player_list: 
+            href = get_href(player['player_name'], player['position'], year, soup)
+            if(href == None):
+                continue
+            else:
+                urls.append(base_url % (href, year)) # append each players URL to our list of URLs 
+        
+    return urls 
+
+
+'''
+Functionality to fetch a specific players href, which is needed to construct their URL
+
+All credit for the following code in this function goes to the developer of the repository:
+      - https://github.com/mjk2244/pro-football-reference-web-scraper
+
+Args:
+    player_name (str): players name to search for 
+    year (int): year corresponding to the season we are searching for metrics for 
+    soup (BeautifulSoup): soup pertaining to raw HTML containing players hrefs
+
+Returns:
+    href (str): href needed to construct URL 
+'''
+def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
+    players = soup.find('div', id='div_players').find_all('p')  # find players HTML element
+
+    for player in players:
+        # Split and parse the years from player text
+        years = player.text.split(' ')
+        years = years[-1].split('-')  # Use the last segment for the years
+
+        try:
+            start_year, end_year = int(years[0]), int(years[1])
+        except ValueError:
+            logging.warning(f"Error parsing years for player {player.text}")
+            continue
+
+        # Check if the player's name, position, and year match
+        if start_year <= year <= end_year and player_name in player.text and position in player.text:
+            a_tag = player.find('a')
+            if a_tag and a_tag.get('href'):
+                href = a_tag.get('href').replace('.htm', '')
+                return href
+            else:
+                logging.warning(f"Missing href for player {player_name} ({position}) in year {year}")
+                return None
+    
+    # Log a message when no player matches the criteria
+    logging.warning(f"Cannot find a {position} named {player_name} from {year}")
+    return None  # Explicitly return None when not found
+
+
+
