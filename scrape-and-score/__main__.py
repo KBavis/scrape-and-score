@@ -21,7 +21,7 @@ def main():
    logging.info(f"Successfully fetched {len(teams_and_players)} unique fantasy relevant players and their corresponding teams")
    
    #Fetch relevant team and player metrics 
-   team_metrics, player_metrics = pfr.scrape(teams_and_players, config['nfl']['current-year'])
+   team_metrics, player_metrics = pfr.scrape(teams_and_players)
    logging.info(f"Successfully retrieved metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
    
 # Entry point for the script
