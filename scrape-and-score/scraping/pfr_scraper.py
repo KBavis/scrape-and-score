@@ -49,6 +49,7 @@ Args:
 '''
 def fetch_player_metrics(team_and_player_data, year):
    logging.info(f"Attempting to scrape player metrics for the year {year}")
+   player_metrics = []
     
    # order players by last name inital 
    ordered_players = order_players_by_last_name(team_and_player_data)
@@ -60,8 +61,16 @@ def fetch_player_metrics(team_and_player_data, year):
    for player_url in player_urls:
        url = player_url['url']
        player_name = player_url['player']
+       position = player_url['position']
        
        raw_html = fetch_page(url)
+       
+       soup = BeautifulSoup(raw_html, "html.parser")
+       
+       #TODO: 
+       player_metrics.append({"player": player_name,"position": position, "player_metrics": get_game_log(soup, position)})
+   
+   return player_metrics    
 
 
 '''
@@ -386,12 +395,14 @@ def get_player_urls(ordered_players: dict, year: int):
         # for each player in the corresponding inital, construct player URLs
         for player in player_list: 
             player_name = player['player_name']
-            href = get_href(player_name, player['position'], year, soup)
+            player_position = player['position']
+            
+            href = get_href(player_name, player_position, year, soup)
             if(href == None):
                 continue
             else:
                 url = base_url % (href, year)
-                urls.append({"player": player_name, "url": url}) # append each players URL to our list of URLs 
+                urls.append({"player": player_name,"position": player_position, "url": url}) # append each players URL to our list of URLs 
         
     return urls 
 
@@ -453,3 +464,75 @@ def check_name_similarity(player_text: str, player_name: str):
     words = player_text.split()
     name = ' '.join(words[:2])
     return fuzz.partial_ratio(name, player_name)
+
+
+
+'''
+Functionality to get the game log for a player. This function 
+will retrieve relevant player metrics from their game logs based 
+on their position.
+
+Args:
+    soup (BeautifulSoup): parsed HTML containing relevant player metrics 
+    position (str): the players corresponding position
+
+Returns:
+    similarity (float): similarity of the two passed in names
+'''
+def get_game_log(soup: BeautifulSoup, position: str):
+    # data to retrieve for each player, regardless of position
+    data = {
+        'date': [],
+        'week': [],
+        'team': [],
+        'game_location': [],
+        'opp': [],
+        'result': [],
+        'team_pts': [],
+        'opp_pts': [],
+    }
+    data.update(get_additional_metrics(position)) # update data with additonal metrics 
+
+
+'''
+Helper function to retrieve additional metric fields needed for a player based on position
+
+Args:
+    position (str): the players corresponding position
+
+Returns:
+    additonal_metrics (dict): additional metrics to account for based on player posiiton
+'''
+def get_additional_metrics(position):
+    if position == 'QB':
+        additional_fields = {
+            'cmp': [],
+            'att': [],
+            'pass_yds': [],
+            'pass_td': [],
+            'int': [],
+            'rating': [],
+            'sacked': [],
+            'rush_att': [],
+            'rush_yds': [],
+            'rush_td': [],
+        }
+    elif position == 'WR': 
+        additional_fields = {
+            'tgt': [],
+            'rec': [],
+            'rec_yds': [],
+            'rec_td': [],
+            'snap_pct': [],
+        }
+    else:
+        additional_fields = {
+            'rush_att': [],
+            'rush_yds': [],
+            'rush_td': [],
+            'tgt': [],
+            'rec': [],
+            'rec_yds': [],
+            'rec_td': [],
+        }
+    return additional_fields    
