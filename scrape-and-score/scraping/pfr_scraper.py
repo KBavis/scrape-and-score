@@ -6,6 +6,7 @@ from .util import fetch_page
 from datetime import date, datetime
 from bs4 import BeautifulSoup
 from haversine import haversine, Unit
+from rapidfuzz import fuzz
 
 
 '''
@@ -32,16 +33,32 @@ def scrape(team_and_player_data: list):
    # fetch relevant team metrics 
    team_metrics = fetch_team_metrics(teams, team_template_url, year)
    
+   # fetch relevant player metrics 
+   player_metrics = fetch_player_metrics(team_and_player_data, year)
+   
+   # return metrics 
+   return team_metrics, player_metrics 
+
+
+'''
+Functionality to fetch the metrics for each relevant player on current 53 man roster of specified year
+
+Args:
+   team_and_player_data (list[dict]) - every relevant fantasy NFL player corresponding to specified NFL season
+   year (int) - year to fetch metrics for 
+'''
+def fetch_player_metrics(team_and_player_data, year):
    # order players by last name inital 
    ordered_players = order_players_by_last_name(team_and_player_data)
        
    # construct each players metrics link 
-   players_urls = get_player_urls(ordered_players, year)
+   player_urls = get_player_urls(ordered_players, year)
    
-   # fetch metrics for each player 
-   
-   # return metrics 
-   return team_metrics, [] #TODO: Update this to be player metrics and team metrics 
+   # for each player url, fetch relevant metrics 
+   for player_url in player_urls:
+       logging.info(f"Fetching metrics for player \'{player_url['player']}\' via the following URL: {player_url['url']}")
+       
+       #raw_html = fetch_page(url)
 
 
 '''
@@ -350,7 +367,7 @@ Args:
     year(int): season to fetch players for 
     
 Returns:
-    urls(list) : list of URLs pertaining to players to fetch metrics 
+    urls(list) : list of dictionary containing players URL and name
 '''
 def get_player_urls(ordered_players: dict, year: int): 
     base_url = "https://www.pro-football-reference.com%s/gamelog/%s"
@@ -365,11 +382,13 @@ def get_player_urls(ordered_players: dict, year: int):
         
         # for each player in the corresponding inital, construct player URLs
         for player in player_list: 
-            href = get_href(player['player_name'], player['position'], year, soup)
+            player_name = player['player_name']
+            href = get_href(player_name, player['position'], year, soup)
             if(href == None):
                 continue
             else:
-                urls.append(base_url % (href, year)) # append each players URL to our list of URLs 
+                url = base_url % (href, year)
+                urls.append({"player": player_name, "url": url}) # append each players URL to our list of URLs 
         
     return urls 
 
@@ -403,7 +422,8 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
             continue
 
         # Check if the player's name, position, and year match
-        if start_year <= year <= end_year and player_name in player.text and position in player.text:
+        player_text = player.text
+        if start_year <= year <= end_year and position in player_text and check_name_similarity(player_text, player_name) >= 90:
             a_tag = player.find('a')
             if a_tag and a_tag.get('href'):
                 href = a_tag.get('href').replace('.htm', '')
@@ -412,9 +432,21 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
                 logging.warning(f"Missing href for player {player_name} ({position}) in year {year}")
                 return None
     
-    # Log a message when no player matches the criteria
+    #TODO (FFM-40): Add Ability to Re-try Finding Players Name
     logging.warning(f"Cannot find a {position} named {player_name} from {year}")
-    return None  # Explicitly return None when not found
+    return None  
 
+'''
+Helper function to determine the similarity between two names
 
+Args:
+    player_name (str): players name to compare 
+    player_text (str): text from PFR containing players name
 
+Returns:
+    similarity (float): similarity of the two passed in names
+'''
+def check_name_similarity(player_text: str, player_name: str):
+    words = player_text.split()
+    name = ' '.join(words[:2])
+    return fuzz.partial_ratio(name, player_name)
