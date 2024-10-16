@@ -48,6 +48,8 @@ Args:
    year (int) - year to fetch metrics for 
 '''
 def fetch_player_metrics(team_and_player_data, year):
+   logging.info(f"Attempting to scrape player metrics for the year {year}")
+    
    # order players by last name inital 
    ordered_players = order_players_by_last_name(team_and_player_data)
        
@@ -56,9 +58,10 @@ def fetch_player_metrics(team_and_player_data, year):
    
    # for each player url, fetch relevant metrics 
    for player_url in player_urls:
-       logging.info(f"Fetching metrics for player \'{player_url['player']}\' via the following URL: {player_url['url']}")
+       url = player_url['url']
+       player_name = player_url['player']
        
-       #raw_html = fetch_page(url)
+       raw_html = fetch_page(url)
 
 
 '''
