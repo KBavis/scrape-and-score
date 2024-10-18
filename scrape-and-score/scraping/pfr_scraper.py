@@ -116,6 +116,8 @@ def fetch_team_metrics(teams: list, url_template: str, year: int):
 '''
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 
+TODO(FFM-45): Refactor to utilize helper functions, not use  range(), and be split into multiple functions
+
 All credit for the following code in this function goes to the developer of the repository:
       - https://github.com/mjk2244/pro-football-reference-web-scraper
 
@@ -661,9 +663,17 @@ def get_additional_metrics(position):
     return additional_fields    
 
 
-# Helper function to handle empty text and convert to integer
-def extract_int(td, stat):
-    text = td.find('td', {'data-stat': stat})
+'''
+Helper function to extract int from a speciifc player metric 
+
+Args:
+    tr (BeautifulSoup): table row containing relevant metrics 
+
+Returns:
+    metric (int): derived metric converted to a int
+'''
+def extract_int(tr, stat):
+    text = tr.find('td', {'data-stat': stat})
     
     if text == None:
         return 0 # return 0 if no value 
@@ -672,9 +682,17 @@ def extract_int(td, stat):
     else:
         return int(text.text)
 
-# Helper function to handle empty text and convert to float
-def extract_float(td, stat):
-    text = td.find('td', {'data-stat': stat})
+'''
+Helper function to extract a float from a speciifc player metric 
+
+Args:
+    tr (BeautifulSoup): table row containing relevant metrics 
+
+Returns:
+    metric (float): derived metric converted to a float 
+'''
+def extract_float(tr, stat):
+    text = tr.find('td', {'data-stat': stat})
     
     if text == None:
         return 0.0
