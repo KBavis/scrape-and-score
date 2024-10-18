@@ -64,11 +64,15 @@ def fetch_player_metrics(team_and_player_data, year):
        position = player_url['position']
        
        raw_html = fetch_page(url)
+       if raw_html == None: #ensure we retrieve response prior to parsing
+           continue
        
        soup = BeautifulSoup(raw_html, "html.parser")
        
-       #TODO: 
+       #TODO (FFM-42): Gather Additional Data other than Game Logs  
+       logging.info(f"Fetching metrics for {position} \'{player_name}\'")
        player_metrics.append({"player": player_name,"position": position, "player_metrics": get_game_log(soup, position)})
+
    
    return player_metrics    
 
@@ -477,7 +481,7 @@ Args:
     position (str): the players corresponding position
 
 Returns:
-    similarity (float): similarity of the two passed in names
+    data (pd.DataFrame): data frmae containing player game logs 
 '''
 def get_game_log(soup: BeautifulSoup, position: str):
     # data to retrieve for each player, regardless of position
@@ -492,6 +496,125 @@ def get_game_log(soup: BeautifulSoup, position: str):
         'opp_pts': [],
     }
     data.update(get_additional_metrics(position)) # update data with additonal metrics 
+    
+    table_rows = soup.find('tbody').find_all('tr')
+    
+    # ignore inactive/DNP games 
+    ignore_statuses = ['Inactive', 'Did Not Play', 'Injured Reserve']
+    filtered_table_rows = [] 
+    for tr in table_rows:
+        elements = tr.find_all('td')
+        status = elements[-1].text
+        
+        if status not in ignore_statuses:
+            filtered_table_rows.append(tr)
+    
+    # add game log data to dictionary  
+    for tr in filtered_table_rows:
+        # add common game log data 
+        add_common_game_log_metrics(data, tr)
+        
+        # add position specific data
+        if position == 'QB':
+            add_qb_specific_game_log_metrics(data, tr)
+        elif position == 'RB':
+            add_rb_specific_game_log_metrics(data,tr)
+        else:
+            add_wr_specific_game_log_metrics(data, tr)        
+    
+    return pd.DataFrame(data=data) 
+
+'''
+Functionality to retireve game log metrics for a QB
+
+Args:
+    tr (BeautifulSoup): parsed HTML tr containing player metrics 
+    data (dict): dictionary containing players metrics 
+
+Returns:
+    None
+''' 
+def add_qb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
+    data['cmp'].append(extract_int(tr, 'pass_cmp'))
+    data['att'].append(extract_int(tr, 'pass_att'))
+    data['pass_yds'].append(extract_int(tr, 'pass_yds'))
+    data['pass_td'].append(extract_int(tr, 'pass_td'))
+    data['int'].append(extract_int(tr, 'pass_int'))
+    data['rating'].append(extract_float(tr, 'pass_rating'))
+    data['sacked'].append(extract_int(tr, 'pass_sacked'))
+    data['rush_att'].append(extract_int(tr, 'rush_att'))
+    data['rush_yds'].append(extract_int(tr, 'rush_yds'))
+    data['rush_td'].append(extract_int(tr, 'rush_td'))
+
+'''
+Functionality to retireve game log metrics for a RB
+
+Args:
+    tr (BeautifulSoup): parsed HTML tr containing player metrics 
+    data (dict): dictionary containing players metrics 
+
+Returns:
+    None
+'''    
+def add_rb_specific_game_log_metrics(data: dict, tr: BeautifulSoup): 
+
+    # Add rushing and receiving stats with missing value handling
+    data['rush_att'].append(extract_int(tr, 'rush_att'))
+    data['rush_yds'].append(extract_int(tr, 'rush_yds'))
+    data['rush_td'].append(extract_int(tr, 'rush_td'))
+    data['tgt'].append(extract_int(tr, 'targets'))
+    data['rec'].append(extract_int(tr, 'rec'))
+    data['rec_yds'].append(extract_int(tr, 'rec_yds'))
+    data['rec_td'].append(extract_int(tr, 'rec_td'))
+
+
+'''
+Functionality to retrieve game log metrics for a WR
+
+Args:
+    tr (BeautifulSoup): parsed HTML tr containing player metrics 
+    data (dict): dictionary containing players metrics 
+
+Returns:
+    None
+'''
+def add_wr_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
+    data['tgt'].append(extract_int(tr, 'targets'))
+    data['rec'].append(extract_int(tr, 'rec'))
+    data['rec_yds'].append(extract_int(tr, 'rec_yds'))
+    data['rec_td'].append(extract_int(tr, 'rec_td'))
+
+    # Handle snap percentage
+    snap_pct_td = tr.find('td', {'data-stat': 'off_pct'})
+    if snap_pct_td and snap_pct_td.text:  # Check for valid data
+        snap_pct = snap_pct_td.text[:-1]  # Remove '%' symbol
+        data['snap_pct'].append(float(snap_pct) / 100)  # Convert to float percentage
+    else:
+        data['snap_pct'].append(0.0)  # Append 0 if snap percentage is not available
+        
+    
+'''
+Functionality to retireve common game log metrics for a given player 
+
+Args:
+    tr (BeautifulSoup): parsed HTML tr containing player metrics 
+    data (dict): dictionary containing players metrics 
+
+Returns:
+    None
+'''
+def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
+    data['date'].append(tr.find('td', {'data-stat': 'game_date'}).text)
+    data['week'].append(int(tr.find('td', {'data-stat': 'week_num'}).text))
+    data['team'].append(tr.find('td', {'data-stat': 'team'}).text)
+    data['game_location'].append(tr.find('td', {'data-stat': 'game_location'}).text)
+    data['opp'].append(tr.find('td', {'data-stat': 'opp'}).text)
+    
+    # For result, team_pts, and opp_pts, split the text properly
+    game_result_text = tr.find('td', {'data-stat': 'game_result'}).text.split(' ')
+    data['result'].append(game_result_text[0])
+    data['team_pts'].append(int(game_result_text[1].split('-')[0]))
+    data['opp_pts'].append(int(game_result_text[1].split('-')[1])) 
 
 
 '''
@@ -517,15 +640,7 @@ def get_additional_metrics(position):
             'rush_yds': [],
             'rush_td': [],
         }
-    elif position == 'WR': 
-        additional_fields = {
-            'tgt': [],
-            'rec': [],
-            'rec_yds': [],
-            'rec_td': [],
-            'snap_pct': [],
-        }
-    else:
+    elif position == 'RB':
         additional_fields = {
             'rush_att': [],
             'rush_yds': [],
@@ -535,4 +650,35 @@ def get_additional_metrics(position):
             'rec_yds': [],
             'rec_td': [],
         }
+    else: 
+        additional_fields = {
+            'tgt': [],
+            'rec': [],
+            'rec_yds': [],
+            'rec_td': [],
+            'snap_pct': [],
+        }
     return additional_fields    
+
+
+# Helper function to handle empty text and convert to integer
+def extract_int(td, stat):
+    text = td.find('td', {'data-stat': stat})
+    
+    if text == None:
+        return 0 # return 0 if no value 
+    elif text.text == '':
+        return 0
+    else:
+        return int(text.text)
+
+# Helper function to handle empty text and convert to float
+def extract_float(td, stat):
+    text = td.find('td', {'data-stat': stat})
+    
+    if text == None:
+        return 0.0
+    elif text.text == '':
+        return 0
+    else:
+        return float(text.text) 
