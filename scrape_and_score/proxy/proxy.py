@@ -9,7 +9,8 @@ from random import choice
 Functionality to fetch relevant proxies 
 
 Args: 
-   None 
+   url (str): URL to fetch proxies from
+   max (int): max number of proxies to parse
    
 Returns: 
    proxies (json) - json object containing relevant proxies    
@@ -25,14 +26,19 @@ def fetch_proxies(url, max=10):
          break 
       
       proxy = {"http": ip["proxy"]}
+
+      # validate each proxy 
       if validate_proxy(proxy):
          count+=1
          proxies.append(proxy)
       else: 
          logging.info(f"Invalid Proxy: {proxy}")   
          continue 
-   
-   cache_proxies(proxies)   
+
+   # cache proxies if retrieved 
+   if len(proxies) > 0:
+      cache_proxies(proxies)   
+
    return proxies   
 
 
@@ -94,11 +100,10 @@ def validate_proxy(proxy):
       
       # valid IPv4 address contains three '.'
       if ip.text.count(".") == 3:
-         logging.info(f"The proxy {proxy} is valid")
          return True 
       return False 
    except Exception as e:
-      logging.info(f"An exception occured while checking if the proxy \'{proxy}\' is valid: {e}")
+      logging.error(f"An exception occured: {e}")
       return False   
 
 
@@ -112,6 +117,7 @@ Returns:
    proxy(dict) - random proxy in format {<protocol>:<proxy}   
 '''
 def get_random_proxy():
+
    with open("./resources/proxies.json", "r") as f:
       cache_data = json.load(f)
       

@@ -4,7 +4,8 @@ pandas
 numpy
 matplotlib
 seaborn
-sklearn
+scikit-learns
 PyYAML
 haversine
 rapidfuzz
+pytests

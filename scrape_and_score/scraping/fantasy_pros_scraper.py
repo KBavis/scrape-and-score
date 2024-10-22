@@ -5,8 +5,6 @@ from .util import fetch_page
 
 
 def scrape(url: str): 
-   logging.info(f"Attempting to scrape the following URL: {url}")
-     
    #Fetch Raw HTMl corresponding to Fantasy Pros site 
    html = fetch_page(url)
    
