@@ -52,7 +52,7 @@ Args:
 Returns: 
    None   
 '''
-def cache_proxies(proxies):
+def cache_proxies(proxies, file_path="./resources/proxies.json"):
    # configure cache data
    expiration = datetime.now() + timedelta(hours=3) 
    cache_data = {
@@ -61,7 +61,8 @@ def cache_proxies(proxies):
    }
    
    # create cache or override data
-   with open("./resources/proxies.json", "w") as f:
+   logging.info(f"Caching the proxies fetched in the following directory: {file_path}")
+   with open(file_path, "w") as f:
       json.dump(cache_data, f, indent=4)
 
 '''
