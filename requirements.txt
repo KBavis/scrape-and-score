@@ -8,4 +8,4 @@ scikit-learns
 PyYAML
 haversine
 rapidfuzz
-pytests
+pytest
