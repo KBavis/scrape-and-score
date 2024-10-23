@@ -1,8 +1,9 @@
 import requests
 import pytest
+from datetime import datetime, timedelta
 import json
 import os
-from unittest.mock import Mock
+from unittest import mock
 from scrape_and_score.proxy import proxy
 from helper import mock_proxies_response, mock_with_open_expired_cache, get_html_ip, mock_with_open, EXPECTED_PROXIES, URL, IP, JSON_RESPONSE
 
@@ -63,28 +64,87 @@ def test_is_cache_expired_is_true():
     assert proxy.is_cache_expired() is True
 
 # validate cache proxies correctly creates cache
-@pytest.mark.usefixtures("mock_with_open")
-def test_cache_proxies():
-    proxy.cache_proxies(EXPECTED_PROXIES)
+def test_cache_proxies_creates_cache(tmpdir):
+    # create temporary dir & cache 
+    temp_file = tmpdir.join("proxies.json")
+    
+    # invoke function
+    proxy.cache_proxies(EXPECTED_PROXIES, file_path=str(temp_file))
 
     # ensure data is cached
-    file = "./scrape_and_score/resources/proxies.json"
-    assert os.path.exists(file)
+    assert os.path.exists(temp_file)
 
-# validate functions called when no cache
-def test_get_proxy_calls_fetch_proxies_no_cache():
-    # create mock callback
-    mock_callback = Mock() 
-
-    proxy.get_proxy(mock_callback)
-
+def test_cache_proxies_persists_proxies(tmpdir):
+    # create tmp dir & cache 
+    temp_file = tmpdir.join("proxies.json")
     
-
-# def test_fetch_proxies_validates_each_proxy(): 
-
-# def test_get_proxy_calls_fetch_proxies_if_none_cached():
-
-# def test_get_proxy_calls_fetch_proxies_if_cache_expired():
-
-# def test_get_proxy_calls_get_random_proxy(): 
+    # invoke function 
+    proxy.cache_proxies(EXPECTED_PROXIES, file_path=str(temp_file))
+    
+    # validate proxies persisted 
+    with open(temp_file, "r") as f:
+        data = json.load(f)
+        assert data["proxies"] == EXPECTED_PROXIES    
+        
+def test_cache_proxies_persists_expriation(tmpdir):    
+    # create tmp dir & cache 
+    temp_file = tmpdir.join("proxies.json")
+    
+    current_time = datetime.now()
+    
+    # invoke function 
+    proxy.cache_proxies(EXPECTED_PROXIES, file_path=str(temp_file))
+    
+    # extract expiration persisted 
+    with open(temp_file, "r") as f:
+        data = json.load(f)
+        expiration = datetime.fromisoformat(data["expiration"])
+        
+    time_diff = expiration - current_time
+    
+    # assert that expiration is three hours from now 
+    assert time_diff - timedelta(hours=3) < timedelta(seconds=3)
+        
+        
+def test_get_proxy_no_cache():
+    # define mocks 
+    with mock.patch("os.path.exists") as mock_exists, \
+         mock.patch("scrape_and_score.proxy.proxy.fetch_proxies") as mock_fetch_proxies, \
+         mock.patch("scrape_and_score.proxy.proxy.is_cache_expired") as mock_is_cache_expired, \
+         mock.patch("scrape_and_score.proxy.proxy.get_random_proxy") as mock_get_random_proxy:     
+            
+         mock_exists.return_value = False # ensure cache DNE
+         mock_fetch_proxies.return_value = EXPECTED_PROXIES
+         mock_is_cache_expired.return_value = False 
+         mock_get_random_proxy.return_value = EXPECTED_PROXIES[0]  
+         
+         # invoke function 
+         proxy.get_proxy()              
+         
+         # verify mock interactions 
+         mock_fetch_proxies.assert_called_once() 
+         mock_get_random_proxy.assert_called_once()
+         mock_exists.assert_called_once()
+         mock_is_cache_expired.assert_called_once()
+    
+def test_get_proxy_cache_expired(): 
+    # define mocks 
+    with mock.patch("os.path.exists") as mock_exists, \
+         mock.patch("scrape_and_score.proxy.proxy.fetch_proxies") as mock_fetch_proxies, \
+         mock.patch("scrape_and_score.proxy.proxy.is_cache_expired") as mock_is_cache_expired, \
+         mock.patch("scrape_and_score.proxy.proxy.get_random_proxy") as mock_get_random_proxy:     
+            
+         mock_exists.return_value = True # ensure cache exists 
+         mock_fetch_proxies.return_value = EXPECTED_PROXIES
+         mock_is_cache_expired.return_value = True # ensure cache expired 
+         mock_get_random_proxy.return_value = EXPECTED_PROXIES[0]  
+         
+         # invoke function 
+         proxy.get_proxy()              
+         
+         # verify mock interactions 
+         mock_fetch_proxies.assert_called_once() 
+         mock_get_random_proxy.assert_called_once()
+         mock_exists.assert_called_once()
+         mock_is_cache_expired.assert_called_once()
 
