@@ -1,12 +1,12 @@
 import unittest
 from unittest.mock import patch, MagicMock 
 import requests 
-from scrape_and_score.scraping import util
+from scraping import util
 
 
-@patch('scrape_and_score.scraping.util.get_proxy')
-@patch('scrape_and_score.scraping.util.session.get')
-@patch('scrape_and_score.scraping.util.time.sleep', return_value=None)
+@patch('proxy.proxy.get_proxy')
+@patch('scraping.util.session.get')
+@patch('scraping.util.time.sleep', return_value=None)
 def test_fetch_page_success(mock_sleep, mock_get, mock_get_proxy):
    # arrange 
    mock_get_proxy.return_value = {"http": "97.74.87.226:80"}

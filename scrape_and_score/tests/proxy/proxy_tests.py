@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import json
 import os
 from unittest import mock
-from scrape_and_score.proxy import proxy
+from proxy import proxy
 from helper import mock_proxies_response, mock_with_open_expired_cache, get_html_ip, mock_with_open, EXPECTED_PROXIES, URL, IP, JSON_RESPONSE
 
 # validate expected proxies returned when valid
@@ -109,9 +109,9 @@ def test_cache_proxies_persists_expriation(tmpdir):
 def test_get_proxy_no_cache():
     # define mocks 
     with mock.patch("os.path.exists") as mock_exists, \
-         mock.patch("scrape_and_score.proxy.proxy.fetch_proxies") as mock_fetch_proxies, \
-         mock.patch("scrape_and_score.proxy.proxy.is_cache_expired") as mock_is_cache_expired, \
-         mock.patch("scrape_and_score.proxy.proxy.get_random_proxy") as mock_get_random_proxy:     
+         mock.patch("proxy.proxy.fetch_proxies") as mock_fetch_proxies, \
+         mock.patch("proxy.proxy.is_cache_expired") as mock_is_cache_expired, \
+         mock.patch("proxy.proxy.get_random_proxy") as mock_get_random_proxy:     
             
          mock_exists.return_value = False # ensure cache DNE
          mock_fetch_proxies.return_value = EXPECTED_PROXIES
@@ -130,9 +130,9 @@ def test_get_proxy_no_cache():
 def test_get_proxy_cache_expired(): 
     # define mocks 
     with mock.patch("os.path.exists") as mock_exists, \
-         mock.patch("scrape_and_score.proxy.proxy.fetch_proxies") as mock_fetch_proxies, \
-         mock.patch("scrape_and_score.proxy.proxy.is_cache_expired") as mock_is_cache_expired, \
-         mock.patch("scrape_and_score.proxy.proxy.get_random_proxy") as mock_get_random_proxy:     
+         mock.patch("proxy.proxy.fetch_proxies") as mock_fetch_proxies, \
+         mock.patch("proxy.proxy.is_cache_expired") as mock_is_cache_expired, \
+         mock.patch("proxy.proxy.get_random_proxy") as mock_get_random_proxy:     
             
          mock_exists.return_value = True # ensure cache exists 
          mock_fetch_proxies.return_value = EXPECTED_PROXIES
