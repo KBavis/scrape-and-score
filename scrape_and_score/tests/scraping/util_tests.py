@@ -23,6 +23,22 @@ def test_fetch_page_success(mock_sleep, mock_get, mock_get_proxy):
    
    # assert 
    assert result == mock_response.text
+   
+@patch('proxy.proxy.get_proxy')
+@patch('scraping.util.session.get')
+@patch('scraping.util.time.sleep', return_value = None)
+def test_fetch_page_exception(mock_sleep, mock_get, mock_get_proxy):
+   # arrange 
+   mock_get_proxy.return_value = {"http": "97.74.87.226:80"}
+   
+   mock_get.side_effect = requests.RequestException("Failed to fetch data")
+   
+   url = "http://example.com"
+   
+   # act 
+   result = util.fetch_page(url)
+   
+   assert result is None
 
    
    
