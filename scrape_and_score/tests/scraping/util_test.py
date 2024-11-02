@@ -1,4 +1,3 @@
-import unittest
 from unittest.mock import patch, MagicMock 
 import requests 
 from scraping import util
