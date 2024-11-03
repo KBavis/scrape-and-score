@@ -52,7 +52,7 @@ def fetch_team_data(soup: BeautifulSoup):
       for position in positions:
          #Extract position name 
          position_name = position.find("h4", class_="position-head").text.strip() 
-         position_abrv = position_mapping.get(position_name[3:]) #map to abbreviated position and skip the 'ECR' substring at beginning
+         position_abrv = position_mapping.get(position_name[3:].strip()) #map to abbreviated position and skip the 'ECR' substring at beginning
          
          #Find all players corresponding to position for current team 
          players = position.find_all("a", class_="fp-player-link")
