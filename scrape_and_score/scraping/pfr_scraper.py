@@ -652,7 +652,7 @@ def get_additional_metrics(position):
             'rec_yds': [],
             'rec_td': [],
         }
-    else: 
+    elif position == 'WR' or position == 'TE': 
         additional_fields = {
             'tgt': [],
             'rec': [],
@@ -660,6 +660,9 @@ def get_additional_metrics(position):
             'rec_td': [],
             'snap_pct': [],
         }
+    else:
+        logging.error(f"An unexpected position was passed to get_additional_metrics: {position}")
+        raise Exception(f"The position '{position}' is not a valid position to fetch metrics for.")   
     return additional_fields    
 
 
@@ -697,6 +700,6 @@ def extract_float(tr, stat):
     if text == None:
         return 0.0
     elif text.text == '':
-        return 0
+        return 0.0
     else:
         return float(text.text) 
