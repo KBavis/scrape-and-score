@@ -1,7 +1,10 @@
 from unittest.mock import patch, MagicMock
 from scraping import pfr_scraper
+import pandas as pd
 import pytest
-from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks
+from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
+         mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
+         mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -287,7 +290,7 @@ def test_add_qb_specific_game_log_metrics():
 @patch('scraping.pfr_scraper.add_common_game_log_metrics')
 @patch('scraping.pfr_scraper.add_qb_specific_game_log_metrics')
 def test_get_game_log_for_qb_calls_expected_functions(mock_add_qb_metrics, mock_add_common_metrics, mock_get_additional_metrics):
-   mock_soup = setup_game_log_mocks()
+   mock_soup = setup_game_log_mocks('Valid')
 
    pfr_scraper.get_game_log(mock_soup, 'QB')
    
@@ -300,7 +303,7 @@ def test_get_game_log_for_qb_calls_expected_functions(mock_add_qb_metrics, mock_
 @patch('scraping.pfr_scraper.add_common_game_log_metrics')
 @patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
 def test_get_game_log_for_wr_calls_expected_functions(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics):
-   mock_soup = setup_game_log_mocks()
+   mock_soup = setup_game_log_mocks('Valid')
    
    pfr_scraper.get_game_log(mock_soup, 'WR')
    
@@ -313,7 +316,7 @@ def test_get_game_log_for_wr_calls_expected_functions(mock_add_wr_metrics, mock_
 @patch('scraping.pfr_scraper.add_common_game_log_metrics')
 @patch('scraping.pfr_scraper.add_rb_specific_game_log_metrics')
 def test_get_game_log_for_rb_calls_expected_functions(mock_add_rb_metrics, mock_add_common_metrics, mock_get_additional_metrics):
-   mock_soup = setup_game_log_mocks()
+   mock_soup = setup_game_log_mocks('Valid')
    
    pfr_scraper.get_game_log(mock_soup, 'RB')
    
@@ -327,11 +330,78 @@ def test_get_game_log_for_rb_calls_expected_functions(mock_add_rb_metrics, mock_
 @patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
 def test_get_game_log_for_te_calls_expected_functions(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics): 
     
-   mock_soup = setup_game_log_mocks()
+   mock_soup = setup_game_log_mocks('Valid')
    
    pfr_scraper.get_game_log(mock_soup, 'TE')
    
    mock_add_common_metrics.assert_called_once()
    mock_add_wr_metrics.assert_called_once()
    mock_get_additional_metrics.assert_called_once()
+
+
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
+def test_get_game_log_ignores_inactive_status(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics): 
+   mock_soup = setup_game_log_mocks('Inactive') # setup mocks with inactive status
+   mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
+  
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
    
+   assert pandas_df.empty
+   
+   
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
+def test_get_game_log_ignores_inactive_status(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics): 
+   mock_soup = setup_game_log_mocks('Did Not Play') # setup mocks with inactive status
+   mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
+  
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   
+   assert pandas_df.empty
+   
+   
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
+def test_get_game_log_ignores_inactive_status(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics): 
+   mock_soup = setup_game_log_mocks('Injured Reserve') # setup mocks with inactive status
+   mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
+  
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   
+   assert pandas_df.empty
+   
+
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
+def test_get_game_log_returns_expected_df(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics):
+   mock_add_wr_metrics.side_effect = mock_add_wr_game_log_metrics
+   mock_add_common_metrics.side_effect = mock_add_common_game_log_metrics
+   
+   mock_soup = setup_game_log_mocks('Valid')
+   mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
+   
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   
+   expected_data = {
+      'date': ['2024-11-10'],
+      'week': [10],
+      'team': ['Team A'],
+      'game_location': ['@'],
+      'opp': ['Team B'],
+      'result': ['W'],
+      'team_pts': [24],
+      'opp_pts': [17],
+      'tgt': [7],
+      'rec': [5],
+      'rec_yds': [102],
+      'rec_td': [1],
+      'snap_pct': [67.7]
+   }
+   expected_df = pd.DataFrame(data=expected_data)
+   
+   pd.testing.assert_frame_equal(pandas_df, expected_df)
