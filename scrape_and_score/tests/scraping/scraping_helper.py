@@ -46,7 +46,9 @@ def mock_find_rb_metrics(tag, attrs):
    
    return data_stat_map.get(attrs['data-stat'])
 
-
+'''
+Mock function to map each 'data-stat' attribute to its respective mock return value for QB specific metrics 
+'''
 def mock_find_qb_metrics(tag, attrs): 
    data_stat_map = {
       'pass_cmp': MagicMock(text='24'),      
@@ -62,3 +64,15 @@ def mock_find_qb_metrics(tag, attrs):
    }
    
    return data_stat_map.get(attrs['data-stat'])
+
+def setup_game_log_mocks():    
+   mock_soup = MagicMock()
+   mock_tbody = MagicMock()
+   mock_tr = MagicMock()
+   mock_element = MagicMock()
+   mock_element.text = ''
+   mock_soup.find.return_value = mock_tbody
+   mock_tbody.find_all.return_value = [mock_tr]
+   mock_tr.find_all.return_value = [MagicMock(), mock_element]
+   
+   return mock_soup

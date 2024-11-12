@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 from scraping import pfr_scraper
 import pytest
-from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, mock_find_rb_metrics, mock_find_qb_metrics
+from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -283,53 +283,55 @@ def test_add_qb_specific_game_log_metrics():
    assert data['rush_td'] == [1]
    
 
-def test_get_game_log_for_qb():
-   mockSoup = MagicMock()
-   # mock 'get_additional_metrics' return value
-   
-   # mock 'add_common_game_log_metrics' return value 
-   
-   # mock 'add_qb_specific_game_log_metrics' return value 
-   
-   
-   pfr_scraper.get_game_log(mockSoup, 'QB')
-   
-   # ensure mocks are interacted with the correct number of times 
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_qb_specific_game_log_metrics')
+def test_get_game_log_for_qb_calls_expected_functions(mock_add_qb_metrics, mock_add_common_metrics, mock_get_additional_metrics):
+   mock_soup = setup_game_log_mocks()
 
-def test_get_game_log_for_wr():
-   mockSoup = MagicMock()
-   # mock 'get_additional_metrics' return value
+   pfr_scraper.get_game_log(mock_soup, 'QB')
    
-   # mock 'add_common_game_log_metrics' return value 
+   mock_add_common_metrics.assert_called_once()
+   mock_add_qb_metrics.assert_called_once()
+   mock_get_additional_metrics.assert_called_once()
    
-   # mock 'add_wr_specific_game_log_metrics' return value 
-   
-   pfr_scraper.get_game_log(mockSoup, 'WR')
-   
-   # ensure mocks are interacted with the correct number of times 
 
-def test_get_game_log_for_rb():
-   mockSoup = MagicMock()
-   # mock 'get_additional_metrics' return value
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
+def test_get_game_log_for_wr_calls_expected_functions(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics):
+   mock_soup = setup_game_log_mocks()
    
-   # mock 'add_common_game_log_metrics' return value 
+   pfr_scraper.get_game_log(mock_soup, 'WR')
    
-   # mock 'add_rb_specific_game_log_metrics' return value
+   mock_add_common_metrics.assert_called_once()
+   mock_add_wr_metrics.assert_called_once()
+   mock_get_additional_metrics.assert_called_once()
    
-   pfr_scraper.get_game_log(mockSoup, 'RB')
+
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_rb_specific_game_log_metrics')
+def test_get_game_log_for_rb_calls_expected_functions(mock_add_rb_metrics, mock_add_common_metrics, mock_get_additional_metrics):
+   mock_soup = setup_game_log_mocks()
    
-   # ensure mocks are interacted with the correct number of times 
+   pfr_scraper.get_game_log(mock_soup, 'RB')
    
-def test_get_game_log_for_te(): 
+   mock_add_common_metrics.assert_called_once()
+   mock_add_rb_metrics.assert_called_once()
+   mock_get_additional_metrics.assert_called_once()
+
+
+@patch('scraping.pfr_scraper.get_additional_metrics')
+@patch('scraping.pfr_scraper.add_common_game_log_metrics')
+@patch('scraping.pfr_scraper.add_wr_specific_game_log_metrics')
+def test_get_game_log_for_te_calls_expected_functions(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics): 
     
-   mockSoup = MagicMock() 
-   # mock 'get_additional_metrics' return value
+   mock_soup = setup_game_log_mocks()
    
-   # mock 'add_common_game_log_metrics' return value 
+   pfr_scraper.get_game_log(mock_soup, 'TE')
    
-   # mock 'add_wr_specific_game_log_metrics' return value 
-   
-   pfr_scraper.get_game_log(mockSoup, 'TE')
-   
-   # ensure mocks are interacted with the correct number of times   
+   mock_add_common_metrics.assert_called_once()
+   mock_add_wr_metrics.assert_called_once()
+   mock_get_additional_metrics.assert_called_once()
    
