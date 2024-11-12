@@ -5,7 +5,7 @@ import json
 import os
 from unittest import mock
 from proxy import proxy
-from helper import mock_proxies_response, mock_with_open_expired_cache, get_html_ip, mock_with_open, EXPECTED_PROXIES, URL, IP, JSON_RESPONSE
+from proxy_helper import mock_proxies_response, mock_with_open_expired_cache, get_html_ip, mock_with_open, EXPECTED_PROXIES, URL, IP, JSON_RESPONSE
 
 # validate expected proxies returned when valid
 @pytest.mark.usefixtures("mock_proxies_response")
