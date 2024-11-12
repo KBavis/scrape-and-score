@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 from scraping import pfr_scraper
 import pytest
-from helper import mock_find_common_metrics, mock_find_wr_metrics, mock_find_rb_metrics, mock_find_qb_metrics
+from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, mock_find_rb_metrics, mock_find_qb_metrics
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -281,3 +281,55 @@ def test_add_qb_specific_game_log_metrics():
    assert data['rush_att'] == [5]
    assert data['rush_yds'] == [23]
    assert data['rush_td'] == [1]
+   
+
+def test_get_game_log_for_qb():
+   mockSoup = MagicMock()
+   # mock 'get_additional_metrics' return value
+   
+   # mock 'add_common_game_log_metrics' return value 
+   
+   # mock 'add_qb_specific_game_log_metrics' return value 
+   
+   
+   pfr_scraper.get_game_log(mockSoup, 'QB')
+   
+   # ensure mocks are interacted with the correct number of times 
+
+def test_get_game_log_for_wr():
+   mockSoup = MagicMock()
+   # mock 'get_additional_metrics' return value
+   
+   # mock 'add_common_game_log_metrics' return value 
+   
+   # mock 'add_wr_specific_game_log_metrics' return value 
+   
+   pfr_scraper.get_game_log(mockSoup, 'WR')
+   
+   # ensure mocks are interacted with the correct number of times 
+
+def test_get_game_log_for_rb():
+   mockSoup = MagicMock()
+   # mock 'get_additional_metrics' return value
+   
+   # mock 'add_common_game_log_metrics' return value 
+   
+   # mock 'add_rb_specific_game_log_metrics' return value
+   
+   pfr_scraper.get_game_log(mockSoup, 'RB')
+   
+   # ensure mocks are interacted with the correct number of times 
+   
+def test_get_game_log_for_te(): 
+    
+   mockSoup = MagicMock() 
+   # mock 'get_additional_metrics' return value
+   
+   # mock 'add_common_game_log_metrics' return value 
+   
+   # mock 'add_wr_specific_game_log_metrics' return value 
+   
+   pfr_scraper.get_game_log(mockSoup, 'TE')
+   
+   # ensure mocks are interacted with the correct number of times   
+   
