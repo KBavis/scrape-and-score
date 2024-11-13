@@ -405,3 +405,16 @@ def test_get_game_log_returns_expected_df(mock_add_wr_metrics, mock_add_common_m
    expected_df = pd.DataFrame(data=expected_data)
    
    pd.testing.assert_frame_equal(pandas_df, expected_df)
+   
+   
+
+@patch('scraping.pfr_scraper.fuzz.partial_ratio')
+def test_check_name_similarity_parses_correct_name(mock_partial_ratio):
+   player_text = "Anthony Richardson Jr."
+   player_name = "Anthony Richardson"
+   
+   pfr_scraper.check_name_similarity(player_text, player_name)
+   
+   mock_partial_ratio.assert_called_once_with("Anthony Richardson", player_name)
+   
+
