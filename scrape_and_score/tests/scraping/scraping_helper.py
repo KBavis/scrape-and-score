@@ -107,3 +107,23 @@ def mock_add_wr_game_log_metrics(data, tr):
    data['rec_yds'].append(102)
    data['rec_td'].append(1)
    data['snap_pct'].append(67.7)
+   
+
+'''
+Mock the BeautifulSoup instance passed to get_href
+
+Args:
+   invalid_date (bool) - flag to determine if dates should be invalid
+'''
+def setup_get_href_mocks(invalid_date): 
+   mock_soup = MagicMock() 
+   mock_div_players = MagicMock()
+   
+   mock_player_one = MagicMock() 
+   mock_player_two = MagicMock() 
+   mock_player_one.text = 'Arbitrary Invalid-Date' if invalid_date else 'Arbitrary 2023-2024'
+   mock_player_two.text = 'Arbitrary Invalid-Date' if invalid_date else 'Abritrary 2023-2024'
+   mock_soup.find.return_value = mock_div_players
+   mock_div_players.find_all.return_value = [mock_player_one, mock_player_two]
+   
+   return mock_soup

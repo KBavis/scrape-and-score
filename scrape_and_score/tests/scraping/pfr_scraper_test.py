@@ -4,7 +4,8 @@ import pandas as pd
 import pytest
 from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
-         mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics
+         mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics, \
+         setup_get_href_mocks   
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -418,3 +419,23 @@ def test_check_name_similarity_parses_correct_name(mock_partial_ratio):
    mock_partial_ratio.assert_called_once_with("Anthony Richardson", player_name)
    
 
+@patch('scraping.pfr_scraper.check_name_similarity')
+def test_get_href_skips_players_with_invalid_years(mock_check_name_similarity):
+   player_name = 'Anthony Richardson'
+   year = 2024 
+   position = 'QB'
+   
+   # setup mocks  
+   mock_soup = setup_get_href_mocks(True)
+   
+   href = pfr_scraper.get_href(player_name, position, year, mock_soup)
+   
+   mock_check_name_similarity.assert_not_called() 
+   assert href == None
+
+
+
+   
+   
+   
+   
