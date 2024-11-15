@@ -426,7 +426,7 @@ def test_get_href_skips_players_with_invalid_years(mock_check_name_similarity):
    position = 'QB'
    
    # setup mocks  
-   mock_soup = setup_get_href_mocks(True)
+   mock_soup = setup_get_href_mocks(True, False)
    
    href = pfr_scraper.get_href(player_name, position, year, mock_soup)
    
@@ -434,8 +434,76 @@ def test_get_href_skips_players_with_invalid_years(mock_check_name_similarity):
    assert href == None
 
 
+@patch('scraping.pfr_scraper.check_name_similarity')
+def test_get_href_skips_players_not_active_within_specified_year(mock_check_name_similarity):
+   player_name = 'Anthony Richardson'
+   year = 2021 # use year with no valid players
+   position = 'QB'
+   
+   # setup mocks 
+   mock_check_name_similarity.return_value = 95 # valid name similarity
+   mock_soup = setup_get_href_mocks(False, False)
+   
+   href = pfr_scraper.get_href(player_name, position, year, mock_soup)
+   
+   assert href == None
+   
+   
+@patch('scraping.pfr_scraper.check_name_similarity')
+def test_get_href_skips_players_not_active_at_specified_position(mock_check_name_similarity):
+   player_name = 'Anthony Richardson'
+   year = 2023
+   position = 'RB' # invalid position 
+   
+   # setup mocks 
+   mock_check_name_similarity.return_value = 95 # valid name similarity
+   mock_soup = setup_get_href_mocks(False, False)
+   
+   href = pfr_scraper.get_href(player_name, position, year, mock_soup)
+   
+   assert href == None
 
+
+@patch('scraping.pfr_scraper.check_name_similarity')
+def test_get_href_skips_players_if_name_isnt_similar_enough(mock_check_name_similarity):
+   player_name = 'Anthony Richardson'
+   year = 2023
+   position = 'QB' 
    
+   # setup mocks 
+   mock_check_name_similarity.return_value = 85 # invalid similarity
+   mock_soup = setup_get_href_mocks(False, False)
    
+   href = pfr_scraper.get_href(player_name, position, year, mock_soup)
    
+   assert href == None
+
+
+@patch('scraping.pfr_scraper.check_name_similarity')
+def test_get_href_returns_none_when_no_a_tag(mock_check_name_similarity):
+   player_name = 'Anthony Richardson'
+   year = 2023
+   position = 'QB' 
    
+   # setup mocks 
+   mock_check_name_similarity.return_value = 95 # valid similarity
+   mock_soup = setup_get_href_mocks(False, True)
+   
+   href = pfr_scraper.get_href(player_name, position, year, mock_soup)
+   
+   assert href == None
+
+
+@patch('scraping.pfr_scraper.check_name_similarity')
+def test_get_href_returns_expected_href(mock_check_name_similarity):
+   player_name = 'Anthony Richardson'
+   year = 2023
+   position = 'QB' 
+   
+   # setup mocks 
+   mock_check_name_similarity.return_value = 95 # valid similarity
+   mock_soup = setup_get_href_mocks(False, False)
+   
+   href = pfr_scraper.get_href(player_name, position, year, mock_soup)
+   
+   assert href == 'my-href'

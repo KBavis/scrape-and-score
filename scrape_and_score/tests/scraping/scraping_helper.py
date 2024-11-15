@@ -114,15 +114,18 @@ Mock the BeautifulSoup instance passed to get_href
 
 Args:
    invalid_date (bool) - flag to determine if dates should be invalid
+   invalid_a_tag (bool) - flag to determine if a tag should be invalid
 '''
-def setup_get_href_mocks(invalid_date): 
+def setup_get_href_mocks(invalid_date, invalid_a_tag): 
    mock_soup = MagicMock() 
    mock_div_players = MagicMock()
    
    mock_player_one = MagicMock() 
    mock_player_two = MagicMock() 
-   mock_player_one.text = 'Arbitrary Invalid-Date' if invalid_date else 'Arbitrary 2023-2024'
-   mock_player_two.text = 'Arbitrary Invalid-Date' if invalid_date else 'Abritrary 2023-2024'
+   mock_player_one.find.return_value = { 'href' : 'my-href.htm' } if not invalid_a_tag else None 
+   
+   mock_player_one.text = 'Arbitrary Invalid-Date' if invalid_date else 'QB 2023-2024'
+   mock_player_two.text = 'Arbitrary Invalid-Date' if invalid_date else 'QB 2023-2024'
    mock_soup.find.return_value = mock_div_players
    mock_div_players.find_all.return_value = [mock_player_one, mock_player_two]
    
