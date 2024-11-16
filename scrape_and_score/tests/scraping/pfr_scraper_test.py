@@ -1,6 +1,7 @@
 from unittest.mock import patch, MagicMock
 from scraping import pfr_scraper
 import pandas as pd
+from datetime import date
 import pytest
 from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
@@ -601,3 +602,127 @@ def test_order_players_by_last_name_successfully_orders_players():
    # assert 
    assert expected_ordered_players == actual_ordered_players
 
+
+def test_get_game_date_prior_to_new_year_when_game_date_prior_to_new_year():
+   #arrange 
+   current_date = date(2023, 8, 20) # set date to be during August, prior to New Year
+   expected_game_date = date(2023, 11, 20) # game date year should be for current year
+   
+   # setup mocks 
+   game = MagicMock() 
+   game_found = MagicMock() 
+   game_found.text = 'November 20' # set game month to be Novemeber 
+   game.find.return_value = game_found
+   
+   
+   # act 
+   actual_game_date = pfr_scraper.get_game_date(game, current_date)
+   
+   # assert 
+   assert actual_game_date == expected_game_date
+   
+   
+
+def test_get_game_date_after_new_year_when_game_date_prior_to_new_year():
+   #arrange 
+   current_date = date(2023, 1, 20) # set date to be during January, after New Year
+   expected_game_date = date(2023, 11, 20) # game date year should be for current year
+   
+   # setup mocks 
+   game = MagicMock() 
+   game_found = MagicMock() 
+   game_found.text = 'November 20'
+   game.find.return_value = game_found
+   
+   
+   # act 
+   actual_game_date = pfr_scraper.get_game_date(game, current_date)
+   
+   # assert 
+   assert actual_game_date == expected_game_date
+   
+ 
+def test_get_game_date_after_new_year_when_game_date_after_new_year():
+   #arrange 
+   current_date = date(2024, 1, 10) # set date to be during January, after New Year
+   expected_game_date = date(2024, 1, 20) # set game date to be within January/Feb
+   
+   # setup mocks 
+   game = MagicMock() 
+   game_found = MagicMock() 
+   game_found.text = 'January 20'
+   game.find.return_value = game_found
+   
+   
+   # act 
+   actual_game_date = pfr_scraper.get_game_date(game, current_date)
+   
+   # assert 
+   assert actual_game_date == expected_game_date
+   
+
+def test_get_game_date_before_new_year_when_game_date_after_new_year():
+   #arrange 
+   current_date = date(2023, 9, 20) # set date to be during Septmeber, prior to New Year
+   expected_game_date = date(2024, 1, 20) # set game date to be within January/Feb
+   
+   # setup mocks 
+   game = MagicMock() 
+   game_found = MagicMock() 
+   game_found.text = 'January 20'
+   game.find.return_value = game_found
+   
+   
+   # act 
+   actual_game_date = pfr_scraper.get_game_date(game, current_date)
+   
+   # assert 
+   assert actual_game_date == expected_game_date
+
+
+def test_calculate_distance_returns_expected_distance():
+   # arrange 
+   city1 = {'latitude': 42.3656, 'longitude': 71.0096, 'airport': 'BOS'}
+   city2 = {'latitude': 33.4352, 'longitude': 112.0101, 'airport': 'PHX'}
+   expected_distance = 2294.86
+   
+   # act
+   actual_distance = pfr_scraper.calculate_distance(city1, city2)
+   
+   assert expected_distance == round(actual_distance, ndigits=2)
+
+
+@patch('scraping.pfr_scraper.fetch_page')
+def test_get_team_metrics_html_calls_expected_function(mock_fetch_page):
+   # arrange 
+   team_name = 'Carolina Panthers'
+   year = 2024
+   template_url = "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
+   expected_html = "<html><body><h1>h1</h1></body></body>"
+   
+   # mock 
+   mock_fetch_page.return_value = expected_html
+   
+   # act
+   pfr_scraper.get_team_metrics_html(team_name, year, template_url)
+   
+   # assert 
+   mock_fetch_page.assert_called_with("https://www.pro-football-reference.com/teams/car/2024.htm")
+   
+
+@patch('scraping.pfr_scraper.fetch_page')
+def test_get_team_metrics_html_returns_expected_response(mock_fetch_page):
+   # arrange 
+   team_name = 'Carolina Panthers'
+   year = 2024
+   template_url = "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
+   expected_html = "<html><body><h1>h1</h1></body></body>"
+   
+   # mock 
+   mock_fetch_page.return_value = expected_html
+   
+   # act
+   actual_html = pfr_scraper.get_team_metrics_html(team_name, year, template_url)
+   
+   # assert 
+   assert actual_html == expected_html
