@@ -5,7 +5,7 @@ import pytest
 from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
          mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics, \
-         setup_get_href_mocks   
+         setup_get_href_mocks, mock_get_href_response   
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -507,3 +507,97 @@ def test_get_href_returns_expected_href(mock_check_name_similarity):
    href = pfr_scraper.get_href(player_name, position, year, mock_soup)
    
    assert href == 'my-href'
+   
+
+@patch('scraping.pfr_scraper.get_href')
+@patch('scraping.pfr_scraper.fetch_page')
+def test_get_player_urls_returns_expected_urls(mock_fetch_page, mock_get_href):
+   # arrange 
+   ordered_players = { "A": [], "R" : [ {"team": "Indianapolis Colts", "position": "QB", "player_name": "Anthony Richardson"}], 
+                        "Z": [{"team": "Indianapolis Colts", "position": "RB", "player_name": "Test Ziegler"}, {"team": "Tennessee Titans", "position": "RB", "player_name": "Xavier Zegette"}]}
+   year = 2024
+   expected_urls = [
+      {"player": "Anthony Richardson", "position": "QB", "url": "https://www.pro-football-reference.com/ARich/gamelog/2024"},
+      {"player": "Test Ziegler", "position": "RB", "url": "https://www.pro-football-reference.com/TZieg/gamelog/2024"},
+      {"player": "Xavier Zegette", "position": "RB", "url": "https://www.pro-football-reference.com/XZeg/gamelog/2024"},
+   ]
+   
+   
+   # setup mocks 
+   mock_fetch_page.return_value = "<html><body><h1>Testing</h1></body></html>"
+   mock_get_href.side_effect = mock_get_href_response
+   
+   # act 
+   actual_urls = pfr_scraper.get_player_urls(ordered_players, year)
+   
+   # assert 
+   assert expected_urls == actual_urls
+   
+
+
+@patch('scraping.pfr_scraper.get_href')
+@patch('scraping.pfr_scraper.fetch_page')
+def test_get_player_urls_calls_expected_functions(mock_fetch_page, mock_get_href): 
+   # arrange 
+   ordered_players = { "A": [], "R" : [ {"team": "Indianapolis Colts", "position": "QB", "player_name": "Anthony Richardson"}], 
+                        "Z": [{"team": "Indianapolis Colts", "position": "RB", "player_name": "Test Ziegler"}, {"team": "Tennessee Titans", "position": "RB", "player_name": "Xavier Zegette"}]}
+   year = 2024
+   
+   
+   # setup mocks 
+   mock_fetch_page.return_value = "<html><body><h1>Testing</h1></body></html>"
+   mock_get_href.side_effect = mock_get_href_response
+   
+   # act 
+   pfr_scraper.get_player_urls(ordered_players, year)
+   
+   # assert 
+   assert mock_fetch_page.call_count == 3
+   assert mock_get_href.call_count == 3
+   
+   
+
+@patch('scraping.pfr_scraper.get_href')
+@patch('scraping.pfr_scraper.fetch_page')
+def test_get_player_urls_skips_appending_urls_if_none_found(mock_fetch_page, mock_get_href): 
+   # arrange 
+   ordered_players = { "A": [], "R" : [ {"team": "Indianapolis Colts", "position": "QB", "player_name": "Anthony Richardson"}], 
+                        "Z": [{"team": "Indianapolis Colts", "position": "RB", "player_name": "Test Ziegler"}, {"team": "Tennessee Titans", "position": "RB", "player_name": "Xavier Zegette"}]}
+   year = 2024
+   
+   
+   # setup mocks 
+   mock_fetch_page.return_value = "<html><body><h1>Testing</h1></body></html>"
+   mock_get_href.return_value = None # have get_href fail to find href 
+   
+   # act 
+   actual_urls = pfr_scraper.get_player_urls(ordered_players, year)
+   
+   # assert 
+   assert actual_urls == []
+   
+   
+
+def test_order_players_by_last_name_successfully_orders_players():
+   # arrange
+   player_data = [{"player_name": "Chris Cranger"}, {"player_name":  "Order Amega"}, {"player_name": "Zebra Zilch"}, {"player_name": "Brandon Baker"}, {"player_name" : "Harvey Yonkers"}]
+   expected_ordered_players = {
+        "A": [],"B": [],"C": [],"D": [],"E": [],
+        "F": [],"G": [],"H": [],"I": [],"J": [],
+        "K": [],"L": [],"M": [],"N": [],"O": [],
+        "P": [],"Q": [],"R": [],"S": [],"T": [],
+        "U": [],"V": [],"W": [],"X": [],"Y": [],
+        "Z": []
+    }
+   expected_ordered_players['C'].append({"player_name": "Chris Cranger"})
+   expected_ordered_players['A'].append({"player_name": "Order Amega"})
+   expected_ordered_players['Y'].append({"player_name": "Harvey Yonkers"})
+   expected_ordered_players['B'].append({"player_name": "Brandon Baker"})
+   expected_ordered_players['Z'].append({"player_name": "Zebra Zilch"})
+   
+   # act
+   actual_ordered_players = pfr_scraper.order_players_by_last_name(player_data)
+   
+   # assert 
+   assert expected_ordered_players == actual_ordered_players
+
