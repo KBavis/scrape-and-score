@@ -130,3 +130,26 @@ def setup_get_href_mocks(invalid_date, invalid_a_tag):
    mock_div_players.find_all.return_value = [mock_player_one, mock_player_two]
    
    return mock_soup
+
+
+'''
+Functionality to mock the response of get_href 
+
+Args:
+   player_name (str): player name to mock href for 
+   player_position (str): player position to mock href for
+   year (int) : year to mock href for 
+   soup (BeautifulSoup) : parsed HTML containing fake hrefs 
+   
+Returns:
+   mocked_href (str): fake href 
+'''
+def mock_get_href_response(player_name, player_position, year, soup):
+   if player_name == "Anthony Richardson":
+      return "/ARich"
+   elif player_name == "Test Ziegler":
+      return "/TZieg"
+   elif player_name == "Xavier Zegette":
+      return "/XZeg" 
+   else:
+      return None
