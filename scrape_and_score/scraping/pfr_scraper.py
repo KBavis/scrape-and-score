@@ -416,9 +416,6 @@ def get_player_urls(ordered_players: dict, year: int):
 '''
 Functionality to fetch a specific players href, which is needed to construct their URL
 
-All credit for the following code in this function goes to the developer of the repository:
-      - https://github.com/mjk2244/pro-football-reference-web-scraper
-
 Args:
     player_name (str): players name to search for 
     year (int): year corresponding to the season we are searching for metrics for 
