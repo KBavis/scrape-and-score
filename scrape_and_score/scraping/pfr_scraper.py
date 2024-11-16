@@ -339,10 +339,15 @@ Returns:
 def get_game_date(game: BeautifulSoup, current_date: date): 
     game_date_str = game.find('td', {'data-stat': 'game_date'}).text
     month_date = datetime.strptime(game_date_str, "%B %d").date() #convert to date time object
-    if month_date.month == 1: 
-        game_year = current_date.year + 1 #date corresponds to next year [TODO: determine how to fix this logic when we run this applicaiton in January?]
+    
+    # if game date month is janurary or feburary, we must adjust logic 
+    if month_date.month == 1 or month_date.month == 2: 
+        if current_date.month == 1 or current_date.month == 2: 
+            game_year = current_date.year # game year should be current year if application is running in january or febutary 
+        else:
+            game_year = current_date.year + 1 # game yar should be next year if application is running in march through december
     else: 
-        game_year = current_date.year #date corresponds to this year 
+        game_year = current_date.year #date corresponds to this year if game date isn't jan or feb
     return date(game_year, month_date.month, month_date.day)
 
 
