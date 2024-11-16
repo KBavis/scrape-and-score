@@ -329,6 +329,10 @@ def calculate_distance(city1: dict, city2: dict):
 '''
 Functionality to fetch the game date for a game 
 
+Note: This application should be run on a scheduled basis throughout the football year, 
+starting in August and concluding in Feburary. Therefore, the game date year should account
+for this logic 
+
 Args:
     game (BeautifulSoup): BeautifulSoup object containing relevant game data 
     current_date (date) : the current date the application is being run 
