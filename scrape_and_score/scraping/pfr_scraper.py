@@ -403,7 +403,7 @@ def get_player_urls(ordered_players: dict, year: int):
             player_name = player['player_name']
             player_position = player['position']
             
-            href = get_href(player_name, player_position, year, soup)
+            href = get_href(player_name, player_position, year, soup) # extract href from parsed HTML  
             if(href == None):
                 continue
             else:
