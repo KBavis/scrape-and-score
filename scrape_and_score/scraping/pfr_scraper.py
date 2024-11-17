@@ -133,7 +133,7 @@ Returns:
 ''' 
 def collect_team_data(team: str, raw_html: str, year: int):
     
-    #Configure Pandas DF 
+    # configure data frame
     data = {
         'week': [],
         'day': [],
@@ -156,48 +156,11 @@ def collect_team_data(team: str, raw_html: str, year: int):
     # create BeautifulSoup instance
     soup = BeautifulSoup(raw_html, "html.parser")
 
-    #loading game data
+    #load game data 
     games = soup.find_all('tbody')[1].find_all('tr')
-
-    # remove playoff games
-    j = 0
-    while j < len(games) and games[j].find('td', {'data-stat': 'game_date'}).text != 'Playoffs':
-        j += 1
-    for k in range(j, len(games)):
-        games.pop()
-
-    # remove bye weeks
-    bye_weeks = []
-    for j in range(len(games)):
-        if games[j].find('td', {'data-stat': 'opp'}).text == 'Bye Week':
-            bye_weeks.append(j)
-
-    if len(bye_weeks) > 1:
-        games.pop(bye_weeks[0])
-        games.pop(bye_weeks[1] - 1)
-
-    elif len(bye_weeks) == 1:
-        games.pop(bye_weeks[0])
-
-    # remove canceled games 
-    to_delete = []
-    for j in range(len(games)):
-        if games[j].find('td', {'data-stat': 'boxscore_word'}).text == 'canceled':
-            to_delete.append(j)
-    for k in to_delete:
-        games.pop(k)
     
-    # remove games that have yet to be played  
-    to_delete = []
-    current_date = date.today()
-    for j in range(len(games)):
-        game_date = get_game_date(games[j], current_date)    
-        if game_date >= current_date:
-            to_delete.append(j)
-    for k in reversed(to_delete): #reverse order to prevent shifting issue 
-        games.pop(k)
+    remove_uneeded_games(games) 
       
-
     # gathering data for each game
     for i in range(len(games)):
         week = int(games[i].find('th', {'data-stat': 'week_num'}).text)
@@ -288,6 +251,53 @@ def collect_team_data(team: str, raw_html: str, year: int):
 
     return df  
 
+
+'''
+Helper function to remove all canceled/playoff games, bye weeks, 
+and games yet to be played so that they aren't accounted for 
+
+Args: 
+    games (BeautifulSoup): parsed HTML containing game data 
+'''
+def remove_uneeded_games(games: BeautifulSoup):
+    # remove playoff games
+    j = 0
+    while j < len(games) and games[j].find('td', {'data-stat': 'game_date'}).text != 'Playoffs':
+        j += 1
+    for k in range(j, len(games)):
+        games.pop()
+
+    # remove bye weeks
+    bye_weeks = []
+    for j in range(len(games)):
+        if games[j].find('td', {'data-stat': 'opp'}).text == 'Bye Week':
+            bye_weeks.append(j)
+
+    if len(bye_weeks) > 1:
+        games.pop(bye_weeks[0])
+        games.pop(bye_weeks[1] - 1)
+
+    elif len(bye_weeks) == 1:
+        games.pop(bye_weeks[0])
+
+    # remove canceled games 
+    to_delete = []
+    for j in range(len(games)):
+        if games[j].find('td', {'data-stat': 'boxscore_word'}).text == 'canceled':
+            to_delete.append(j)
+    for k in to_delete:
+        games.pop(k)
+    
+    # remove games that have yet to be played  
+    to_delete = []
+    current_date = date.today()
+    for j in range(len(games)):
+        game_date = get_game_date(games[j], current_date)    
+        if game_date >= current_date:
+            to_delete.append(j)
+    for k in reversed(to_delete): #reverse order to prevent shifting issue 
+        games.pop(k)
+    
 
 '''
 Helper function to generate URL and fetch raw HTML for NFL Team
