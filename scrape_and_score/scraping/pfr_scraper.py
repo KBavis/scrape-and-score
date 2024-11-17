@@ -165,28 +165,9 @@ def collect_team_data(team: str, raw_html: str, year: int):
     for i in range(len(games)):
         week = int(games[i].find('th', {'data-stat': 'week_num'}).text)
         day = games[i].find('td', {'data-stat': 'game_day_of_week'}).text
-        if i > 0:
-            if games[i - 1].find('td', {'data-stat': 'opp'}).text == 'Bye Week':
-                date1 = games[i - 2].find('td', {'data-stat': 'game_date'}).text.split(' ')
-                date2 = games[i].find('td', {'data-stat': 'game_date'}).text.split(' ')
-            else:
-                date1 = games[i - 1].find('td', {'data-stat': 'game_date'}).text.split(' ')
-                date2 = games[i].find('td', {'data-stat': 'game_date'}).text.split(' ')
-            if date1[0] == 'January':
-                rest_days = date(year + 1, MONTHS[date2[0]], int(date2[1])) - date(
-                    year + 1, MONTHS[date1[0]], int(date1[1])
-                )
-            elif date2[0] == 'January':
-                rest_days = date(year + 1, MONTHS[date2[0]], int(date2[1])) - date(
-                    year, MONTHS[date1[0]], int(date1[1])
-                )
-            else:
-                rest_days = date(year + 1, MONTHS[date2[0]], int(date2[1])) - date(
-                    year + 1, MONTHS[date1[0]], int(date1[1])
-                )
-        else:
-            rest_days = date(2022, 7, 11) - date(2022, 7, 1)  # setting first game as 10 rest days
-
+        
+        rest_days = calculate_rest_days(games, i, year)
+        
         opp = games[i].find('td', {'data-stat': 'opp'}).text
 
         if games[i].find('td', {'data-stat': 'game_location'}).text == '@':
@@ -199,36 +180,8 @@ def collect_team_data(team: str, raw_html: str, year: int):
         result = games[i].find('td', {'data-stat': 'game_outcome'}).text
         points_for = int(games[i].find('td', {'data-stat': 'pts_off'}).text)
         points_allowed = int(games[i].find('td', {'data-stat': 'pts_def'}).text)
-        tot_yds = (
-            int(games[i].find('td', {'data-stat': 'yards_off'}).text)
-            if games[i].find('td', {'data-stat': 'yards_off'}).text != ''
-            else 0
-        )
-        pass_yds = (
-            int(games[i].find('td', {'data-stat': 'pass_yds_off'}).text)
-            if games[i].find('td', {'data-stat': 'pass_yds_off'}).text != ''
-            else 0
-        )
-        rush_yds = (
-            int(games[i].find('td', {'data-stat': 'rush_yds_off'}).text)
-            if games[i].find('td', {'data-stat': 'rush_yds_off'}).text != ''
-            else 0
-        )
-        opp_tot_yds = (
-            int(games[i].find('td', {'data-stat': 'yards_def'}).text)
-            if games[i].find('td', {'data-stat': 'yards_def'}).text != ''
-            else 0
-        )
-        opp_pass_yds = (
-            int(games[i].find('td', {'data-stat': 'pass_yds_def'}).text)
-            if games[i].find('td', {'data-stat': 'pass_yds_def'}).text != ''
-            else 0
-        )
-        opp_rush_yds = (
-            int(games[i].find('td', {'data-stat': 'rush_yds_def'}).text)
-            if games[i].find('td', {'data-stat': 'pass_yds_def'}).text != ''
-            else 0
-        )
+        
+        tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = calculate_yardage_totals(games)
 
         # add row to data frame
         df.loc[len(df.index)] = [
@@ -251,6 +204,56 @@ def collect_team_data(team: str, raw_html: str, year: int):
 
     return df  
 
+
+'''
+Helper function to calculate the yardage totals for a particular game of a team 
+
+Args: 
+    games (BeautifulSoup): parsed HTML containing game data 
+    index (int): index pertaining to current game 
+
+Returns:
+    tot_yds,pass_yds,rush_yds,opp_tot_yds,opp_pass_yds,opp_rush_yds (tuple): yardage totals of particular game 
+'''
+def calculate_yardage_totals(games: BeautifulSoup, index: int): 
+    tot_yds = extract_int(games[index], 'yards_off')
+    pass_yds = extract_int(games[index], 'pass_yds_off')
+    rush_yds = extract_int(games[index], 'rush_yds_off')
+    opp_tot_yds = extract_int(games[index], 'yards_def')
+    opp_pass_yds = extract_int(games[index], 'pass_yds_def')
+    opp_rush_yds = extract_int(games[index], 'rush_yds_def')
+
+    return tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds
+
+'''
+Helper function to determine a teams total rest days 
+
+Args:
+    games (BeautifulSoup): parsed HTML containing game data 
+    index (int): index pertaining to current game 
+    year (int): year we are calculating metrics for 
+
+Returns:
+    rest_days (int): total number of rest days since previous game 
+
+'''
+def calculate_rest_days(games: BeautifulSoup, index: int, year: int):
+        if index == 0:
+            return 10 # set rest days to be 10 if first game of year 
+        
+        # fetch previous game and current game date
+        previous_game_date = games[index - 1].find('td', {'data-stat': 'game_date'}).text.split(' ')
+        current_game_date= games[index].find('td', {'data-stat': 'game_date'}).text.split(' ')
+        
+        # account for new year 
+        if current_game_date[0] == 'January' and previous_game_date[0] != "January":
+            return date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+        # both games in new year
+        elif current_game_date[0] == 'January' and previous_game_date[0] == "January":
+            return date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+        # both games not in new year
+        else:
+            return date(year, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year + 1, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
 
 '''
 Helper function to remove all canceled/playoff games, bye weeks, 
