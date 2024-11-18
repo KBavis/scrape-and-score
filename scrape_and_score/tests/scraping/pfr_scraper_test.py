@@ -6,7 +6,8 @@ import pytest
 from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
          mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics, \
-         setup_get_href_mocks, mock_get_href_response, mocked_extract_int  
+         setup_get_href_mocks, mock_get_href_response, mocked_extract_int, \
+         mock_find_for_collect_team_data    
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -996,4 +997,91 @@ def test_remove_uneeded_games_removes_games_yet_to_be_played(mocked_get_game_dat
    
    # assert 
    assert mocked_games == [] 
-     
+
+
+@patch('scraping.pfr_scraper.calculate_rest_days')
+@patch('scraping.pfr_scraper.calculate_distance')
+@patch('scraping.pfr_scraper.BeautifulSoup')
+@patch('scraping.pfr_scraper.extract_int')
+@patch('scraping.pfr_scraper.calculate_yardage_totals')
+@patch('scraping.pfr_scraper.remove_uneeded_games')
+def test_collect_team_data_calls_expected_functions(mock_remove_uneeded_games, mock_calc_yard_totals, mock_extract_int, mock_beautiful_soup, mock_calculate_distance, mock_calculate_rest_days):
+   game_one = MagicMock() 
+   game_one.find.side_effect = mock_find_for_collect_team_data
+   games = [game_one]
+   
+   mock_soup = MagicMock()
+   mock_tbody = MagicMock() 
+   mock_tbody.find_all.return_value = games
+   
+   mock_soup.find_all.return_value = [MagicMock(), mock_tbody]
+   mock_beautiful_soup.return_value = mock_soup
+   
+   mock_calculate_distance.return_value = 67.77
+   mock_extract_int.return_value = 24
+   mock_calculate_rest_days.return_value = 10
+   mock_calc_yard_totals.return_value = 7, 5, 102, 1, 67, 78
+   
+   mock_remove_uneeded_games.return_value = None
+   
+   pfr_scraper.collect_team_data('Arizona Cardinals', "<html></html>", 2024)
+   
+   mock_remove_uneeded_games.assert_called_once()
+   mock_calc_yard_totals.assert_called_once() 
+   assert mock_extract_int.call_count == 2
+   mock_calculate_distance.assert_called_once() 
+   mock_calculate_rest_days.assert_called_once()
+   
+
+@patch('scraping.pfr_scraper.calculate_rest_days')
+@patch('scraping.pfr_scraper.calculate_distance')
+@patch('scraping.pfr_scraper.BeautifulSoup')
+@patch('scraping.pfr_scraper.extract_int')
+@patch('scraping.pfr_scraper.calculate_yardage_totals')
+@patch('scraping.pfr_scraper.remove_uneeded_games')
+def test_collect_team_data_returns_expected_df(mock_remove_uneeded_games, mock_calc_yard_totals, mock_extract_int, mock_beautiful_soup, mock_calculate_distance, mock_calculate_rest_days):
+   game_one = MagicMock() 
+   game_one.find.side_effect = mock_find_for_collect_team_data
+   games = [game_one]
+   
+   mock_soup = MagicMock()
+   mock_tbody = MagicMock() 
+   mock_tbody.find_all.return_value = games
+   
+   mock_soup.find_all.return_value = [MagicMock(), mock_tbody]
+   mock_beautiful_soup.return_value = mock_soup
+   
+   mock_calculate_distance.return_value = 67.77
+   mock_extract_int.return_value = 24
+   mock_calculate_rest_days.return_value = 10
+   mock_calc_yard_totals.return_value = 7, 5, 102, 1, 67, 78
+   
+   mock_remove_uneeded_games.return_value = None
+   
+   data = {
+      'week': [],
+      'day': [],
+      'rest_days': [],
+      'home_team': [],
+      'distance_traveled': [],
+      'opp': [],
+      'result': [],
+      'points_for': [],
+      'points_allowed': [],
+      'tot_yds': [],
+      'pass_yds': [],
+      'rush_yds': [],
+      'opp_tot_yds': [],
+      'opp_pass_yds': [],
+      'opp_rush_yds': [],
+    }
+   expected_df = pd.DataFrame(data)
+   expected_df.loc[0] = [20, 10, 10, False, 67.77, 'Arizona Cardinals', 'W', 24, 24, 7, 5, 102, 1, 67, 78]
+
+   
+   actual_df = pfr_scraper.collect_team_data('Arizona Cardinals', "<html></html>", 2024)
+   
+   pd.testing.assert_frame_equal(actual_df, expected_df, check_dtype=False)
+   
+   
+   

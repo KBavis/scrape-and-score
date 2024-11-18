@@ -180,3 +180,21 @@ def mocked_extract_int(tr, stat):
       return 60
    else: 
       raise Exception('Unknown stat passed to mock function')
+
+
+'''
+Mock function to map each 'data-stat' attribute to its respective mock return value for collect_team_data
+'''
+def mock_find_for_collect_team_data(tag, attrs): 
+   data_stat_map = {
+      'week_num': MagicMock(text=20),
+      'game_day_of_week': MagicMock(text=10),
+      'game_outcome': MagicMock(text='W'),
+      'game_location': MagicMock(text='@'),
+      'opp': MagicMock(text='Arizona Cardinals'),
+      'pts_off': MagicMock(text=24),
+      'pts_def': MagicMock(text=24)
+   }
+
+   # return mock based on specific data-stat value   
+   return data_stat_map.get(attrs['data-stat'])
