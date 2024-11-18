@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 from scraping import pfr_scraper
 import pandas as pd
-from datetime import date
+from datetime import date, datetime, timedelta
 import pytest
 from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
@@ -894,3 +894,106 @@ def test_calculate_rest_days_when_current_game_only_in_new_year():
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
    assert expected_rest_days == actual_rest_days
+
+
+@patch('scraping.pfr_scraper.get_game_date')
+def test_remove_uneeded_games_removes_playoff_games(mocked_get_game_date):
+   # set up game date mocks 
+   mocked_game_one = MagicMock()
+   mocked_game_two = MagicMock()
+   
+   mocked_game_date_two = MagicMock()
+   mocked_game_date_two.text = 'Playoffs'
+   mocked_game_two.find.return_value = mocked_game_date_two
+   
+   mocked_game_date_one = MagicMock()
+   mocked_game_date_one.text = 'Random'
+   mocked_game_one.find.return_value = mocked_game_date_one
+   
+   mocked_games = [mocked_game_one, mocked_game_two]
+   expected_games = [mocked_game_one]
+   
+   mocked_get_game_date.return_value = date.today() - timedelta(days=1) # set date to be yesterday
+   
+   # act 
+   pfr_scraper.remove_uneeded_games(mocked_games) 
+   
+   # assert 
+   assert mocked_games == expected_games
+   
+
+@patch('scraping.pfr_scraper.get_game_date')
+def test_remove_uneeded_games_removes_removes_bye_weeks(mocked_get_game_date):
+      # set up game date mocks 
+   mocked_game_one = MagicMock()
+   mocked_game_two = MagicMock()
+   
+   mocked_game_date_two = MagicMock()
+   mocked_game_date_two.text = 'Bye Week'
+   mocked_game_two.find.return_value = mocked_game_date_two
+   
+   mocked_game_date_one = MagicMock()
+   mocked_game_date_one.text = 'Random'
+   mocked_game_one.find.return_value = mocked_game_date_one
+   
+   mocked_games = [mocked_game_one, mocked_game_two]
+   expected_games = [mocked_game_one]
+   
+   mocked_get_game_date.return_value = date.today() - timedelta(days=1) # set date to be yesterday
+   
+   # act 
+   pfr_scraper.remove_uneeded_games(mocked_games) 
+   
+   # assert 
+   assert mocked_games == expected_games
+
+@patch('scraping.pfr_scraper.get_game_date')
+def test_remove_uneeded_games_removes_canceled_games(mocked_get_game_date):
+   # set up game date mocks 
+   mocked_game_one = MagicMock()
+   mocked_game_two = MagicMock()
+   
+   mocked_game_date_two = MagicMock()
+   mocked_game_date_two.text = 'canceled'
+   mocked_game_two.find.return_value = mocked_game_date_two
+   
+   mocked_game_date_one = MagicMock()
+   mocked_game_date_one.text = 'Random'
+   mocked_game_one.find.return_value = mocked_game_date_one
+   
+   mocked_games = [mocked_game_one, mocked_game_two]
+   expected_games = [mocked_game_one]
+   
+   mocked_get_game_date.return_value = date.today() - timedelta(days=1) # set date to be yesterday
+   
+   # act 
+   pfr_scraper.remove_uneeded_games(mocked_games) 
+   
+   # assert 
+   assert mocked_games == expected_games
+
+@patch('scraping.pfr_scraper.get_game_date')
+def test_remove_uneeded_games_removes_games_yet_to_be_played(mocked_get_game_date):
+      # set up game date mocks 
+   mocked_game_one = MagicMock()
+   mocked_game_two = MagicMock()
+   
+   mocked_game_date_two = MagicMock()
+   mocked_game_date_two.text = 'Random'
+   mocked_game_two.find.return_value = mocked_game_date_two
+   
+   mocked_game_date_one = MagicMock()
+   mocked_game_date_one.text = 'Random'
+   mocked_game_one.find.return_value = mocked_game_date_one
+   
+   mocked_games = [mocked_game_one, mocked_game_two]
+   expected_games = [mocked_game_one]
+   
+   mocked_get_game_date.return_value = date.today() + timedelta(days=1) # set date to be tomorrow, so it should be remove
+   
+   # act 
+   pfr_scraper.remove_uneeded_games(mocked_games) 
+   
+   # assert 
+   assert mocked_games == [] 
+     
