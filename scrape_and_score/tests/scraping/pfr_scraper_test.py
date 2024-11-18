@@ -1084,4 +1084,270 @@ def test_collect_team_data_returns_expected_df(mock_remove_uneeded_games, mock_c
    pd.testing.assert_frame_equal(actual_df, expected_df, check_dtype=False)
    
    
+
+@patch('scraping.pfr_scraper.collect_team_data')
+@patch('scraping.pfr_scraper.get_team_metrics_html')
+def test_fetch_team_metrics_returns_expected_metrics(mock_get_team_metrics_html, mock_collect_team_data):
+   # arrange 
+   data = {
+      'week': [1],
+      'day': [1],
+      'rest_days': [1],
+      'home_team': [False],
+      'distance_traveled': [100.82],
+      'opp': ['Bufallo Bills'],
+      'result': ['W'],
+      'points_for': [20],
+      'points_allowed': [20],
+      'tot_yds': [1],
+      'pass_yds': [1],
+      'rush_yds': [1],
+      'opp_tot_yds': [1],
+      'opp_pass_yds': [1],
+      'opp_rush_yds': [1],
+    }
+   expected_df = pd.DataFrame(data = data)
+   mock_get_team_metrics_html.return_value = "<html><body><h1>Testing</h1></body></html>"
+   mock_collect_team_data.return_value = expected_df
    
+   teams = ['Indianapolis Colts']
+   url_template = 'https://template.com'
+   year = 2024
+   
+   expected_team_metrics = [{"team_name": teams[0], "team_metrics": expected_df}]
+   
+   # act
+   team_metrics = pfr_scraper.fetch_team_metrics(teams, url_template, year)
+   
+   # assert
+   assert expected_team_metrics == team_metrics
+
+
+@patch('scraping.pfr_scraper.collect_team_data')
+@patch('scraping.pfr_scraper.get_team_metrics_html')
+def test_fetch_team_metrics_calls_expected_functions(mock_get_team_metrics_html, mock_collect_team_data):
+   # arrange 
+   data = {
+      'week': [1],
+      'day': [1],
+      'rest_days': [1],
+      'home_team': [False],
+      'distance_traveled': [100.82],
+      'opp': ['Bufallo Bills'],
+      'result': ['W'],
+      'points_for': [20],
+      'points_allowed': [20],
+      'tot_yds': [1],
+      'pass_yds': [1],
+      'rush_yds': [1],
+      'opp_tot_yds': [1],
+      'opp_pass_yds': [1],
+      'opp_rush_yds': [1],
+    }
+   expected_df = pd.DataFrame(data = data)
+   mock_get_team_metrics_html.return_value = "<html><body><h1>Testing</h1></body></html>"
+   mock_collect_team_data.return_value = expected_df
+   
+   teams = ['Indianapolis Colts']
+   url_template = 'https://template.com'
+   year = 2024
+   
+   # act
+   pfr_scraper.fetch_team_metrics(teams, url_template, year)
+   
+   # assert 
+   mock_get_team_metrics_html.assert_called_once()
+   mock_collect_team_data.assert_called_once()
+   
+
+ 
+@patch('scraping.pfr_scraper.collect_team_data')
+@patch('scraping.pfr_scraper.get_team_metrics_html')
+def test_fetch_team_metrics_raises_exception_when_no_team_data_extracted(mock_get_team_metrics_html, mock_collect_team_data):
+   # arrange 
+   expected_df = pd.DataFrame(data = None) # set team_data to be empty
+   mock_get_team_metrics_html.return_value = "<html><body><h1>Testing</h1></body></html>"
+   mock_collect_team_data.return_value = expected_df
+   
+   teams = ['Indianapolis Colts']
+   url_template = 'https://template.com'
+   year = 2024
+   
+   # act & assert 
+   with pytest.raises(Exception, match="Unable to collect team data for the NFL Team 'Indianapolis Colts'"):
+      pfr_scraper.fetch_team_metrics(teams, url_template, year)
+   
+
+@patch('scraping.pfr_scraper.collect_team_data')
+@patch('scraping.pfr_scraper.get_team_metrics_html')
+def test_fetch_team_metrics_raises_exception_when_unable_to_extract_raw_html(mock_get_team_metrics_html, mock_collect_team_data):
+   # arrange 
+   mock_get_team_metrics_html.return_value = None # set raw_html to be None to cause Exception
+   
+   teams = ['Indianapolis Colts']
+   url_template = 'https://template.com'
+   year = 2024
+   
+   # act & assert 
+   with pytest.raises(Exception, match="Unable to extract raw HTML for the NFL Team 'Indianapolis Colts'"):
+      pfr_scraper.fetch_team_metrics(teams, url_template, year)
+      
+
+@patch('scraping.pfr_scraper.get_game_log')
+@patch('scraping.pfr_scraper.fetch_page')
+@patch('scraping.pfr_scraper.get_player_urls')
+@patch('scraping.pfr_scraper.order_players_by_last_name')
+def test_fetch_player_metrics_returns_expected_metrics(mock_ordered_players_by_last_name, mock_get_player_urls, mock_fetch_page, mock_get_game_log):
+   # arrange 
+   team_and_player_data = []
+   year = 2024 
+   data = {
+      'yards': [100]
+   }
+   expected_df = pd.DataFrame(data=data)
+   exected_player_metrics = [{"player": "Alonzo Alkaine", "position": "RB", "player_metrics": expected_df}]
+   
+   mock_ordered_players_by_last_name.return_value = [{"A": ['Alonzo Alkaine']}]
+   mock_get_player_urls.return_value = [{'player': 'Alonzo Alkaine', 'position': 'RB', 'url': 'https://myfakeurl.com'}]
+   mock_fetch_page.return_value = "<html></html>"
+   mock_get_game_log.return_value = expected_df
+   
+   # act
+   actual_player_metrics = pfr_scraper.fetch_player_metrics(team_and_player_data, year)
+   
+   # assert 
+   assert actual_player_metrics == exected_player_metrics
+   
+   
+@patch('scraping.pfr_scraper.get_game_log')
+@patch('scraping.pfr_scraper.fetch_page')
+@patch('scraping.pfr_scraper.get_player_urls')
+@patch('scraping.pfr_scraper.order_players_by_last_name')
+def test_fetch_player_metrics_calls_expected_functions(mock_ordered_players_by_last_name, mock_get_player_urls, mock_fetch_page, mock_get_game_log):
+   # arrange 
+   team_and_player_data = []
+   year = 2024 
+   
+   mock_ordered_players_by_last_name.return_value = [{"A": ['Alonzo Alkaine']}]
+   mock_get_player_urls.return_value = [{'player': 'Alonzo Alkaine', 'position': 'RB', 'url': 'https://myfakeurl.com'}]
+   mock_fetch_page.return_value = "<html></html>"
+   mock_get_game_log.return_value = pd.DataFrame(data = None)
+   
+   # act
+   pfr_scraper.fetch_player_metrics(team_and_player_data, year)
+   
+   # assert 
+   mock_ordered_players_by_last_name.assert_called_once()
+   mock_get_player_urls.assert_called_once() 
+   mock_fetch_page.assert_called_once() 
+   mock_get_game_log.assert_called_once() 
+
+
+
+@patch('scraping.pfr_scraper.get_game_log')
+@patch('scraping.pfr_scraper.fetch_page')
+@patch('scraping.pfr_scraper.get_player_urls')
+@patch('scraping.pfr_scraper.order_players_by_last_name')
+def test_fetch_player_metrics_skips_not_found_players(mock_ordered_players_by_last_name, mock_get_player_urls, mock_fetch_page, mock_get_game_log):
+   # arrange 
+   team_and_player_data = []
+   year = 2024 
+   
+   mock_ordered_players_by_last_name.return_value = [{"A": ['Alonzo Alkaine']}]
+   mock_get_player_urls.return_value = [{'player': 'Alonzo Alkaine', 'position': 'RB', 'url': 'https://myfakeurl.com'}]
+   mock_fetch_page.return_value = None # ensure we skip this particular player 
+   mock_get_game_log.return_value = pd.DataFrame(data = None)
+   
+   # act
+   actual_player_metrics = pfr_scraper.fetch_player_metrics(team_and_player_data, year)
+   
+   # assert 
+   assert actual_player_metrics == []
+
+
+@patch('scraping.pfr_scraper.fetch_player_metrics')
+@patch('scraping.pfr_scraper.fetch_team_metrics')
+@patch('scraping.pfr_scraper.props.load_configs')
+def test_scrape_returns_expected_team_metrics(mock_load_configs, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+   # arrange 
+   mock_load_configs.return_value = {
+      'website': {
+         'pro-football-reference': {
+               'urls': {
+                  'team-metrics': 'https://template.com'
+               }
+         }
+      },
+      'nfl': {
+         'current-year': 2024
+      }
+   }
+   player_metrics = [pd.DataFrame(data=None)]
+   team_metrics = [pd.DataFrame(data=None)]
+   mock_fetch_player_metrics.return_value = player_metrics
+   mock_fetch_team_metrics.return_value = team_metrics
+   
+   # act 
+   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}])
+   
+   # assert 
+   assert actual_team_metrics == team_metrics
+   
+@patch('scraping.pfr_scraper.fetch_player_metrics')
+@patch('scraping.pfr_scraper.fetch_team_metrics')
+@patch('scraping.pfr_scraper.props.load_configs')
+def test_scrape_returns_expected_player_metrics(mock_load_configs, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+   # arrange 
+   mock_load_configs.return_value = {
+      'website': {
+         'pro-football-reference': {
+               'urls': {
+                  'team-metrics': 'https://template.com'
+               }
+         }
+      },
+      'nfl': {
+         'current-year': 2024
+      }
+   }
+   player_metrics = [pd.DataFrame(data=None)]
+   team_metrics = [pd.DataFrame(data=None)]
+   mock_fetch_player_metrics.return_value = player_metrics
+   mock_fetch_team_metrics.return_value = team_metrics
+   
+   # act 
+   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}])
+   
+   # assert 
+   assert actual_player_metrics == player_metrics
+
+
+@patch('scraping.pfr_scraper.fetch_player_metrics')
+@patch('scraping.pfr_scraper.fetch_team_metrics')
+@patch('scraping.pfr_scraper.props.load_configs')
+def test_scrape_calls_expected_functions(mock_load_configs, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+   # arrange 
+   mock_load_configs.return_value = {
+      'website': {
+         'pro-football-reference': {
+               'urls': {
+                  'team-metrics': 'https://template.com'
+               }
+         }
+      },
+      'nfl': {
+         'current-year': 2024
+      }
+   }
+   player_metrics = [pd.DataFrame(data=None)]
+   team_metrics = [pd.DataFrame(data=None)]
+   mock_fetch_player_metrics.return_value = player_metrics
+   mock_fetch_team_metrics.return_value = team_metrics
+   
+   # act 
+   pfr_scraper.scrape([{'team': 'Indianapolis Colts'}])
+   
+   # assert 
+   mock_load_configs.assert_called_once()
+   mock_fetch_player_metrics.assert_called_once()
+   mock_fetch_team_metrics.assert_called_once()
