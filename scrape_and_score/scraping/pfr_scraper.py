@@ -139,7 +139,7 @@ def collect_team_data(team: str, raw_html: str, year: int):
         'day': [],
         'rest_days': [],
         'home_team': [],
-        'distance_travelled': [],
+        'distance_traveled': [],
         'opp': [],
         'result': [],
         'points_for': [],
