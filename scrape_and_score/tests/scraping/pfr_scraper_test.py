@@ -6,7 +6,7 @@ import pytest
 from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
          mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics, \
-         setup_get_href_mocks, mock_get_href_response   
+         setup_get_href_mocks, mock_get_href_response, mocked_extract_int  
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -726,3 +726,171 @@ def test_get_team_metrics_html_returns_expected_response(mock_fetch_page):
    
    # assert 
    assert actual_html == expected_html
+
+
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_returns_expected_tot_yds(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert tot_yds == 10
+
+   
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_returns_expected_pass_yds(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert pass_yds == 20
+  
+   
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_returns_expected_rush_yds(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert rush_yds == 30
+   
+
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_returns_expected_opp_tot_yds(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert opp_tot_yds == 40
+
+
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_returns_expected_opp_pass_yds(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert opp_pass_yds == 50
+
+
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_returns_expected_opp_rush_yds(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert opp_rush_yds == 60
+
+
+@patch('scraping.pfr_scraper.extract_int')
+def test_calculate_yardage_totals_calls_expected_functions(mock_extract_int):
+   games = [MagicMock()]
+   index = 0
+   mock_extract_int.side_effect = mocked_extract_int
+   
+   # act 
+   pfr_scraper.calculate_yardage_totals(games, index)
+   
+   # assert 
+   assert mock_extract_int.call_count == 6
+
+
+def test_calculate_rest_days_when_index_is_zero():
+   games = MagicMock()
+   index = 0 # set index to zero
+   year = 2024 
+   expected_rest_days = 10
+   
+   actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
+   
+   assert expected_rest_days == actual_rest_days
+
+
+def test_calculate_rest_days_when_both_games_prior_to_new_year():
+   previous_game_date = MagicMock()
+   previous_game_date.text = 'September 21' # set date prior to new year
+   previous_game = MagicMock()
+   previous_game.find.return_value = previous_game_date
+     
+   current_game_date = MagicMock()
+   current_game_date.text = 'September 28' # set date prior to new year
+   current_game = MagicMock() 
+   current_game.find.return_value = current_game_date
+   
+   games = [previous_game, current_game]
+   
+   index = 1
+   year = 2024 
+   expected_rest_days = date(2024, 9, 28) - date(2024, 9, 21)
+   
+   actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
+   
+   assert expected_rest_days == actual_rest_days
+
+
+def test_calculate_rest_days_when_both_games_in_new_year():
+   previous_game_date = MagicMock()
+   previous_game_date.text = 'January 7'
+   previous_game = MagicMock()
+   previous_game.find.return_value = previous_game_date
+     
+   current_game_date = MagicMock()
+   current_game_date.text = 'January 14'
+   current_game = MagicMock() 
+   current_game.find.return_value = current_game_date
+   
+   games = [previous_game, current_game]
+   
+   index = 1
+   year = 2024 
+   expected_rest_days = date(2025, 1, 14) - date(2025, 1, 7)
+   
+   actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
+   
+   assert expected_rest_days == actual_rest_days
+
+
+def test_calculate_rest_days_when_current_game_only_in_new_year():
+   previous_game_date = MagicMock()
+   previous_game_date.text = 'December 31'
+   previous_game = MagicMock()
+   previous_game.find.return_value = previous_game_date
+     
+   current_game_date = MagicMock()
+   current_game_date.text = 'January 7'
+   current_game = MagicMock() 
+   current_game.find.return_value = current_game_date
+   
+   games = [previous_game, current_game]
+   
+   index = 1
+   year = 2024 
+   expected_rest_days = date(2025, 1, 7) - date(2024, 12, 31)
+   
+   actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
+   
+   assert expected_rest_days == actual_rest_days

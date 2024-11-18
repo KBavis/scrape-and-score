@@ -153,3 +153,30 @@ def mock_get_href_response(player_name, player_position, year, soup):
       return "/XZeg" 
    else:
       return None
+
+
+'''
+Functionality to mock the response of extract_int for calculate_yardage_totals 
+
+Args:
+   tr (BeautifulSoup): parsed HTML containing statistics 
+   stat (str): stat to extract from parsed HTML 
+
+Returns:
+   mocked numeric
+'''
+def mocked_extract_int(tr, stat):
+   if stat == 'yards_off':
+      return 10
+   elif stat == 'pass_yds_off':
+      return 20
+   elif stat == 'rush_yds_off':
+      return 30
+   elif stat == 'yards_def':
+      return 40
+   elif stat == 'pass_yds_def':
+      return 50
+   elif stat == 'rush_yds_def':
+      return 60
+   else: 
+      raise Exception('Unknown stat passed to mock function')
