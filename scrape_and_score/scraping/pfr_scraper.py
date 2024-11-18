@@ -84,6 +84,9 @@ Args:
    teams (list) - list of team names to fetch metrics for 
    url_template (str) - template URL used to construct specific teams URL
    year (int) - year to fetch metrics for 
+
+Returns:
+    team_metrics (list) - list of df's containing team metrics
 '''
 def fetch_team_metrics(teams: list, url_template: str, year: int): 
    logging.info(f"Attempting to scrape team metrics for the following teams [{teams}]")
@@ -106,7 +109,7 @@ def fetch_team_metrics(teams: list, url_template: str, year: int):
       # validate teams metrics were retrieved properly 
       if(team_data.empty):
          logging.error(f'An error occured while fetching metrics for the team \'{team}\'')
-         raise Exception(f"Unable to extract raw HTML for the NFL Team \'{team}\'")
+         raise Exception(f"Unable to collect team data for the NFL Team \'{team}\'")
       
       # append result 
       team_metrics.append({"team_name": team, "team_metrics": team_data})
