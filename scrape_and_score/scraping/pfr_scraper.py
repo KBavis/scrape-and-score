@@ -178,8 +178,9 @@ def collect_team_data(team: str, raw_html: str, year: int):
             distance_travelled = 0
 
         result = games[i].find('td', {'data-stat': 'game_outcome'}).text
-        points_for = int(games[i].find('td', {'data-stat': 'pts_off'}).text)
-        points_allowed = int(games[i].find('td', {'data-stat': 'pts_def'}).text)
+        points_for = extract_int(games[i], 'pts_off')
+        points_allowed = extract_int(games[i], 'pts_def')
+
         
         tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = calculate_yardage_totals(games)
 
