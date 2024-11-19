@@ -1,3 +1,7 @@
+'''
+Module to store all of our applications constants utilized by our packages
+'''
+
 VALID_POSITIONS = ['QB', 'RB', 'WR', 'TE']
 
 TEAM_HREFS = {
