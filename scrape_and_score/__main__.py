@@ -16,8 +16,11 @@ def main():
    #Load Configurations from YAML file
    config = load_configs() 
    
+   template_url = config['website']['fantasy-pros']['urls']['depth-chart']
+   teams = [team['name'] for team in config['nfl']['teams']] # extract teams from configs
+   
    #Fetch relevant NFL teams & players
-   teams_and_players = scrape_fantasy_pros(config['website']['fantasy-pros']['urls']['depth-chart'])
+   teams_and_players = scrape_fantasy_pros(template_url, teams)
    logging.info(f"Successfully fetched {len(teams_and_players)} unique fantasy relevant players and their corresponding teams")
    
    #Fetch relevant team and player metrics 
