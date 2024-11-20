@@ -3,70 +3,84 @@ from bs4 import BeautifulSoup
 from .util import fetch_page
 
 
-
-def scrape(url: str): 
-   #Fetch Raw HTMl corresponding to Fantasy Pros site 
-   html = fetch_page(url)
-   
-   #Parse with Beautiful Soup
-   soup = BeautifulSoup(html, 'html.parser')
-   
-   # Fetch Players 
-   return fetch_team_data(soup)
-
-   
-
 '''
-Functionality to retrieve relevant fantasy football players and teams from current season
+Functionality to fetch all the relevant fantasy football players and their respective teams 
 
 Args:
-   teams (list) - all current NFL teams
-   
-Returns: 
-   depth_chart (list of dictionaries) - each player corresponding to team 
-'''
+   base_url (str): tempalte URL for a teams depth chart 
+   teams (list): list of all NFL teams 
 
-def fetch_team_data(soup: BeautifulSoup): 
-   logging.info(f"Fetching all relevant WR/RB/QB/TEs corresponding to each NFL team")
+Returns: 
+   team_and_player_data (list): list containing all team and player data 
+'''
+def scrape(base_url: str, teams: list): 
    
-   team_data = []
-   position_mapping = {
-      "Quarterbacks": "QB",
-      "Running Backs": "RB",
-      "Wide Receivers": "WR", 
-      "Tight Ends": "TE"
-   }
+   logging.info("Beginning to scrape Fantasy Pros for fantasy relevant NFL Players & Teams")
+   team_and_player_data = []
    
-   #Extract each HTML section corresponding to an NFL team 
-   teams = soup.find_all("div", class_="team-list") 
-   
-   #Loop through each team 
-   for team in teams:
-      #Extract team name 
-      team_name = team.find("input", class_="team-name")["value"]
+   for team in teams: 
+      # construct url 
+      url = construct_url(team, base_url)
+
+      # fetch raw HTML 
+      html = fetch_page(url)
       
-      # Find each relevant list of players by position 
-      positions = team.find_all("div", class_="position-list")
+      # parse with Beautiful Soup
+      soup = BeautifulSoup(html, 'html.parser')
       
-      #Loop through each relevant fantasy football position for current team
-      for position in positions:
-         #Extract position name 
-         position_name = position.find("h4", class_="position-head").text.strip() 
-         position_abrv = position_mapping.get(position_name[3:].strip()) #map to abbreviated position and skip the 'ECR' substring at beginning
-         
-         #Find all players corresponding to position for current team 
-         players = position.find_all("a", class_="fp-player-link")
-         
-         #Loop through each player and extract player name 
-         for player in players:
-            player_name = player['fp-player-name']
-            #Append Extract Data to Output 
-            team_data.append({
-               'team': team_name, 
-               'position': position_abrv,
-               'player_name': player_name
-            })   
+      # fetch depth chart
+      team_depth_chart = get_depth_chart(soup, team)
+      
+      # add teams player data to our return value
+      team_and_player_data.extend(team_depth_chart)
+
    
-   return team_data 
+   return team_and_player_data
+
+
+'''
+Functionality to construct the proper URL to fetch teams depth cahrt 
+
+Args:
+   team (str): NFL team name 
+   base_url (str): template URL to update 
+
+Returns:
+   formatted_url (str): url for a particular teams depth chart 
+'''
+def construct_url(team: str, base_url: str):
+   formatted_team_name = team.lower().replace(" ", "-")
+   return base_url.replace("{TEAM}", formatted_team_name)
+
+
+
+'''
+Functionality to parse HTML and extract relevant players for a particular team 
+
+Args:
+   soup (BeautifulSoup): parsed HTML with team data 
+   team (str): team name 
+'''
+def get_depth_chart(soup: BeautifulSoup, team: str):
+   logging.info(f"\nFetching depth chart for the following team: {team}")
+   
+   tables = soup.find_all("table") 
+   players_data = []
+   
+   for table in tables:
+      rows = table.find_all("tr")  
+    
+      for row in rows:
+         cells = row.find_all("td")
+        
+         if len(cells) >= 2:  # ensure cell exists for name & position
+               position = cells[0].get_text(strip=True) 
+               name = cells[1].get_text(strip=True)
+            
+               # add player 
+               players_data.append({"player_name": name, "position": position[:2], "team": team})
+   
+   logging.info(f"Relevant players for the NFL Team '{team}: {players_data}\n")
+   return players_data
 
             
