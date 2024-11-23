@@ -1,5 +1,5 @@
 import yaml
-
+import logging
 
 _config = None
 
@@ -17,7 +17,7 @@ def load_configs(file_path="./resources/application.yaml"):
    
    if _config is None: # load once 
       with open(file_path, 'r') as file:
-         return yaml.safe_load(file)
+         _config = yaml.safe_load(file)
    return _config
 
 
@@ -35,6 +35,7 @@ def get_config(key, default=None):
       if isinstance(value, dict): 
          value = value.get(k, default)
       else:
+         logging.warning(f"Configuration '{key}' was not found.")
          return default 
    
    return value
