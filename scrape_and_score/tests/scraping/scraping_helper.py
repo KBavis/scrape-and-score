@@ -198,3 +198,15 @@ def mock_find_for_collect_team_data(tag, attrs):
 
    # return mock based on specific data-stat value   
    return data_stat_map.get(attrs['data-stat'])
+
+
+'''
+Mock the functionality of get_config() 
+'''
+def mocked_get_config(key): 
+   if key == 'nfl.current-year':
+      return 2024
+   elif key == 'website.pro-football-reference.urls.team-metrics':
+      return 'https://url.com'
+   else:
+      raise Exception(f'Unexpected config: {key}')
