@@ -185,7 +185,7 @@ def collect_team_data(team: str, raw_html: str, year: int):
         points_allowed = extract_int(games[i], 'pts_def')
 
         
-        tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = calculate_yardage_totals(games)
+        tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = calculate_yardage_totals(games, i)
 
         # add row to data frame
         df.loc[len(df.index)] = [

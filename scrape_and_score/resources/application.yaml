@@ -6,7 +6,7 @@ website:
          player-metrics: "https://www.pro-football-reference.com/players/{LAST_NAME_INITAL}/{HASHED_NAME}.htm"
    fantasy-pros:
       urls:
-         depth-chart: "https://www.fantasypros.com/nfl/depth-charts.php"
+         depth-chart: "https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php"
 
 nfl:
    current-year: 2024
