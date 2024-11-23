@@ -76,7 +76,11 @@ def get_depth_chart(soup: BeautifulSoup, team: str):
          if len(cells) >= 2:  # ensure cell exists for name & position
                position = cells[0].get_text(strip=True) 
                name = cells[1].get_text(strip=True)
-            
+
+               # ensure cells contains valid data
+               if position == "" or name == "":
+                  continue
+               
                # add player 
                players_data.append({"player_name": name, "position": position[:2], "team": team})
    
