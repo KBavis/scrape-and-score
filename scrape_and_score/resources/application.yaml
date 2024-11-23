@@ -1,3 +1,4 @@
+# website URLs
 website:
    pro-football-reference:
       urls:
@@ -8,6 +9,11 @@ website:
       urls:
          depth-chart: "https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php"
 
+# scraping
+scraping:
+   delay: 0.5
+
+# NFL teams
 nfl:
    current-year: 2024
    teams:
