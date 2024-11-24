@@ -12,10 +12,17 @@ def init():
    load_dotenv()
    
    try:
-      _connection = connect(database=os.getenv("DB_NAME"), user=os.getenv("DB_USER"), \
-                        password=os.getenv("db.password"), host=os.getenv("DB_HOST"), \
-                        port=os.getenv("DB_PORT"))
-      logging.info('Successfully established database connection')
+      db_name = os.getenv("DB_NAME")
+      password=os.getenv("DB_PASS")
+      host=os.getenv("DB_HOST")
+      port = os.getenv("DB_PORT")
+      user = os.getenv("DB_USER")
+      
+      if not all([db_name, password, host, port, user]):
+         raise ValueError("One or more required environment variables for establishing a db connection are missing.")
+      
+      _connection = connect(database=db_name, user=user, password=password, host=host, port=port)
+
    except Exception as e:
       logging.error('An exception occured while attempting to establish DB connection', e)
       raise e
@@ -26,6 +33,7 @@ Fetch global DB connection
 '''
 def get_connection():
   global _connection
+  
   if _connection is None: 
      raise Exception("Database connection is not intialized.") 
   return _connection
