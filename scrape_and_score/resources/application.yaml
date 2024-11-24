@@ -11,7 +11,7 @@ website:
 
 # scraping
 scraping:
-   delay: 0.5
+   delay: 1.5
 
 # NFL teams
 nfl:
