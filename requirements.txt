@@ -8,4 +8,6 @@ scikit-learns
 PyYAML
 haversine
 rapidfuzz
+psycopg2
 pytest
+python-dotenv
