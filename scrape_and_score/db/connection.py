@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import logging
 
+_connection = None
 
 '''
 Intialize a global DB connection 
@@ -24,7 +25,7 @@ def init():
       _connection = connect(database=db_name, user=user, password=password, host=host, port=port)
 
    except Exception as e:
-      logging.error('An exception occured while attempting to establish DB connection', e)
+      logging.error(f'An exception occured while attempting to establish DB connection: {e}')
       raise e
 
 
