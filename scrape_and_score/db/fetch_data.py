@@ -24,7 +24,7 @@ def fetch_all_teams():
                })
 
    except Exception as e:
-      logging.error("An error occurred while fetching all teams.", e)
+      logging.error("An error occurred while fetching all teams: {e}")
       raise e
 
    return teams
@@ -58,7 +58,7 @@ def fetch_team_by_name(team_name: int):
                }
 
    except Exception as e:
-      logging.error(f"An error occurred while fetching team with name {team_name}.", e)
+      logging.error(f"An error occurred while fetching team with name {team_name}: {e}")
       raise e
 
 
@@ -91,7 +91,7 @@ def fetch_all_players():
                })
 
    except Exception as e:
-      logging.error("An error occurred while fetching all players.", e)
+      logging.error(f"An error occurred while fetching all players: {e}")
       raise e
 
    return players
@@ -125,7 +125,7 @@ def fetch_player_by_name(player_name: str):
                }
 
    except Exception as e:
-      logging.error(f"An error occurred while fetching player with name {player_name}.", e)
+      logging.error(f"An error occurred while fetching player with name {player_name}: {e}.")
       raise e
 
    return player
