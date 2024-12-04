@@ -69,7 +69,7 @@ def insert_teams(teams: list):
       return team_mappings
          
    except Exception as e:
-      logging.error(f'An exception occured while inserting the following teams into our db: {teams}', e)
+      logging.error(f'An exception occured while inserting the following teams into our db: {teams}: {e}')
       raise e
 
 
@@ -82,7 +82,7 @@ Args:
 Returns: 
    team_id (int): id corresponding to a particular team 
 '''
-def insert_team(team_name: dict): 
+def insert_team(team_name: str): 
    sql = "INSERT INTO team (name) VALUES (%s) RETURNING team_id"
    
    try: 
@@ -99,7 +99,7 @@ def insert_team(team_name: dict):
          return team_id
       
    except Exception as e: 
-      logging.error(f"An exception occured while inserting the following team '{team_name}' into our db", e)
+      logging.error(f"An exception occured while inserting the following team '{team_name}' into our db: {e}")
       raise e
       
    
