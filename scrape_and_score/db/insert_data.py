@@ -35,7 +35,7 @@ def insert_player(player: dict):
       player_position = player['position']
       team_id = player['team_id']
       
-      # Create a connection to the DB
+      # fetch connection to the DB
       connection = get_connection()
 
       with connection.cursor() as cur: 
