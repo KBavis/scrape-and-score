@@ -116,7 +116,6 @@ def fetch_team_metrics(teams: list, url_template: str, year: int):
 '''
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 
-TODO(FFM-45): Refactor to utilize helper functions, not use  range(), and be split into multiple functions
 
 All credit for the following code in this function goes to the developer of the repository:
       - https://github.com/mjk2244/pro-football-reference-web-scraper
