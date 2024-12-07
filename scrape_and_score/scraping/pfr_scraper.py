@@ -570,6 +570,8 @@ def add_qb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
 '''
 Functionality to retireve game log metrics for a RB
 
+TODO (FFM-83): Account for RB Snap Percentage Metrics
+
 Args:
     tr (BeautifulSoup): parsed HTML tr containing player metrics 
     data (dict): dictionary containing players metrics 
