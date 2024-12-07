@@ -19,65 +19,97 @@ nfl:
    teams:
       - name: Arizona Cardinals
         acronym: crd
+        pfr_acronym: ARI
       - name: Atlanta Falcons
         acronym: atl
+        pfr_acronym: ATL
       - name: Baltimore Ravens
         acronym: rav
+        pfr_acronym: BAL
       - name: Buffalo Bills
         acronym: buf
+        pfr_acronym: BUF
       - name: Carolina Panthers
         acronym: car
+        pfr_acronym: CAR
       - name: Chicago Bears
         acronym: chi
+        pfr_acronym: CHI
       - name: Cincinnati Bengals
         acronym: cin
+        pfr_acronym: CIN
       - name: Cleveland Browns
         acronym: cle
+        pfr_acronym: CLE
       - name: Dallas Cowboys
         acronym: dal
+        pfr_acronym: DAL
       - name: Denver Broncos
         acronym: den
+        pfr_acronym: DEN
       - name: Detroit Lions
         acronym: det
+        pfr_acronym: DET
       - name: Green Bay Packers
         acronym: gnb
+        pfr_acronym: GNB
       - name: Houston Texans
         acronym: htx
+        pfr_acronym: HOU
       - name: Indianapolis Colts
         acronym: clt
+        pfr_acronym: IND
       - name: Jacksonville Jaguars
         acronym: jax
+        pfr_acronym: JAX
       - name: Kansas City Chiefs
         acronym: kan
+        pfr_acronym: KAN
       - name: Las Vegas Raiders
         acronym: rai
+        pfr_acronym: LVR
       - name: Los Angeles Chargers
         acronym: sdg
+        pfr_acronym: LAC
       - name: Los Angeles Rams
         acronym: ram
+        pfr_acronym: LAR
       - name: Miami Dolphins
         acronym: mia
+        pfr_acronym: MIA
       - name: Minnesota Vikings
         acronym: min
+        pfr_acronym: MIN
       - name: New England Patriots
         acronym: nwe
+        pfr_acronym: NWE
       - name: New Orleans Saints
         acronym: nor
+        pfr_acronym: NOR
       - name: New York Giants
         acronym: nyg
+        pfr_acronym: NYG
       - name: New York Jets
         acronym: nyj
+        pfr_acronym: NYJ
       - name: Philadelphia Eagles
         acronym: phi
+        pfr_acronym: PHI
       - name: Pittsburgh Steelers
         acronym: pit
+        pfr_acronym: PIT
       - name: San Francisco 49ers
         acronym: sfo
+        pfr_acronym: SFO
       - name: Seattle Seahawks
         acronym: sea
+        pfr_acronym: SEA
       - name: Tampa Bay Buccaneers
         acronym: tam
+        pfr_acronym: TAM
       - name: Tennessee Titans
         acronym: oti
+        pfr_acronym: TEN
       - name: Washington Commanders
         acronym: was
+        pfr_acronym: WAS
