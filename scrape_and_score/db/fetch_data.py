@@ -129,3 +129,66 @@ def fetch_player_by_name(player_name: str):
       raise e
 
    return player
+
+
+'''
+Functionality to retrieve a single team game log from our DB 
+
+Args:
+   None 
+Returns: 
+   player_game_log (dict): team game log or None if not found 
+'''
+def fetch_one_team_game_log():
+   sql = 'SELECT * FROM team_game_log FETCH FIRST 1 ROW ONLY'
+   team_game_log = None
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+            cur.execute(sql)  
+            row = cur.fetchone()  
+            
+            if row:
+               team_game_log = {
+                  'team_game_log_id': row[0]
+               }
+
+   except Exception as e:
+      logging.error(f"An error occurred while fetching one record from team_game_log: {e}")
+      raise e
+   
+   return team_game_log
+
+
+'''
+Functionality to retrieve a single player game log from our DB 
+
+Args:
+   None 
+Returns: 
+   player_game_log (dict): player game log or None if not found 
+'''
+def fetch_one_player_game_log():
+   sql = 'SELECT * FROM player_game_log FETCH FIRST 1 ROW ONLY'
+   player_game_log = None
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+            cur.execute(sql)  
+            row = cur.fetchone()  
+            
+            if row:
+               player_game_log = {
+                  'player_game_log_id': row[0]
+               }
+
+   except Exception as e:
+      logging.error(f"An error occurred while fetching one record from player_game_log: {e}")
+      raise e
+   
+   return player_game_log
+   
