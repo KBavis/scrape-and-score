@@ -846,7 +846,8 @@ def test_calculate_rest_days_when_both_games_prior_to_new_year():
    
    index = 1
    year = 2024 
-   expected_rest_days = date(2024, 9, 28) - date(2024, 9, 21)
+   expected_time = date(2024, 9, 28) - date(2024, 9, 21)
+   expected_rest_days = expected_time.days
    
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
@@ -868,7 +869,8 @@ def test_calculate_rest_days_when_both_games_in_new_year():
    
    index = 1
    year = 2024 
-   expected_rest_days = date(2025, 1, 14) - date(2025, 1, 7)
+   expected_time = date(2025, 1, 14) - date(2025, 1, 7)
+   expected_rest_days = expected_time.days
    
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
@@ -890,7 +892,8 @@ def test_calculate_rest_days_when_current_game_only_in_new_year():
    
    index = 1
    year = 2024 
-   expected_rest_days = date(2025, 1, 7) - date(2024, 12, 31)
+   expected_time = date(2025, 1, 7) - date(2024, 12, 31)
+   expected_rest_days = expected_time.days
    
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
