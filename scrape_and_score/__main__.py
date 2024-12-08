@@ -3,6 +3,7 @@ from scraping import scrape_fantasy_pros
 from scraping import pfr_scraper as pfr
 from db import connection, is_player_empty, is_team_empty, insert_teams, fetch_all_teams, insert_players, fetch_all_players
 from config import load_configs, get_config
+from service import player_game_logs_service, team_game_logs_service
 import logging
 
 
@@ -26,16 +27,13 @@ def main():
          logging.info('No teams persisted; persisting all configured NFL teams to our database')
          team_names_and_ids = insert_teams(teams)
       else: 
-         logging.info('All teams persisted; skipping insertion')
+         logging.info('All teams persisted; skipping insertion and fetching teams from database')
+         team_names_and_ids = fetch_all_teams()
    
    
       # check if players are persisted; if not, persist relevant players
       depth_charts = []
       if is_player_empty():
-         # fetch relevant team names & ids if needed
-         if len(team_names_and_ids) == 0:
-            logging.info('Fetching all relevant NFL teams')
-            team_names_and_ids = fetch_all_teams()
             
          depth_charts = scrape_fantasy_pros(template_url, team_names_and_ids)
          logging.info(f"Successfully fetched {len(depth_charts)} unique fantasy relevant players and their corresponding teams")
@@ -47,13 +45,22 @@ def main():
          # TODO: FFM-64 - Check for depth chart changes to determine if need to make updates to persisted data
          logging.info('All players persisted; skipping insertion')
    
-   
-      if len(depth_charts) == 0: 
-         depth_charts = fetch_all_players() 
-         
+      # ensure that we fetch player records (need player ID)
+      depth_charts = fetch_all_players() 
+      
+      # TODO (FFM-77): Add Else If Statement for scraping most recent team/player game logs 
       # fetch relevant team and player metrics 
-      team_metrics, player_metrics = pfr.scrape(depth_charts, teams)
-      logging.info(f"Successfully retrieved metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
+      if player_game_logs_service.is_player_game_logs_empty(): # scrape & persist all game logs if none persisted
+         team_metrics, player_metrics = pfr.scrape(depth_charts, teams)
+         logging.info(f"Successfully retrieved metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
+         
+         # insert into player_game_log & team_game_log
+         player_game_logs_service.insert_multiple_players_game_logs(player_metrics, depth_charts)
+         team_game_logs_service.insert_multiple_teams_game_logs(team_metrics, team_names_and_ids)
+      else :
+         logging.info('No metrics to be fetched; no need to re-run application')
+      
+
    
    except Exception as e:
       logging.error('An exception occured while executing the main script', e)
