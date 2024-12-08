@@ -28,13 +28,12 @@ def scrape(team_and_player_data: list, teams: list):
    year = props.get_config('nfl.current-year')
 
    # fetch relevant team metrics 
-   team_metrics = fetch_team_metrics(teams, team_template_url, year)
+   team_metrics = fetch_team_metrics(teams, team_template_url, year) 
    
    # fetch relevant player metrics 
    player_metrics = fetch_player_metrics(team_and_player_data, year)
-   
    # return metrics 
-   return team_metrics, player_metrics 
+   return team_metrics, player_metrics
 
 
 '''
@@ -69,8 +68,6 @@ def fetch_player_metrics(team_and_player_data, year):
        #TODO (FFM-42): Gather Additional Data other than Game Logs  
        logging.info(f"Fetching metrics for {position} \'{player_name}\'")
        player_metrics.append({"player": player_name,"position": position, "player_metrics": get_game_log(soup, position)})
-
-   
    return player_metrics    
 
 
@@ -247,13 +244,15 @@ def calculate_rest_days(games: BeautifulSoup, index: int, year: int):
         
         # account for new year 
         if current_game_date[0] == 'January' and previous_game_date[0] != "January":
-            return date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+            rest_days = date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
         # both games in new year
         elif current_game_date[0] == 'January' and previous_game_date[0] == "January":
-            return date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year + 1, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+            rest_days = date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year + 1, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
         # both games not in new year
         else:
-            return date(year, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+            rest_days = date(year, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+        
+        return rest_days.days # return as integer
 
 '''
 Helper function to remove all canceled/playoff games, bye weeks, 
