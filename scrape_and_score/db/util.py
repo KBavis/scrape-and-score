@@ -1,5 +1,7 @@
 from .fetch_data import fetch_all_teams, fetch_all_players
 
+#TODO (FFM-85): Move this functionality into team & player services (respectively)
+
 '''
 Functionality to determine if there are no entries in our team table 
 
