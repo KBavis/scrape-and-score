@@ -1,5 +1,6 @@
 from .connection import get_connection, close_connection
 import logging 
+import pandas as pd
 
 '''
 Functionality to persist a particular player 
@@ -102,4 +103,122 @@ def insert_team(team_name: str):
       logging.error(f"An exception occured while inserting the following team '{team_name}' into our db: {e}")
       raise e
       
+
+'''
+Functionality to persist multiple game logs for a team 
+
+Args:
+   game_logs (list): list of tuples to insert into team_game_logs 
    
+Returns:
+   None
+'''
+def insert_team_game_logs(game_logs: list):
+   sql = '''
+      INSERT INTO team_game_log (team_id, week, day, year, rest_days, home_team, distance_traveled, opp, result, points_for, points_allowed, tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds)
+      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+   '''
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, game_logs)
+         
+         connection.commit()
+         logging.info(f"Successfully inserted {len(game_logs)} team game logs into the database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the team game logs: {game_logs}", exc_info=True)
+      raise e
+
+
+'''
+Functionality to persist multiple game logs for a RB 
+
+Args:
+   game_logs (list): list of tuples to insert into player_game_logs 
+
+Returns: 
+   None
+'''
+def insert_rb_player_game_logs(game_logs: list): 
+   sql = '''
+      INSERT INTO player_game_log (player_id, week, day, year, home_team, opp, result, points_for, points_allowed, rush_att, rush_yds, rush_tds, tgt, rec, rec_yd, rec_td)
+      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+   '''
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, game_logs)
+         
+         connection.commit()
+         logging.info(f"Successfully inserted {len(game_logs)} RB game logs into the database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the RB game logs: {game_logs}", exc_info=True)
+      raise e
+
+
+'''
+Functionality to persist multiple game logs for a QB
+
+Args:
+   game_logs (list): list of tuples to insert into player_game_logs 
+
+Returns: 
+   None
+'''
+def insert_qb_player_game_logs(game_logs: list): 
+   sql = '''
+         INSERT INTO player_game_log (player_id, week, day, year, home_team, opp, result, points_for, points_allowed, completions, attempts, pass_yd, pass_td, interceptions, rating, sacked, rush_att, rush_yds, rush_tds)
+         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+   '''
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, game_logs)
+         
+         connection.commit()
+         logging.info(f"Successfully inserted {len(game_logs)} QB game logs into the database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the QB game logs: {game_logs}", exc_info=True)
+      raise e
+
+   
+'''
+Functionality to persist multiple game logs for a WR or TE
+
+Args:
+   game_logs (list): list of tuples to insert into player_game_logs 
+
+Returns: 
+   None
+'''
+def insert_wr_or_te_player_game_logs(game_logs: list): 
+   sql = '''
+      INSERT INTO player_game_log (player_id, week, day, year, home_team, opp, result, points_for, points_allowed, tgt, rec, rec_yd, rec_td, snap_pct)
+      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+   '''
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, game_logs)
+         
+         connection.commit()
+         logging.info(f"Successfully inserted {len(game_logs)} WR/TE game logs into the database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the WR/TE game logs: {game_logs}", exc_info=True)
+      raise e
+
+   
+
+
