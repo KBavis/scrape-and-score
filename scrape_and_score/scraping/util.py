@@ -2,6 +2,7 @@ import requests
 import logging 
 import time 
 from proxy import proxy
+from config import get_config
 session = requests.Session() 
 
 '''
@@ -18,7 +19,7 @@ def fetch_page(url: str):
    try:
       logging.info(f"Fetching raw HTML from the following URL: {url}")
       
-      time.sleep(3) #TODO: Make this value configurable 
+      time.sleep(get_config('scraping.delay'))
       response = session.get(url, proxies=proxy.get_proxy())
       response.raise_for_status()
       return response.text

@@ -7,7 +7,7 @@ from scraping_helper import mock_find_common_metrics, mock_find_wr_metrics, \
          mock_find_rb_metrics, mock_find_qb_metrics, setup_game_log_mocks, \
          mock_add_common_game_log_metrics, mock_add_wr_game_log_metrics, \
          setup_get_href_mocks, mock_get_href_response, mocked_extract_int, \
-         mock_find_for_collect_team_data    
+         mock_find_for_collect_team_data, mocked_get_config  
 
 def test_extract_float_returns_zero_when_none():
    tr_mock = MagicMock()
@@ -846,7 +846,8 @@ def test_calculate_rest_days_when_both_games_prior_to_new_year():
    
    index = 1
    year = 2024 
-   expected_rest_days = date(2024, 9, 28) - date(2024, 9, 21)
+   expected_time = date(2024, 9, 28) - date(2024, 9, 21)
+   expected_rest_days = expected_time.days
    
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
@@ -868,7 +869,8 @@ def test_calculate_rest_days_when_both_games_in_new_year():
    
    index = 1
    year = 2024 
-   expected_rest_days = date(2025, 1, 14) - date(2025, 1, 7)
+   expected_time = date(2025, 1, 14) - date(2025, 1, 7)
+   expected_rest_days = expected_time.days
    
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
@@ -890,7 +892,8 @@ def test_calculate_rest_days_when_current_game_only_in_new_year():
    
    index = 1
    year = 2024 
-   expected_rest_days = date(2025, 1, 7) - date(2024, 12, 31)
+   expected_time = date(2025, 1, 7) - date(2024, 12, 31)
+   expected_rest_days = expected_time.days
    
    actual_rest_days = pfr_scraper.calculate_rest_days(games, index, year)
    
@@ -1267,56 +1270,34 @@ def test_fetch_player_metrics_skips_not_found_players(mock_ordered_players_by_la
 
 @patch('scraping.pfr_scraper.fetch_player_metrics')
 @patch('scraping.pfr_scraper.fetch_team_metrics')
-@patch('scraping.pfr_scraper.props.load_configs')
-def test_scrape_returns_expected_team_metrics(mock_load_configs, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+@patch('scraping.pfr_scraper.props.get_config')
+def test_scrape_returns_expected_team_metrics(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
    # arrange 
-   mock_load_configs.return_value = {
-      'website': {
-         'pro-football-reference': {
-               'urls': {
-                  'team-metrics': 'https://template.com'
-               }
-         }
-      },
-      'nfl': {
-         'current-year': 2024
-      }
-   }
+   mock_get_config.side_effect = mocked_get_config
    player_metrics = [pd.DataFrame(data=None)]
    team_metrics = [pd.DataFrame(data=None)]
    mock_fetch_player_metrics.return_value = player_metrics
    mock_fetch_team_metrics.return_value = team_metrics
    
    # act 
-   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}])
+   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}], 'Indianapolis Colts')
    
    # assert 
    assert actual_team_metrics == team_metrics
    
 @patch('scraping.pfr_scraper.fetch_player_metrics')
 @patch('scraping.pfr_scraper.fetch_team_metrics')
-@patch('scraping.pfr_scraper.props.load_configs')
-def test_scrape_returns_expected_player_metrics(mock_load_configs, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+@patch('scraping.pfr_scraper.props.get_config')
+def test_scrape_returns_expected_player_metrics(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
    # arrange 
-   mock_load_configs.return_value = {
-      'website': {
-         'pro-football-reference': {
-               'urls': {
-                  'team-metrics': 'https://template.com'
-               }
-         }
-      },
-      'nfl': {
-         'current-year': 2024
-      }
-   }
+   mock_get_config.side_effect = mocked_get_config
    player_metrics = [pd.DataFrame(data=None)]
    team_metrics = [pd.DataFrame(data=None)]
    mock_fetch_player_metrics.return_value = player_metrics
    mock_fetch_team_metrics.return_value = team_metrics
    
    # act 
-   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}])
+   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}], ['Indianapolis Colts'])
    
    # assert 
    assert actual_player_metrics == player_metrics
@@ -1324,30 +1305,20 @@ def test_scrape_returns_expected_player_metrics(mock_load_configs, mock_fetch_te
 
 @patch('scraping.pfr_scraper.fetch_player_metrics')
 @patch('scraping.pfr_scraper.fetch_team_metrics')
-@patch('scraping.pfr_scraper.props.load_configs')
-def test_scrape_calls_expected_functions(mock_load_configs, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+@patch('scraping.pfr_scraper.props.get_config')
+def test_scrape_calls_expected_functions(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+   
    # arrange 
-   mock_load_configs.return_value = {
-      'website': {
-         'pro-football-reference': {
-               'urls': {
-                  'team-metrics': 'https://template.com'
-               }
-         }
-      },
-      'nfl': {
-         'current-year': 2024
-      }
-   }
+   mock_get_config.side_effect = mocked_get_config
    player_metrics = [pd.DataFrame(data=None)]
    team_metrics = [pd.DataFrame(data=None)]
    mock_fetch_player_metrics.return_value = player_metrics
    mock_fetch_team_metrics.return_value = team_metrics
    
    # act 
-   pfr_scraper.scrape([{'team': 'Indianapolis Colts'}])
+   pfr_scraper.scrape([{'team': 'Indianapolis Colts'}], ['Indianapolis Colts'])
    
    # assert 
-   mock_load_configs.assert_called_once()
+   assert mock_get_config.call_count == 2
    mock_fetch_player_metrics.assert_called_once()
    mock_fetch_team_metrics.assert_called_once()
