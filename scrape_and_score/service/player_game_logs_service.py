@@ -34,7 +34,6 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
       player_id = get_player_id_by_name(player_name, depth_charts)
       
       # iterate through game logs, generate tuples, and insert into db
-      tuples = []
       if position == 'QB':
          tuples = get_qb_game_log_tuples(df, player_id)
          insert_data.insert_qb_player_game_logs(tuples)
