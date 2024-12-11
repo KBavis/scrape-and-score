@@ -14,3 +14,18 @@ def get_team_id_by_name(name: str):
    logging.info(f"Fetching team ID for team corresponding to name '{name}'")
    team = fetch_data.fetch_team_by_name(name)
    return team['team_id']
+
+
+'''
+Functionality to retrieve all teams persisted within our DB 
+
+Args:
+   None
+   
+Returns:
+   teams (list): list of dictionary items representing teams from our DB 
+'''
+def get_all_teams():
+   logging.info(f"Fetching all teams persisted within our DB")
+   teams = fetch_data.fetch_all_teams()
+   return teams
