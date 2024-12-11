@@ -51,14 +51,23 @@ def main():
       # TODO (FFM-77): Add Else If Statement for scraping most recent team/player game logs 
       # fetch relevant team and player metrics 
       if player_game_logs_service.is_player_game_logs_empty(): # scrape & persist all game logs if none persisted
-         team_metrics, player_metrics = pfr.scrape(depth_charts, teams)
+         team_metrics, player_metrics = pfr.scrape_all(depth_charts, teams)
          logging.info(f"Successfully retrieved metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
          
          # insert into player_game_log & team_game_log
          player_game_logs_service.insert_multiple_players_game_logs(player_metrics, depth_charts)
          team_game_logs_service.insert_multiple_teams_game_logs(team_metrics, team_names_and_ids)
       else :
-         logging.info('No metrics to be fetched; no need to re-run application')
+         logging.info('All previous games fetched; fetching metrics for most recent week')
+         team_metrics, player_metrics = pfr.scrape_recent()
+         logging.info(f"Successfully retrieved most recent game log metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
+         
+         # TODO: check if this week already inserted
+         # insert into player_game_log & team_game_log
+         player_game_logs_service.insert_multiple_players_game_logs(player_metrics, depth_charts)
+         team_game_logs_service.insert_multiple_teams_game_logs(team_metrics, team_names_and_ids)
+         logging.info('Successfully persisted most recent player & game log metrics')
+         
       
 
    
