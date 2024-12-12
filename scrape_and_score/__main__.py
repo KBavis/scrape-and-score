@@ -3,6 +3,7 @@ from scraping import scrape_fantasy_pros
 from scraping import pfr_scraper as pfr
 from db import connection, is_player_empty, is_team_empty, insert_teams, fetch_all_teams, insert_players, fetch_all_players
 from config import load_configs, get_config
+from datetime import datetime
 from service import player_game_logs_service, team_game_logs_service
 import logging
 
@@ -17,6 +18,7 @@ def main():
       configure_logging()
       load_configs() 
       connection.init()
+      start_time = datetime.now()
    
       template_url = get_config('website.fantasy-pros.urls.depth-chart')
       teams = [team['name'] for team in get_config('nfl.teams')] # extract teams from configs
@@ -70,6 +72,7 @@ def main():
          
       
 
+      logging.info(f'Application took {(datetime.now() - start_time).seconds} seconds to complete')
    
    except Exception as e:
       logging.error('An exception occured while executing the main script', e)
