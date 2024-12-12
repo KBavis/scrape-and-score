@@ -167,3 +167,101 @@ def test_insert_team_attempts_to_insert_expected_team(mock_get_connection):
    mock_cursor.execute.assert_called_once_with(
       "INSERT INTO team (name) VALUES (%s) RETURNING team_id", (test_team,)
    )
+
+
+@patch('db.insert_data.get_connection', side_effect = Exception('Database connection failed'))
+def test_insert_team_game_logs_when_exception_occurs(mock_get_connection):
+   try:
+      insert_data.insert_team_game_logs([(1,2), (3,4)])
+   except Exception as e:
+      assert str(e) == 'Database connection failed'
+   
+   
+
+@patch('db.insert_data.get_connection')
+def test_insert_team_game_logs_calls_expected_functions(mock_get_connection):
+   mock_connection = MagicMock() 
+   mock_connection.commit.return_value = None 
+   mock_cursor = MagicMock() 
+   mock_cursor.executemany.return_value = None 
+   mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+   mock_get_connection.return_value = mock_connection
+   
+   insert_data.insert_team_game_logs([(1,2,3), (4,5,6)])
+   
+   mock_get_connection.assert_called_once()
+   mock_cursor.executemany.assert_called_once()
+   mock_connection.commit.assert_called_once()
+
+@patch('db.insert_data.get_connection', side_effect = Exception('Database connection failed'))
+def test_insert_rb_player_game_logs_when_exception_occurs(mock_get_connection):
+   try:
+      insert_data.insert_rb_player_game_logs([(1,2), (3,4)])
+   except Exception as e:
+      assert str(e) == 'Database connection failed'
+   
+   
+
+@patch('db.insert_data.get_connection')
+def test_insert_rb_player_game_logs_calls_expected_functions(mock_get_connection):
+   mock_connection = MagicMock() 
+   mock_connection.commit.return_value = None 
+   mock_cursor = MagicMock() 
+   mock_cursor.executemany.return_value = None 
+   mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+   mock_get_connection.return_value = mock_connection
+   
+   insert_data.insert_rb_player_game_logs([(1,2,3), (4,5,6)])
+   
+   mock_get_connection.assert_called_once()
+   mock_cursor.executemany.assert_called_once()
+   mock_connection.commit.assert_called_once()
+
+@patch('db.insert_data.get_connection', side_effect = Exception('Database connection failed'))
+def test_insert_qb_player_game_logs_when_exception_occurs(mock_get_connection):
+   try:
+      insert_data.insert_qb_player_game_logs([(1,2), (3,4)])
+   except Exception as e:
+      assert str(e) == 'Database connection failed'
+   
+   
+
+@patch('db.insert_data.get_connection')
+def test_insert_qb_player_game_logs_calls_expected_functions(mock_get_connection):
+   mock_connection = MagicMock() 
+   mock_connection.commit.return_value = None 
+   mock_cursor = MagicMock() 
+   mock_cursor.executemany.return_value = None 
+   mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+   mock_get_connection.return_value = mock_connection
+   
+   insert_data.insert_qb_player_game_logs([(1,2,3), (4,5,6)])
+   
+   mock_get_connection.assert_called_once()
+   mock_cursor.executemany.assert_called_once()
+   mock_connection.commit.assert_called_once()
+
+
+@patch('db.insert_data.get_connection', side_effect = Exception('Database connection failed'))
+def test_insert_wr_or_te_player_game_logs_when_exception_occurs(mock_get_connection):
+   try:
+      insert_data.insert_wr_or_te_player_game_logs([(1,2), (3,4)])
+   except Exception as e:
+      assert str(e) == 'Database connection failed'
+   
+   
+
+@patch('db.insert_data.get_connection')
+def test_insert_wr_or_te_player_game_logs_calls_expected_functions(mock_get_connection):
+   mock_connection = MagicMock() 
+   mock_connection.commit.return_value = None 
+   mock_cursor = MagicMock() 
+   mock_cursor.executemany.return_value = None 
+   mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+   mock_get_connection.return_value = mock_connection
+   
+   insert_data.insert_wr_or_te_player_game_logs([(1,2,3), (4,5,6)])
+   
+   mock_get_connection.assert_called_once()
+   mock_cursor.executemany.assert_called_once()
+   mock_connection.commit.assert_called_once()
