@@ -9,7 +9,7 @@ from scraping import fantasy_pros_scraper
 @patch('scraping.fantasy_pros_scraper.BeautifulSoup')
 def test_scrape_returns_expected_data(mock_soup, mock_get_depth_chart, mock_fetch_page, mock_construct_url): 
     base_url = 'https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php'
-    teams = ['Indianapolis Colts']
+    teams = [{'name': 'Indianapolis Colts', 'team_id': 20}]
     expected_data = [{'player_name': 'Anthony Richardson', 'position': 'QB', 'team': 'Indianapolis Colts'}]
     mock_get_depth_chart.return_value = expected_data
     mock_soup.return_value = None
@@ -24,7 +24,7 @@ def test_scrape_returns_expected_data(mock_soup, mock_get_depth_chart, mock_fetc
 @patch('scraping.fantasy_pros_scraper.BeautifulSoup')
 def test_scrape_calls_expected_functions(mock_soup, mock_get_depth_chart, mock_fetch_page, mock_construct_url): 
     base_url = 'https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php'
-    teams = ['Indianapolis Colts']
+    teams = [{'name': 'Indianapolis Colts', 'team_id': 20}]
     expected_data = [{'player_name': 'Anthony Richardson', 'position': 'QB', 'team': 'Indianapolis Colts'}]
     mock_get_depth_chart.return_value = expected_data
     mock_soup.return_value = None
@@ -67,13 +67,14 @@ def test_get_depth_chart_returns_expected_depth_chart():
     """
     soup = BeautifulSoup(html, 'html.parser')
     team = "Indianapolis Colts"
+    team_id = 20
     
     expected_data = [
-        {"player_name": "Anthony Richardson", "position": "QB", "team": team},
-        {"player_name": "Jonathan Taylor", "position": "RB", "team": team}
+        {"player_name": "Anthony Richardson", "position": "QB", "team_id": team_id},
+        {"player_name": "Jonathan Taylor", "position": "RB", "team_id": team_id}
     ]
     
-    result = fantasy_pros_scraper.get_depth_chart(soup, team)
+    result = fantasy_pros_scraper.get_depth_chart(soup, team, team_id)
     assert result == expected_data
     
     
@@ -104,12 +105,13 @@ def test_get_depth_chart_skips_rows_without_name_and_position():
     """
     soup = BeautifulSoup(html, 'html.parser')
     team = "Indianapolis Colts"
+    team_id = 20
     
     # expected data doesn't include empty cells
     expected_data = [
-        {"player_name": "Anthony Richardson", "position": "QB", "team": team},
-        {"player_name": "Jonathan Taylor", "position": "RB", "team": team}
+        {"player_name": "Anthony Richardson", "position": "QB", "team_id": team_id},
+        {"player_name": "Jonathan Taylor", "position": "RB", "team_id": team_id}
     ]
     
-    result = fantasy_pros_scraper.get_depth_chart(soup, team)
+    result = fantasy_pros_scraper.get_depth_chart(soup, team, team_id)
     assert result == expected_data
