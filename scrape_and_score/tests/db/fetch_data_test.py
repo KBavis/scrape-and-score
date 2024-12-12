@@ -178,3 +178,154 @@ def test_fetch_player_by_name_throws_exception(mock_get_connection):
         fetch_data.fetch_player_by_name('Anthony Gould') 
     except Exception as e: 
         assert str(e) == 'Database connection error'
+
+
+
+@patch('db.fetch_data.get_connection', side_effect=Exception('Database connection error'))
+def test_fetch_one_team_game_log_throws_exception(mock_get_connection):
+    try:
+        fetch_data.fetch_one_team_game_log()
+    except Exception as e:
+        assert str(e) == 'Database connection error'
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_team_game_log_returns_expected_game_log(mock_get_connection):
+    expected_game_log = {
+        'team_game_log_id': 2
+    }
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    actual_game_log = fetch_data.fetch_one_team_game_log()
+    
+    assert expected_game_log == actual_game_log
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_team_game_log_calls_expected_functions(mock_get_connection): 
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_one_team_game_log()
+    
+    mock_get_connection.assert_called_once()
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_team_game_log_executes_expected_sql(mock_get_connection):
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_one_team_game_log()
+    
+    mock_cursor.execute.assert_called_once_with('SELECT * FROM team_game_log FETCH FIRST 1 ROW ONLY')
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_team_game_log_when_no_records_persisted(mock_get_connection):
+    expected_team_game_log = None
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = None # ensure nothing returned
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    actual_team_game_log = fetch_data.fetch_one_team_game_log()
+    
+    assert actual_team_game_log == expected_team_game_log
+
+
+@patch('db.fetch_data.get_connection', side_effect=Exception('Database connection error'))
+def test_fetch_one_player_game_log_throws_exception(mock_get_connection):
+    try:
+        fetch_data.fetch_one_player_game_log()
+    except Exception as e:
+        assert str(e) == 'Database connection error'
+        
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_player_game_log_returns_expected_game_log(mock_get_connection):
+    expected_game_log = {
+        'player_game_log_id': 2
+    }
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    actual_game_log = fetch_data.fetch_one_player_game_log()
+    
+    assert expected_game_log == actual_game_log
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_player_game_log_calls_expected_functions(mock_get_connection): 
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_one_player_game_log()
+    
+    mock_get_connection.assert_called_once()
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_player_game_log_executes_expected_sql(mock_get_connection):
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_one_player_game_log()
+    
+    mock_cursor.execute.assert_called_once_with('SELECT * FROM player_game_log FETCH FIRST 1 ROW ONLY')
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_one_player_game_log_when_no_records_persisted(mock_get_connection):
+    expected_player_game_log = None
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = None # ensure nothing returned
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    actual_player_game_log = fetch_data.fetch_one_player_game_log()
+    
+    assert actual_player_game_log == expected_player_game_log
+    
