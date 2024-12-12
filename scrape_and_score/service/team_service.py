@@ -13,6 +13,11 @@ Returns:
 def get_team_id_by_name(name: str):
    logging.info(f"Fetching team ID for team corresponding to name '{name}'")
    team = fetch_data.fetch_team_by_name(name)
+   
+   if team == None:
+      logging.warning(f'Unable to locate team by the name: {name}')
+      return None
+   
    return team['team_id']
 
 
