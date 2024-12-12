@@ -295,7 +295,7 @@ def test_add_qb_specific_game_log_metrics():
 def test_get_game_log_for_qb_calls_expected_functions(mock_add_qb_metrics, mock_add_common_metrics, mock_get_additional_metrics):
    mock_soup = setup_game_log_mocks('Valid')
 
-   pfr_scraper.get_game_log(mock_soup, 'QB')
+   pfr_scraper.get_game_log(mock_soup, 'QB', False)
    
    mock_add_common_metrics.assert_called_once()
    mock_add_qb_metrics.assert_called_once()
@@ -308,7 +308,7 @@ def test_get_game_log_for_qb_calls_expected_functions(mock_add_qb_metrics, mock_
 def test_get_game_log_for_wr_calls_expected_functions(mock_add_wr_metrics, mock_add_common_metrics, mock_get_additional_metrics):
    mock_soup = setup_game_log_mocks('Valid')
    
-   pfr_scraper.get_game_log(mock_soup, 'WR')
+   pfr_scraper.get_game_log(mock_soup, 'WR', False)
    
    mock_add_common_metrics.assert_called_once()
    mock_add_wr_metrics.assert_called_once()
@@ -321,7 +321,7 @@ def test_get_game_log_for_wr_calls_expected_functions(mock_add_wr_metrics, mock_
 def test_get_game_log_for_rb_calls_expected_functions(mock_add_rb_metrics, mock_add_common_metrics, mock_get_additional_metrics):
    mock_soup = setup_game_log_mocks('Valid')
    
-   pfr_scraper.get_game_log(mock_soup, 'RB')
+   pfr_scraper.get_game_log(mock_soup, 'RB', False)
    
    mock_add_common_metrics.assert_called_once()
    mock_add_rb_metrics.assert_called_once()
@@ -335,7 +335,7 @@ def test_get_game_log_for_te_calls_expected_functions(mock_add_wr_metrics, mock_
     
    mock_soup = setup_game_log_mocks('Valid')
    
-   pfr_scraper.get_game_log(mock_soup, 'TE')
+   pfr_scraper.get_game_log(mock_soup, 'TE', False)
    
    mock_add_common_metrics.assert_called_once()
    mock_add_wr_metrics.assert_called_once()
@@ -349,7 +349,7 @@ def test_get_game_log_ignores_inactive_status(mock_add_wr_metrics, mock_add_comm
    mock_soup = setup_game_log_mocks('Inactive') # setup mocks with inactive status
    mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
   
-   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR', False)
    
    assert pandas_df.empty
    
@@ -361,7 +361,7 @@ def test_get_game_log_ignores_inactive_status(mock_add_wr_metrics, mock_add_comm
    mock_soup = setup_game_log_mocks('Did Not Play') # setup mocks with inactive status
    mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
   
-   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR', False)
    
    assert pandas_df.empty
    
@@ -373,7 +373,7 @@ def test_get_game_log_ignores_inactive_status(mock_add_wr_metrics, mock_add_comm
    mock_soup = setup_game_log_mocks('Injured Reserve') # setup mocks with inactive status
    mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
   
-   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR', False)
    
    assert pandas_df.empty
    
@@ -388,7 +388,7 @@ def test_get_game_log_returns_expected_df(mock_add_wr_metrics, mock_add_common_m
    mock_soup = setup_game_log_mocks('Valid')
    mock_get_additional_metrics.return_value = {'tgt': [],'rec': [],'rec_yds': [],'rec_td': [],'snap_pct': []}
    
-   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR')
+   pandas_df = pfr_scraper.get_game_log(mock_soup, 'WR', False)
    
    expected_data = {
       'date': ['2024-11-10'],
@@ -1027,7 +1027,7 @@ def test_collect_team_data_calls_expected_functions(mock_remove_uneeded_games, m
    
    mock_remove_uneeded_games.return_value = None
    
-   pfr_scraper.collect_team_data('Arizona Cardinals', "<html></html>", 2024)
+   pfr_scraper.collect_team_data('Arizona Cardinals', "<html></html>", 2024, False)
    
    mock_remove_uneeded_games.assert_called_once()
    mock_calc_yard_totals.assert_called_once() 
@@ -1082,7 +1082,7 @@ def test_collect_team_data_returns_expected_df(mock_remove_uneeded_games, mock_c
    expected_df.loc[0] = [20, 10, 10, False, 67.77, 'Arizona Cardinals', 'W', 24, 24, 7, 5, 102, 1, 67, 78]
 
    
-   actual_df = pfr_scraper.collect_team_data('Arizona Cardinals', "<html></html>", 2024)
+   actual_df = pfr_scraper.collect_team_data('Arizona Cardinals', "<html></html>", 2024, False)
    
    pd.testing.assert_frame_equal(actual_df, expected_df, check_dtype=False)
    
@@ -1271,7 +1271,7 @@ def test_fetch_player_metrics_skips_not_found_players(mock_ordered_players_by_la
 @patch('scraping.pfr_scraper.fetch_player_metrics')
 @patch('scraping.pfr_scraper.fetch_team_metrics')
 @patch('scraping.pfr_scraper.props.get_config')
-def test_scrape_returns_expected_team_metrics(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+def test_scrape_all_returns_expected_team_metrics(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
    # arrange 
    mock_get_config.side_effect = mocked_get_config
    player_metrics = [pd.DataFrame(data=None)]
@@ -1280,7 +1280,7 @@ def test_scrape_returns_expected_team_metrics(mock_get_config, mock_fetch_team_m
    mock_fetch_team_metrics.return_value = team_metrics
    
    # act 
-   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}], 'Indianapolis Colts')
+   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape_all([{'team': 'Indianapolis Colts'}], 'Indianapolis Colts')
    
    # assert 
    assert actual_team_metrics == team_metrics
@@ -1288,7 +1288,7 @@ def test_scrape_returns_expected_team_metrics(mock_get_config, mock_fetch_team_m
 @patch('scraping.pfr_scraper.fetch_player_metrics')
 @patch('scraping.pfr_scraper.fetch_team_metrics')
 @patch('scraping.pfr_scraper.props.get_config')
-def test_scrape_returns_expected_player_metrics(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
+def test_scrape_all_returns_expected_player_metrics(mock_get_config, mock_fetch_team_metrics, mock_fetch_player_metrics): 
    # arrange 
    mock_get_config.side_effect = mocked_get_config
    player_metrics = [pd.DataFrame(data=None)]
@@ -1297,7 +1297,7 @@ def test_scrape_returns_expected_player_metrics(mock_get_config, mock_fetch_team
    mock_fetch_team_metrics.return_value = team_metrics
    
    # act 
-   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape([{'team': 'Indianapolis Colts'}], ['Indianapolis Colts'])
+   actual_team_metrics, actual_player_metrics = pfr_scraper.scrape_all([{'team': 'Indianapolis Colts'}], ['Indianapolis Colts'])
    
    # assert 
    assert actual_player_metrics == player_metrics
@@ -1316,7 +1316,7 @@ def test_scrape_calls_expected_functions(mock_get_config, mock_fetch_team_metric
    mock_fetch_team_metrics.return_value = team_metrics
    
    # act 
-   pfr_scraper.scrape([{'team': 'Indianapolis Colts'}], ['Indianapolis Colts'])
+   pfr_scraper.scrape_all([{'team': 'Indianapolis Colts'}], ['Indianapolis Colts'])
    
    # assert 
    assert mock_get_config.call_count == 2
