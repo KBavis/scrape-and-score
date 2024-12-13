@@ -152,7 +152,9 @@ def fetch_one_team_game_log():
             
             if row:
                team_game_log = {
-                  'team_game_log_id': row[0]
+                  'team_id': row[0], 
+                  'week': row[1],
+                  'year': row[3]
                }
 
    except Exception as e:
@@ -183,7 +185,9 @@ def fetch_one_player_game_log():
             
             if row:
                player_game_log = {
-                  'player_game_log_id': row[0]
+                  'player_id': row[0],
+                  'week': row[1],
+                  'year': row[3]
                }
 
    except Exception as e:

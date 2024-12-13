@@ -191,13 +191,15 @@ def test_fetch_one_team_game_log_throws_exception(mock_get_connection):
 @patch('db.fetch_data.get_connection')
 def test_fetch_one_team_game_log_returns_expected_game_log(mock_get_connection):
     expected_game_log = {
-        'team_game_log_id': 2
+        'team_id': 2,
+        'week': 14,
+        'year': 2024
     }
     mock_connection = MagicMock() 
     
     mock_cursor = MagicMock() 
     mock_cursor.execute.return_value = None
-    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    mock_cursor.fetchone.return_value = (2, 14, 'Arbitrary', 2024)
     
     mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
     mock_get_connection.return_value = mock_connection
@@ -213,7 +215,7 @@ def test_fetch_one_team_game_log_calls_expected_functions(mock_get_connection):
     
     mock_cursor = MagicMock() 
     mock_cursor.execute.return_value = None
-    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary', 'Test')
     
     mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
     mock_get_connection.return_value = mock_connection
@@ -229,7 +231,7 @@ def test_fetch_one_team_game_log_executes_expected_sql(mock_get_connection):
     
     mock_cursor = MagicMock() 
     mock_cursor.execute.return_value = None
-    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary', 'Test')
     
     mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
     mock_get_connection.return_value = mock_connection
@@ -266,13 +268,15 @@ def test_fetch_one_player_game_log_throws_exception(mock_get_connection):
 @patch('db.fetch_data.get_connection')
 def test_fetch_one_player_game_log_returns_expected_game_log(mock_get_connection):
     expected_game_log = {
-        'player_game_log_id': 2
+        'player_id': 2,
+        'week': 14,
+        'year': 2024
     }
     mock_connection = MagicMock() 
     
     mock_cursor = MagicMock() 
     mock_cursor.execute.return_value = None
-    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    mock_cursor.fetchone.return_value = (2, 14, 'Arbitrary', 2024)
     
     mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
     mock_get_connection.return_value = mock_connection
@@ -288,7 +292,7 @@ def test_fetch_one_player_game_log_calls_expected_functions(mock_get_connection)
     
     mock_cursor = MagicMock() 
     mock_cursor.execute.return_value = None
-    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary', 2023)
     
     mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
     mock_get_connection.return_value = mock_connection
@@ -304,7 +308,7 @@ def test_fetch_one_player_game_log_executes_expected_sql(mock_get_connection):
     
     mock_cursor = MagicMock() 
     mock_cursor.execute.return_value = None
-    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary')
+    mock_cursor.fetchone.return_value = (2, 'Value', 'Arbitrary', 2023)
     
     mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
     mock_get_connection.return_value = mock_connection
