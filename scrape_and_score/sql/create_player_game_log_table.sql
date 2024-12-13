@@ -1,5 +1,4 @@
 CREATE TABLE player_game_log (
-    player_game_log_id SERIAL PRIMARY KEY,
     player_id INT NOT NULL,
     week INT NOT NULL,
     day VARCHAR(20) NOT NULL,
@@ -24,6 +23,7 @@ CREATE TABLE player_game_log (
     rec_yd INT,
     rec_td INT,
     snap_pct INT,
+    PRIMARY KEY (player_id, week, year),
     FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE,
     FOREIGN KEY (opp) REFERENCES team(team_id) ON DELETE CASCADE
 );
