@@ -85,6 +85,24 @@ def setup_game_log_mocks(status):
 
 
 '''
+Setup mocks necessary for get_game_log() -- For two games
+
+Args: status(str)
+         - Status to set 
+'''
+def setup_two_game_log_mocks(status):    
+   mock_soup = MagicMock()
+   mock_tbody = MagicMock()
+   mock_tr = MagicMock()
+   mock_element = MagicMock()
+   mock_element.text = status
+   mock_soup.find.return_value = mock_tbody
+   mock_tbody.find_all.return_value = [mock_tr, mock_tr]
+   mock_tr.find_all.return_value = [MagicMock(), mock_element]
+   
+   return mock_soup
+
+'''
 Mock the functionality of add_common_game_log_metrics() with hard-coded values 
 
 '''
