@@ -235,12 +235,14 @@ def remove_previously_inserted_games(player_metrics, depth_charts):
    
    # check if this execution is for recent games or not 
    if len(player_metrics) != len(player_metric_pks):
+      logging.info("Program execution is not for most recent games; skipping check for previously persisted player game logs")
       return
    
    # remove duplicate entires 
    index = 0 
    while index < len(player_metrics):
       if is_game_log_persisted(player_metric_pks[index]):
+         logging.info('Player game log previously persisted; skipping insert')
          del player_metrics[index]
          del player_metric_pks[index]
       else:

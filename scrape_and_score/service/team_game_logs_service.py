@@ -143,6 +143,7 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year):
    index = 0 
    while index < len(team_metrics):
       if is_game_log_persisted(team_metric_pks[index]):
+         logging.info('Team game log previously persisted; skipping insert')
          del team_metrics[index]
          del team_metric_pks[index]
       else:
