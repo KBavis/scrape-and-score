@@ -1,3 +1,5 @@
+from config import props
+
 '''
 Module to act as intermediary between business logic & data access layer for player_game_logs 
 '''
@@ -17,6 +19,13 @@ Returns:
    None
 '''
 def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
+   
+   remove_previously_inserted_games(player_metrics, depth_charts)
+
+   if len(player_metrics) == 0:
+      logging.info('No new player game logs to persist; skipping insertion')
+      return
+
    for player in player_metrics:
       player_name = player['player']
       logging.info(f"Attempting to insert game logs for player '{player_name}'")
@@ -47,7 +56,16 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
          raise Exception(f"Unknown position '{position}'; unable to fetch game log tuples")
       
       
+'''
+Utility function to check if a player game logs table is empty
 
+Args:
+   None
+
+Returns:
+   bool: truthy value to determine if table is empty or not
+   
+'''
 def is_player_game_logs_empty(): 
    player_game_log = fetch_data.fetch_one_player_game_log() 
    
@@ -178,6 +196,56 @@ def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int):
    return tuples
 
 
+'''
+Functionality to determine if a game log was persisted for a given week 
 
+Args:
+   game_log_pk (dict): PK to check is persisted in DB 
+
+Returns:
+   game_log (dict): None or persisted game log
+'''
+def is_game_log_persisted(game_log_pk: dict):
+   game_log = fetch_data.fetch_player_game_log_by_pk(game_log_pk)
    
+   if game_log == None:
+      return False
+   else:
+      return True
+
+
+'''
+Utility function to remove games that have already been persisted
+
+Args:
+   player_metrics (list): list of dictionaries containing player's name, position, and game_logs
+   depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
+
+Returns:
+   None
+'''
+def remove_previously_inserted_games(player_metrics, depth_charts):
+   player_metric_pks = []
+
+   # generate pks for each team game log
+   for player in player_metrics:
+      df = player['player_metrics']
+      if len(df) == 1:
+         player_metric_pks.append({"player_id": get_player_id_by_name(player['player']),"week": df.iloc[0]['week'], "year": service_util.extract_year_from_date(df.iloc[0]['date'])})
+   
+   # check if this execution is for recent games or not 
+   if len(player_metrics) != len(player_metric_pks):
+      return
+   
+   # remove duplicate entires 
+   index = 0 
+   while index < len(player_metrics):
+      if is_game_log_persisted(player_metric_pks[index]):
+         del player_metrics[index]
+         del player_metric_pks[index]
+      else:
+         index +=1
+
+
+ 
    
