@@ -501,7 +501,7 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
 
         # Check if the player's name, position, and year match
         player_text = player.text
-        if start_year <= year <= end_year and position in player_text and check_name_similarity(player_text, player_name) >= 90:
+        if start_year <= year <= end_year and position in player_text and check_name_similarity(player_text, player_name) >= 95:
             a_tag = player.find('a')
             if a_tag and a_tag.get('href'):
                 href = a_tag.get('href').replace('.htm', '')
