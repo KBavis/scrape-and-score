@@ -1,6 +1,131 @@
 from unittest.mock import patch, MagicMock
 from db import fetch_data
 
+
+from unittest.mock import patch, MagicMock
+from db import fetch_data
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_team_game_log_by_pk_when_game_log_not_persisted(mock_get_connection):
+    expected_team_game_log = None
+    mock_connection = MagicMock()
+
+    mock_cursor = MagicMock()
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = None  # Simulate no game log found
+
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
+    mock_get_connection.return_value = mock_connection
+
+    pk = {'team_id': 32, 'week': 2, 'year': 2024}
+    actual_team_game_log = fetch_data.fetch_team_game_log_by_pk(pk)
+
+    assert actual_team_game_log == expected_team_game_log
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_player_game_log_by_pk_when_game_log_not_persisted(mock_get_connection):
+    expected_player_game_log = None
+    mock_connection = MagicMock()
+
+    mock_cursor = MagicMock()
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = None  # Simulate no game log found
+
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
+    mock_get_connection.return_value = mock_connection
+
+    pk = {'player_id': 527, 'week': 2, 'year': 2024}
+    actual_player_game_log = fetch_data.fetch_player_game_log_by_pk(pk)
+
+    assert actual_player_game_log == expected_player_game_log
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_team_game_log_by_pk_when_game_log_persisted(mock_get_connection):
+    expected_team_game_log = {
+        'team_id': 32,
+        'week': 2,
+        'day': 'Mon',
+        'year': 2024,
+        'rest_days': 3,
+        'home_team': True,
+        'distance_traveled': 150.0,
+        'opp': 45,
+        'result': 'W',
+        'points_for': 30,
+        'points_allowed': 20,
+        'tot_yds': 400,
+        'pass_yds': 250,
+        'rush_yds': 150,
+        'opp_tot_yds': 300,
+        'opp_pass_yds': 200,
+        'opp_rush_yds': 100
+    }
+    mock_connection = MagicMock()
+
+    mock_cursor = MagicMock()
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (
+        32, 2, 'Mon', 2024, 3, True, 150.0, 45, 'W', 30, 20,
+        400, 250, 150, 300, 200, 100
+    )
+
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
+    mock_get_connection.return_value = mock_connection
+
+    pk = {'team_id': 32, 'week': 2, 'year': 2024}
+    actual_team_game_log = fetch_data.fetch_team_game_log_by_pk(pk)
+
+    assert actual_team_game_log == expected_team_game_log
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_player_game_log_by_pk_when_game_log_persisted(mock_get_connection):
+    expected_player_game_log = {
+        'player_id': 527,
+        'week': 2,
+        'day': 16,
+        'year': 2024,
+        'home_team': True,
+        'opp': 45,
+        'result': 'W',
+        'points_for': 30,
+        'points_allowed': 20,
+        'completions': 25,
+        'attempts': 35,
+        'pass_yd': 300,
+        'pass_td': 3,
+        'interceptions': 1,
+        'rating': 105.5,
+        'sacked': 2,
+        'rush_att': 10,
+        'rush_yds': 50,
+        'rush_tds': 1,
+        'tgt': 5,
+        'rec': 4,
+        'rec_yd': 60,
+        'rec_td': 1,
+        'snap_pct': 85.0
+    }
+    mock_connection = MagicMock()
+
+    mock_cursor = MagicMock()
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchone.return_value = (
+        527, 2, 16, 2024, True, 45, 'W', 30, 20, 25, 35,
+        300, 3, 1, 105.5, 2, 10, 50, 1, 5, 4, 60, 1, 85.0
+    )
+
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
+    mock_get_connection.return_value = mock_connection
+
+    pk = {'player_id': 527, 'week': 2, 'year': 2024}
+    actual_player_game_log = fetch_data.fetch_player_game_log_by_pk(pk)
+
+    assert actual_player_game_log == expected_player_game_log
+
+
 @patch('db.fetch_data.get_connection')
 def test_fetch_all_teams_returns_teams(mock_get_connection):
     expected_teams = [
