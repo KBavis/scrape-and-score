@@ -50,7 +50,6 @@ def main():
       # ensure that we fetch player records (need player ID)
       depth_charts = fetch_all_players() 
       
-      # TODO (FFM-77): Add Else If Statement for scraping most recent team/player game logs 
       # fetch relevant team and player metrics 
       if player_game_logs_service.is_player_game_logs_empty(): # scrape & persist all game logs if none persisted
          team_metrics, player_metrics = pfr.scrape_all(depth_charts, teams)
