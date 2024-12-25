@@ -7,7 +7,8 @@ import pandas as pd
 @patch('service.team_game_logs_service.get_team_log_tuples')
 @patch('service.team_game_logs_service.insert_data.insert_team_game_logs')
 @patch('service.team_game_logs_service.props.get_config')
-def test_insert_multiple_teams_game_logs_calls_expected_functions(mock_get_config, mock_insert_team_game_logs, mock_get_team_log_tuples, mock_get_team_id_by_name): 
+@patch('service.team_game_logs_service.remove_previously_inserted_game_logs', return_value = None)
+def test_insert_multiple_teams_game_logs_calls_expected_functions(mock_remove, mock_get_config, mock_insert_team_game_logs, mock_get_team_log_tuples, mock_get_team_id_by_name): 
    df = pd.DataFrame(data = [{'random'}])
    team_metrics = [{"team_name": "Indianapolis Colts", "team_metrics": df}]
    
