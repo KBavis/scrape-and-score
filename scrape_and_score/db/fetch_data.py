@@ -195,4 +195,107 @@ def fetch_one_player_game_log():
       raise e
    
    return player_game_log
+
+
+
+"""
+Functionality to retrieve a team's game log by its PK (team_id, week, year)
+
+Args:
+   pk (dict): primary key for a given team's game log (team_id, week, year)
+
+   Returns:
+   team_game_log (dict): the team game log corresponding to the given PK 
+"""
+def fetch_team_game_log_by_pk(pk: dict):
+    sql = 'SELECT * FROM team_game_log WHERE team_id=%s AND week=%s AND year=%s'
+    team_game_log = None
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (pk['team_id'], pk['week'], pk['year'])) 
+            row = cur.fetchone()  
+            
+            if row:
+               team_game_log = {
+                  'team_id': row[0],
+                  'week': row[1],
+                  'day': row[2],
+                  'year': row[3],
+                  'rest_days': row[4],
+                  'home_team': row[5],
+                  'distance_traveled': row[6],
+                  'opp': row[7],
+                  'result': row[8],
+                  'points_for': row[9],
+                  'points_allowed': row[10],
+                  'tot_yds': row[11],
+                  'pass_yds': row[12],
+                  'rush_yds': row[13],
+                  'opp_tot_yds': row[14],
+                  'opp_pass_yds': row[15],
+                  'opp_rush_yds': row[16]
+               }
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching the team game log corresponding to PK {pk}: {e}")
+        raise e
+    
+    return team_game_log
+
+
+'''
+Functionality to retrieve a players game log by its PK (player_id, week, year)
+
+Args:
+   pk (dict): primary key for a given player's game log (player_id, week, year)
+Returns:
+   player_game_log (dict): the player game log corresponding to the given PK 
+'''
+def fetch_player_game_log_by_pk(pk: dict):
+   sql = 'SELECT * FROM player_game_log WHERE player_id=%s AND week=%s AND year=%s'
+   player_game_log = None
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+            cur.execute(sql, (pk['player_id'], pk['week'], pk['year']))  
+            row = cur.fetchone()  
+            
+            if row:
+               player_game_log = {
+                  'player_id': row[0],
+                  'week': row[1],
+                  'day': row[2],
+                  'year': row[3],
+                  'home_team': row[4],
+                  'opp': row[5],
+                  'result': row[6], 
+                  'points_for': row[7],
+                  'points_allowed': row[8],
+                  'completions': row[9],
+                  'attempts': row[10],
+                  'pass_yd': row[11], 
+                  'pass_td': row[12],
+                  'interceptions': row[13], 
+                  'rating': row[14], 
+                  'sacked': row[15], 
+                  'rush_att': row[16], 
+                  'rush_yds': row[17], 
+                  'rush_tds': row[18], 
+                  'tgt': row[19], 
+                  'rec': row[20], 
+                  'rec_yd': row[21], 
+                  'rec_td': row[22], 
+                  'snap_pct': row[23]
+               }
+
+   except Exception as e:
+      logging.error(f"An error occurred while fetching the player game log corresponding to PK {pk}: {e}")
+      raise e
+   
+   return player_game_log
    
