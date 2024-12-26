@@ -231,7 +231,7 @@ def remove_previously_inserted_games(player_metrics, depth_charts):
    for player in player_metrics:
       df = player['player_metrics']
       if len(df) == 1:
-         player_metric_pks.append({"player_id": get_player_id_by_name(player['player'], depth_charts),"week": df.iloc[0]['week'], "year": service_util.extract_year_from_date(df.iloc[0]['date'])})
+         player_metric_pks.append({"player_id": get_player_id_by_name(player['player'], depth_charts),"week": str(df.iloc[0]['week']), "year": service_util.extract_year_from_date(df.iloc[0]['date'])})
    
    # check if this execution is for recent games or not 
    if len(player_metrics) != len(player_metric_pks):

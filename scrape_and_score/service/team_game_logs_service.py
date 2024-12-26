@@ -132,7 +132,7 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
    for team in team_metrics:
       df = team['team_metrics']
       if len(df) == 1:
-         week = df.iloc[0]['week']
+         week = str(df.iloc[0]['week'])
          team_metric_pks.append({"team_id": get_team_id_by_name(team['team_name'], teams_and_ids),"week": week, "year": service_util.get_game_log_year(week, curr_year)})
    
    # check if this execution is for recent games or not 
