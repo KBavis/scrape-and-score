@@ -18,7 +18,7 @@ def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list):
    
    curr_year = props.get_config('nfl.current-year') # fetch current year
 
-   remove_previously_inserted_game_logs(team_metrics, curr_year)
+   remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
 
    if len(team_metrics) == 0:
       logging.info('No new team game logs to persist; skipping insertion')
@@ -120,11 +120,12 @@ Utility function to determine if a teams game log has previously been inserted
 Args: 
    team_metrics (list): list of dictionaries containing team's name & game logs 
    curr_year (int): current year
+   teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
    
 Returns:
    None
 '''
-def remove_previously_inserted_game_logs(team_metrics, curr_year):
+def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids):
    team_metric_pks = []
 
    # generate pks for each team game log
@@ -132,7 +133,7 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year):
       df = team['team_metrics']
       if len(df) == 1:
          week = df.iloc[0]['week']
-         team_metric_pks.append({"team_id": get_team_id_by_name(team['team_name']),"week": week, "year": service_util.get_game_log_year(week, curr_year)})
+         team_metric_pks.append({"team_id": get_team_id_by_name(team['team_name'], teams_and_ids),"week": week, "year": service_util.get_game_log_year(week, curr_year)})
    
    # check if this execution is for recent games or not 
    if len(team_metrics) != len(team_metric_pks):
@@ -143,8 +144,26 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year):
    index = 0 
    while index < len(team_metrics):
       if is_game_log_persisted(team_metric_pks[index]):
-         logging.info('Team game log previously persisted; skipping insert')
          del team_metrics[index]
          del team_metric_pks[index]
       else:
+         logging.debug(f'Team game log corresponding to PK [{team_metric_pks[index]}] not persisted; inserting new game log')
          index +=1
+
+'''
+Utility function to determine if the game logs for all 32 NFL teams are already inserted for current week / year 
+
+Args:
+   None
+
+Returns:
+   status (bool): truthy value indicating if all game logs already persisted
+'''
+def are_game_logs_persisted_for_week_and_year():
+   # TODO: this functionality will not work ATM since we will just fetch recent week, and then see we have all values persisted, and then determine 
+   # there is no need to scrape. But, the flaw is that we won't have access to most recent week (i.e max could be 17, but week 18 game just got played) and we would avoid 
+   # week 18. Need to think of a way to optimize this so we can check if we need to scrape 
+
+   # fetch max week from team game logs 
+
+   # check if 32 distinct game logs exists for given week 
