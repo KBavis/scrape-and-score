@@ -48,7 +48,7 @@ def extract_home_team_from_game_location(game_location: str):
 
 
 '''
-Utility functio to extract team name from PFR Acronym from properties file 
+Utility function to extract team name from PFR Acronym from properties file 
 
 Args:
    opp (str): acronym to fetch team for 
