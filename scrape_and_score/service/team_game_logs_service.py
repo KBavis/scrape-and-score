@@ -149,21 +149,3 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
       else:
          logging.debug(f'Team game log corresponding to PK [{team_metric_pks[index]}] not persisted; inserting new game log')
          index +=1
-
-'''
-Utility function to determine if the game logs for all 32 NFL teams are already inserted for current week / year 
-
-Args:
-   None
-
-Returns:
-   status (bool): truthy value indicating if all game logs already persisted
-'''
-def are_game_logs_persisted_for_week_and_year():
-   # TODO: this functionality will not work ATM since we will just fetch recent week, and then see we have all values persisted, and then determine 
-   # there is no need to scrape. But, the flaw is that we won't have access to most recent week (i.e max could be 17, but week 18 game just got played) and we would avoid 
-   # week 18. Need to think of a way to optimize this so we can check if we need to scrape 
-
-   # fetch max week from team game logs 
-
-   # check if 32 distinct game logs exists for given week 
