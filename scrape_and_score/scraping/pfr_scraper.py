@@ -1,6 +1,7 @@
 import logging
 import pandas as pd
 from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES, VALID_POSITIONS 
+from service import team_service, player_service
 from config import props
 from .util import fetch_page
 from datetime import date, datetime
@@ -14,30 +15,56 @@ Functionality to scrape relevant NFL teams and player data
 
 Args:
    team_and_player_data (list[dict]): every relevant fantasy NFL player corresponding to specified NFL season
+   teams (list): list of unique NFL team names
 
 Returns:
    data (tuple(list[pd.DataFrame], list[pd.DataFrame])) 
       - metrics for both players and teams
 '''
-def scrape(team_and_player_data: list):
+def scrape_all(team_and_player_data: list, teams: list):
    # TODO (FFM-31): Create logic to determine if new player/team data avaialable. If no new team data available, skip fetching metrics and utilize persisted metrics. If no new player data available, skip fetching metrics for player.
    
    # fetch configs 
-   configs = props.load_configs()
-   team_template_url = configs['website']['pro-football-reference']['urls']['team-metrics']
-   year = configs['nfl']['current-year']
-   
-   # extract unique teams
-   teams = {team['team'] for team in team_and_player_data}
+   team_template_url = props.get_config('website.pro-football-reference.urls.team-metrics')
+   year = props.get_config('nfl.current-year')
 
    # fetch relevant team metrics 
-   team_metrics = fetch_team_metrics(teams, team_template_url, year)
+   team_metrics = fetch_team_metrics(teams, team_template_url, year) 
    
    # fetch relevant player metrics 
    player_metrics = fetch_player_metrics(team_and_player_data, year)
-   
    # return metrics 
-   return team_metrics, player_metrics 
+   return team_metrics, player_metrics
+
+
+'''
+Functionality to scrape the most recent team & player data based on previously persisted teams/players
+
+Args:
+    None 
+
+Returns: 
+    team_metrics, player_metrics (tuple): most recent metrics for both teams & players
+'''
+def scrape_recent(): 
+    # fetch configs 
+    team_template_url = props.get_config('website.pro-football-reference.urls.team-metrics')
+    year = props.get_config('nfl.current-year')
+    
+    # fetch all persisted teams 
+    teams = team_service.get_all_teams()
+    team_names = [team['name'] for team in teams]
+    
+    # fetch recent game logs for each team 
+    team_metrics = fetch_team_metrics(team_names, team_template_url, year, recent_games=True) 
+    
+    # fetch all persisted players 
+    players = player_service.get_all_players()
+    
+    # fetch recent game logs for each players
+    player_metrics = fetch_player_metrics(players, year, recent_games=True) 
+    
+    return team_metrics, player_metrics
 
 
 '''
@@ -46,8 +73,9 @@ Functionality to fetch the metrics for each relevant player on current 53 man ro
 Args:
    team_and_player_data (list[dict]) - every relevant fantasy NFL player corresponding to specified NFL season
    year (int) - year to fetch metrics for 
+   recent_games (bool) - flag to determine if we are fetching metrics for most recent game or not 
 '''
-def fetch_player_metrics(team_and_player_data, year):
+def fetch_player_metrics(team_and_player_data, year, recent_games=False):
    logging.info(f"Attempting to scrape player metrics for the year {year}")
    player_metrics = []
     
@@ -71,9 +99,7 @@ def fetch_player_metrics(team_and_player_data, year):
        
        #TODO (FFM-42): Gather Additional Data other than Game Logs  
        logging.info(f"Fetching metrics for {position} \'{player_name}\'")
-       player_metrics.append({"player": player_name,"position": position, "player_metrics": get_game_log(soup, position)})
-
-   
+       player_metrics.append({"player": player_name,"position": position, "player_metrics": get_game_log(soup, position, recent_games)})
    return player_metrics    
 
 
@@ -84,11 +110,12 @@ Args:
    teams (list) - list of team names to fetch metrics for 
    url_template (str) - template URL used to construct specific teams URL
    year (int) - year to fetch metrics for 
+   recent_games (bool) - flag to indicate if this for recent games or 
 
 Returns:
     team_metrics (list) - list of df's containing team metrics
 '''
-def fetch_team_metrics(teams: list, url_template: str, year: int): 
+def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=False): 
    logging.info(f"Attempting to scrape team metrics for the following teams [{teams}]")
    
    team_metrics = []
@@ -104,7 +131,7 @@ def fetch_team_metrics(teams: list, url_template: str, year: int):
          raise Exception(f"Unable to extract raw HTML for the NFL Team \'{team}\'")
       
       # get team metrics from html 
-      team_data = collect_team_data(team, raw_html, year)
+      team_data = collect_team_data(team, raw_html, year, recent_games)
       
       # validate teams metrics were retrieved properly 
       if(team_data.empty):
@@ -119,7 +146,6 @@ def fetch_team_metrics(teams: list, url_template: str, year: int):
 '''
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 
-TODO(FFM-45): Refactor to utilize helper functions, not use  range(), and be split into multiple functions
 
 All credit for the following code in this function goes to the developer of the repository:
       - https://github.com/mjk2244/pro-football-reference-web-scraper
@@ -130,11 +156,12 @@ Args:
     team (str) - NFL team full name
     raw_html (str) - raw HTML fetch for specified team
     year (int) - year to fetch metrics for 
+    recent_games (bool) - flag to indicate if we are fetching most recent game or all games
       
 Returns:
     pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player     
 ''' 
-def collect_team_data(team: str, raw_html: str, year: int):
+def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
     
     # configure data frame
     data = {
@@ -163,9 +190,15 @@ def collect_team_data(team: str, raw_html: str, year: int):
     games = soup.find_all('tbody')[1].find_all('tr')
     
     remove_uneeded_games(games) 
+    
+    # determine how many games to process 
+    if recent_games:
+        game_range = range(len(games) - 1, len(games)) # only last game 
+    else: 
+        game_range = range(len(games)) # all games 
       
     # gathering data for each game
-    for i in range(len(games)):
+    for i in game_range:
         week = int(games[i].find('th', {'data-stat': 'week_num'}).text)
         day = games[i].find('td', {'data-stat': 'game_day_of_week'}).text
         
@@ -251,13 +284,15 @@ def calculate_rest_days(games: BeautifulSoup, index: int, year: int):
         
         # account for new year 
         if current_game_date[0] == 'January' and previous_game_date[0] != "January":
-            return date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+            rest_days = date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
         # both games in new year
         elif current_game_date[0] == 'January' and previous_game_date[0] == "January":
-            return date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year + 1, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+            rest_days = date(year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year + 1, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
         # both games not in new year
         else:
-            return date(year, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+            rest_days = date(year, MONTHS[current_game_date[0]], int(current_game_date[1])) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+        
+        return rest_days.days # return as integer
 
 '''
 Helper function to remove all canceled/playoff games, bye weeks, 
@@ -381,7 +416,7 @@ Args:
 Returns:
     ordered_players(dict) : dictionary that orders players (i.e 'A': [{<player_data>}, {<player_data>}, ...])
 '''
-def order_players_by_last_name(player_data: dict): 
+def order_players_by_last_name(player_data: list): 
     logging.info("Ordering retrieved players by their last name's first initial")
     
     ordered_players = {
@@ -466,7 +501,7 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
 
         # Check if the player's name, position, and year match
         player_text = player.text
-        if start_year <= year <= end_year and position in player_text and check_name_similarity(player_text, player_name) >= 90:
+        if start_year <= year <= end_year and position in player_text and check_name_similarity(player_text, player_name) >= 95:
             a_tag = player.find('a')
             if a_tag and a_tag.get('href'):
                 href = a_tag.get('href').replace('.htm', '')
@@ -504,11 +539,12 @@ on their position.
 Args:
     soup (BeautifulSoup): parsed HTML containing relevant player metrics 
     position (str): the players corresponding position
+    recent_games (bool): flag to determine if we only need to fetch game log for most recent game
 
 Returns:
     data (pd.DataFrame): data frmae containing player game logs 
 '''
-def get_game_log(soup: BeautifulSoup, position: str):
+def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
     # data to retrieve for each player, regardless of position
     data = {
         'date': [],
@@ -533,6 +569,10 @@ def get_game_log(soup: BeautifulSoup, position: str):
         
         if status not in ignore_statuses:
             filtered_table_rows.append(tr)
+    
+    # check if we only want to fetch recent game log
+    if recent_games:
+        filtered_table_rows = filtered_table_rows[-1:] # keep only last game log
     
     # add game log data to dictionary  
     for tr in filtered_table_rows:
@@ -573,6 +613,8 @@ def add_qb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
 
 '''
 Functionality to retireve game log metrics for a RB
+
+TODO (FFM-83): Account for RB Snap Percentage Metrics
 
 Args:
     tr (BeautifulSoup): parsed HTML tr containing player metrics 

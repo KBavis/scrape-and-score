@@ -8,7 +8,7 @@ Functionality to fetch all the relevant fantasy football players and their respe
 
 Args:
    base_url (str): tempalte URL for a teams depth chart 
-   teams (list): list of all NFL teams 
+   teams (list): list of all NFL teams & corresponding IDs 
 
 Returns: 
    team_and_player_data (list): list containing all team and player data 
@@ -20,7 +20,7 @@ def scrape(base_url: str, teams: list):
    
    for team in teams: 
       # construct url 
-      url = construct_url(team, base_url)
+      url = construct_url(team['name'], base_url)
 
       # fetch raw HTML 
       html = fetch_page(url)
@@ -29,7 +29,7 @@ def scrape(base_url: str, teams: list):
       soup = BeautifulSoup(html, 'html.parser')
       
       # fetch depth chart
-      team_depth_chart = get_depth_chart(soup, team)
+      team_depth_chart = get_depth_chart(soup, team['name'], team['team_id'])
       
       # add teams player data to our return value
       team_and_player_data.extend(team_depth_chart)
@@ -60,8 +60,9 @@ Functionality to parse HTML and extract relevant players for a particular team
 Args:
    soup (BeautifulSoup): parsed HTML with team data 
    team (str): team name 
+   team_id (int): ID of team
 '''
-def get_depth_chart(soup: BeautifulSoup, team: str):
+def get_depth_chart(soup: BeautifulSoup, team: str, team_id: int):
    logging.info(f"\nFetching depth chart for the following team: {team}")
    
    tables = soup.find_all("table") 
@@ -82,7 +83,7 @@ def get_depth_chart(soup: BeautifulSoup, team: str):
                   continue
                
                # add player 
-               players_data.append({"player_name": name, "position": position[:2], "team": team})
+               players_data.append({"player_name": name, "position": position[:2], "team_id": team_id})
    
    logging.info(f"Relevant players for the NFL Team '{team}: {players_data}\n")
    return players_data

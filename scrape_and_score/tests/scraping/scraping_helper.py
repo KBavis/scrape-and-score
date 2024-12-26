@@ -85,6 +85,24 @@ def setup_game_log_mocks(status):
 
 
 '''
+Setup mocks necessary for get_game_log() -- For two games
+
+Args: status(str)
+         - Status to set 
+'''
+def setup_two_game_log_mocks(status):    
+   mock_soup = MagicMock()
+   mock_tbody = MagicMock()
+   mock_tr = MagicMock()
+   mock_element = MagicMock()
+   mock_element.text = status
+   mock_soup.find.return_value = mock_tbody
+   mock_tbody.find_all.return_value = [mock_tr, mock_tr]
+   mock_tr.find_all.return_value = [MagicMock(), mock_element]
+   
+   return mock_soup
+
+'''
 Mock the functionality of add_common_game_log_metrics() with hard-coded values 
 
 '''
@@ -198,3 +216,15 @@ def mock_find_for_collect_team_data(tag, attrs):
 
    # return mock based on specific data-stat value   
    return data_stat_map.get(attrs['data-stat'])
+
+
+'''
+Mock the functionality of get_config() 
+'''
+def mocked_get_config(key): 
+   if key == 'nfl.current-year':
+      return 2024
+   elif key == 'website.pro-football-reference.urls.team-metrics':
+      return 'https://url.com'
+   else:
+      raise Exception(f'Unexpected config: {key}')
