@@ -76,7 +76,7 @@ def test_remove_previously_inserted_games_calls_expected_functions(mock_get_play
 
    mock_get_player_id.assert_called_once()
    mock_extract_year.assert_called_once()
-   mock_is_game_log_persisted.assert_called_once_with({'player_id': 14, 'week': 1, 'year': 2024})
+   mock_is_game_log_persisted.assert_called_once_with({'player_id': 14, 'week': '1', 'year': 2024})
 
 
 
