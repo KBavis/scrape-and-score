@@ -23,6 +23,7 @@ CREATE TABLE player_game_log (
     rec_yd INT,
     rec_td INT,
     snap_pct INT,
+    fantasy_points FLOAT,
     PRIMARY KEY (player_id, week, year),
     FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE,
     FOREIGN KEY (opp) REFERENCES team(team_id) ON DELETE CASCADE
