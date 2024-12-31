@@ -13,6 +13,24 @@ website:
 scraping:
    delay: 3
 
+# scoring
+scoring:
+   offense:
+      passing:
+         yards: 0.04
+         td: 4
+         int: -2
+         two_pt_conversion: 2
+      rushing:
+         yards: 0.1
+         td: 6
+         two_pt_conversion: 2
+      receiving:
+         yards: 0.1
+         rec: 1
+         td: 6
+         two_pt_conversion: 2
+
 # NFL teams
 nfl:
    current-year: 2024
