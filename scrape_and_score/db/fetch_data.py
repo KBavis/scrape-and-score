@@ -263,7 +263,7 @@ def fetch_player_game_log_by_pk(pk: dict):
 
       with connection.cursor() as cur:
             cur.execute(sql, (pk['player_id'], pk['week'], pk['year']))  
-            row = cur.fetchone()  
+            row = cur.fetchone() 
             
             if row:
                player_game_log = {
@@ -298,4 +298,115 @@ def fetch_player_game_log_by_pk(pk: dict):
       raise e
    
    return player_game_log
+
+'''
+Functionality to retrieve all player game logs for the most recent week 
+
+Args:
+   year (int): year to fetch game logs for 
+
+Returns:
+   game_logs (list): list of game logs for given year & recent week
+'''
+def fetch_all_player_game_logs_for_recent_week(year: int):
+   sql = 'SELECT * FROM player_game_log WHERE year=%s AND week=(SELECT MAX(week) FROM player_game_log)'
+   player_game_logs = []
    
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+            cur.execute(sql, (year))  
+            rows = cur.fetchall()
+            
+            if rows:
+               for row in rows:
+                  player_game_log = {
+                     'player_id': row[0],
+                     'week': row[1],
+                     'day': row[2],
+                     'year': row[3],
+                     'home_team': row[4],
+                     'opp': row[5],
+                     'result': row[6], 
+                     'points_for': row[7],
+                     'points_allowed': row[8],
+                     'completions': row[9],
+                     'attempts': row[10],
+                     'pass_yd': row[11], 
+                     'pass_td': row[12],
+                     'interceptions': row[13], 
+                     'rating': row[14], 
+                     'sacked': row[15], 
+                     'rush_att': row[16], 
+                     'rush_yds': row[17], 
+                     'rush_tds': row[18], 
+                     'tgt': row[19], 
+                     'rec': row[20], 
+                     'rec_yd': row[21], 
+                     'rec_td': row[22], 
+                     'snap_pct': row[23]
+                  }
+                  player_game_logs.append(player_game_log)
+
+   except Exception as e:
+      logging.error(f"An error occurred while fetching all recent week player game logs: {e}")
+      raise e
+   
+   return player_game_logs
+
+'''
+Functionality to retrieve all player game logs for a given year 
+
+Args:
+   year (int): year to fetch game logs for 
+   
+Returns:
+   game_logs (list): list of player game logs for given year
+'''
+def fetch_all_player_game_logs_for_given_year(year: int):
+   sql = 'SELECT * FROM player_game_log WHERE year=%s'
+   player_game_logs = []
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+            cur.execute(sql, (year))  
+            rows = cur.fetchall()
+            
+            if rows:
+               for row in rows:
+                  player_game_log = {
+                     'player_id': row[0],
+                     'week': row[1],
+                     'day': row[2],
+                     'year': row[3],
+                     'home_team': row[4],
+                     'opp': row[5],
+                     'result': row[6], 
+                     'points_for': row[7],
+                     'points_allowed': row[8],
+                     'completions': row[9],
+                     'attempts': row[10],
+                     'pass_yd': row[11], 
+                     'pass_td': row[12],
+                     'interceptions': row[13], 
+                     'rating': row[14], 
+                     'sacked': row[15], 
+                     'rush_att': row[16], 
+                     'rush_yds': row[17], 
+                     'rush_tds': row[18], 
+                     'tgt': row[19], 
+                     'rec': row[20], 
+                     'rec_yd': row[21], 
+                     'rec_td': row[22], 
+                     'snap_pct': row[23]
+                  }
+                  player_game_logs.append(player_game_log)
+
+   except Exception as e:
+      logging.error(f"An error occurred while fetching all recent week player game logs: {e}")
+      raise e
+   
+   return player_game_logs
