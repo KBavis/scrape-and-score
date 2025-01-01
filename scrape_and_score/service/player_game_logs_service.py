@@ -281,7 +281,7 @@ def calculate_fantasy_points(recent_game: bool, year: int):
 Functionality to calculate the total points a player
 
 
-TODO (FFM-128): Account for 2-Pt Conversions
+TODO (FFM-128): Account for 2-Pt Conversions and Fumbles 
 
 Args:
    player_game_log (dict): item containing all relevant stats needed to make calculations 
