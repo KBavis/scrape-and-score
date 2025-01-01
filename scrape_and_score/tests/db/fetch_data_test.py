@@ -518,7 +518,7 @@ def test_fetch_all_player_game_logs_for_recent_week_executes_expected_sql(mock_g
     
     mock_cursor.execute.assert_called_once_with(
         'SELECT * FROM player_game_log WHERE year=%s AND week=(SELECT MAX(week) FROM player_game_log)',
-        (2024)
+        (2024,)
     )
 
 @patch('db.fetch_data.get_connection')
@@ -596,7 +596,7 @@ def test_fetch_all_player_game_logs_for_given_year_executes_expected_sql(mock_ge
     
     mock_cursor.execute.assert_called_once_with(
         'SELECT * FROM player_game_log WHERE year=%s',
-        (2024)
+        (2024,)
     )
 
 @patch('db.fetch_data.get_connection')
