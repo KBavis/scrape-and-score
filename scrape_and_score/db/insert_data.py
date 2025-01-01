@@ -221,4 +221,28 @@ def insert_wr_or_te_player_game_logs(game_logs: list):
 
    
 
+'''
+Functionality to update player game log with calculated fantasy points
 
+Args:
+   fantasy_points (list): list of items containing player_game_log PK and their fantasy points
+
+Returns: 
+   None
+'''
+def add_fantasy_points(fantasy_points: list): 
+   sql = 'UPDATE player_game_log SET fantasy_points = %s WHERE player_id = %s AND week = %s AND year = %s'
+   
+   try:
+      connection = get_connection()
+      
+      params = [(log["fantasy_points"], log["player_id"], log["week"], log["year"]) for log in fantasy_points] # create needed tuples for executemany functionality
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, params)
+         connection.commit()
+         logging.info(f"Successfully inserted {len(fantasy_points)} players fantasy points into the database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the follwoing fantasy points: {fantasy_points}", exc_info=True)
+      raise e
