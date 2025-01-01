@@ -316,7 +316,7 @@ def fetch_all_player_game_logs_for_recent_week(year: int):
       connection = get_connection()
 
       with connection.cursor() as cur:
-            cur.execute(sql, (year))  
+            cur.execute(sql, (year,))  
             rows = cur.fetchall()
             
             if rows:
@@ -372,7 +372,7 @@ def fetch_all_player_game_logs_for_given_year(year: int):
       connection = get_connection()
 
       with connection.cursor() as cur:
-            cur.execute(sql, (year))  
+            cur.execute(sql, (year,))  
             rows = cur.fetchall()
             
             if rows:
