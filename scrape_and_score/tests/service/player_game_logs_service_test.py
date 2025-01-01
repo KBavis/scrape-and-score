@@ -478,3 +478,73 @@ def test_get_wr_or_te_game_log_tuples_calls_expected_functions(mock_get_team_nam
    mock_get_home_team.assert_called_once()
    mock_get_team_name.assert_called_once()
    mock_get_team_id.assert_called_once()
+
+
+def test_calculate_point_total_returns_expected_points():
+   passing_yd_pts = .04
+   pass_td_pts = 4
+   interception_pts = -2
+   rush_yd_pts = .1
+   rush_td_pts = 6
+   rec_yd_pts = .1
+   rec_td_pts = 6
+   rec_pts = 1
+   game_log = {
+      'pass_yd': 250,
+      'pass_td': 2,
+      'interceptions': 1,
+      'rush_yds': 30,
+      'rush_tds': 1,
+      'rec_yd': 45,
+      'rec_td': 1,
+      'rec': 6
+   }
+   
+   expected_total = (250 * .04) + (2 * 4) + (1 * -2) + (30 * .1) + (1 * 6) + (45 * .1) + (1 * 6) + (6 * 1)
+   
+   assert player_game_logs_service.calculate_point_total(
+      game_log,
+      passing_yd_pts, 
+      pass_td_pts, 
+      interception_pts,
+      rush_yd_pts, 
+      rush_td_pts,
+      rec_yd_pts,
+      rec_td_pts,
+      rec_pts) == expected_total
+   
+   
+def test_calculate_point_total_returns_expected_points():
+   passing_yd_pts = .04
+   pass_td_pts = 4
+   interception_pts = -2
+   rush_yd_pts = .1
+   rush_td_pts = 6
+   rec_yd_pts = .1
+   rec_td_pts = 6
+   rec_pts = 1
+   game_log = {
+      'pass_yd': None,
+      'pass_td': None,
+      'interceptions': None,
+      'rush_yds': None,
+      'rush_tds': None,
+      'rec_yd': None,
+      'rec_td': None,
+      'rec': None
+   }
+   
+   expected_total = 0
+   
+   assert player_game_logs_service.calculate_point_total(
+      game_log,
+      passing_yd_pts, 
+      pass_td_pts, 
+      interception_pts,
+      rush_yd_pts, 
+      rush_td_pts,
+      rec_yd_pts,
+      rec_td_pts,
+      rec_pts) == expected_total 
+
+
