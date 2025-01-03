@@ -115,6 +115,19 @@ def is_game_log_persisted(game_log_pk: dict):
 
 
 '''
+Functionality to retrieve all game logs for a particular season 
+
+Args:
+   team_id (int): team ID to fetch game logs for
+   year (int): year to fetch game logs for 
+
+Returns:
+   game_logs (list): list of game logs corresponding to team
+'''
+def get_teams_game_logs_for_season(team_id: int, year: int):
+   return fetch_data.fetch_all_teams_game_logs_for_season(team_id, year)
+
+'''
 Utility function to determine if a teams game log has previously been inserted 
 
 Args: 
@@ -149,3 +162,63 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
       else:
          logging.debug(f'Team game log corresponding to PK [{team_metric_pks[index]}] not persisted; inserting new game log')
          index +=1
+
+'''
+Functionality to calculate rankings (offense & defense) for a team
+
+Args:
+   curr_year (int): year to take into account when fetching rankings 
+
+Returns 
+   None 
+'''
+def calculate_team_rankings(curr_year: int):
+   # fetch all teams 
+   teams = team_service.get_all_teams()
+   
+   for team in teams: 
+      # fetch team game logs 
+      team_game_logs = get_teams_game_logs_for_season(team.get("team_id"), curr_year)
+      
+      
+      
+   
+   '''
+   a) For each team:
+      1) fetch game logs for relevant season 
+      2) accumulate metrics for offense 
+            - calculate_rush_rank 
+            - calculate_pass_rank 
+      3) accumulate metrics for defense 
+            - calculate_rush_rank
+            - calculate_pass_rank
+
+
+   '''
+
+'''
+Functionality to calculate the rankings of an offense based on their game logs for a given season 
+
+Args:
+   team_game_logs (list): list of game logs for a particular team 
+
+Returns:
+   off_rush_rank, off_pass_rank (tuple): rankings of the teams offense 
+'''
+def calculate_off_rankings(team_game_logs: list):
+   for game_log in team_game_logs:
+      # accumulate total passing yards 
+      
+      # accumulate total rushing yards 
+
+'''
+Functionality to calculate the rankings of a defense based on their game logs for a given season 
+
+Args:
+   team_game_logs (list): list of game logs for a particular team 
+
+Returns:
+   def_rush_rank, def_pass_rank (tuple): rankings of the teams offense 
+'''
+def calculate_def_rankings(team_game_logs: list):
+   return None
