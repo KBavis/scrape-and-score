@@ -172,53 +172,88 @@ Args:
 Returns 
    None 
 '''
-def calculate_team_rankings(curr_year: int):
+def calculate_all_teams_rankings(curr_year: int):
+   logging.info(f'Attemtping to calculate teams off/def rankings based on metrics for {curr_year} season')
+
    # fetch all teams 
    teams = team_service.get_all_teams()
-   
-   for team in teams: 
-      # fetch team game logs 
-      team_game_logs = get_teams_game_logs_for_season(team.get("team_id"), curr_year)
-      
-      
-      
-   
-   '''
-   a) For each team:
-      1) fetch game logs for relevant season 
-      2) accumulate metrics for offense 
-            - calculate_rush_rank 
-            - calculate_pass_rank 
-      3) accumulate metrics for defense 
-            - calculate_rush_rank
-            - calculate_pass_rank
+
+   # accumulate relevant metrics (off/def) for given season for each team
+   teams_metrics = [
+    get_aggregate_season_metrics(get_teams_game_logs_for_season(team.get("team_id"), curr_year))
+    for team in teams
+   ]
+
+   # calculate rankings 
+   team_rankings = calculate_rankings(teams_metrics)
+
+   # persist rankings
+   update_teams_rankings(team_rankings)
 
 
-   '''
+
 
 '''
-Functionality to calculate the rankings of an offense based on their game logs for a given season 
+Functionality to calculate the rankings of teams based on relevant metric accumulations
 
 Args:
    team_game_logs (list): list of game logs for a particular team 
 
 Returns:
-   off_rush_rank, off_pass_rank (tuple): rankings of the teams offense 
+   rankings (list): list of dictionary items containing team_id & relevant off/def rankings 
 '''
-def calculate_off_rankings(team_game_logs: list):
+def calculate_rankings(metrics: list):
+   #TODO: Finalize implementation using weighted averages of points for/against & relevant yardages
+   return None
+
+
+
+'''
+Obtain relevant offensive & defensive aggergated metrics (total tds, total pass yds, total rush_yds) for a team 
+
+Args:
+   team_game_logs (list): list of team game logs to obtain metrics for 
+
+Returns:
+   metrics (dict): dictionary containing following information
+      team_id, points_for, points_against, pass_yards_for, pass_yards_against, rush_yards_for, rush_yards_against 
+'''
+def get_aggregate_season_metrics(team_game_logs: list):
+   # ensure game logs passed
+   if not team_game_logs:
+      logging.error("Unable to get relevant season metrics for an empty list")
+      raise Exception("Unable to obtain relevant off/def metrics because no team game logs were passed")
+
+   # metrics to account for
+   points_for, points_against, pass_yards_for, pass_yards_against, rush_yards_for, rush_yards_against = (0, 0, 0, 0, 0, 0)
+
    for game_log in team_game_logs:
-      # accumulate total passing yards 
-      
-      # accumulate total rushing yards 
+      points_for += game_log.get("points_for", 0), 0
+      points_against += game_log.get("points_allowed", 0)
+      pass_yards_for += game_log.get("pass_yds", 0)
+      pass_yards_against += game_log.get("opp_pass_yds", 0)
+      rush_yards_for += game_log.get("rush_yds", 0)
+      rush_yards_against += game_log.get("opp_rush_yds", 0)
+   
+   return {
+      "team_id": team_game_logs[0].get("team_id"), 
+      "points_for": points_for,
+      "points_against": points_against,
+      "pass_yards_for": pass_yards_for, 
+      "pass_yards_against": pass_yards_against,
+      "rush_yards_for": rush_yards_for, 
+      "rush_yards_against": rush_yards_against
+   }
+
 
 '''
-Functionality to calculate the rankings of a defense based on their game logs for a given season 
+Persists updated team rankings 
 
 Args:
-   team_game_logs (list): list of game logs for a particular team 
+   rankings (list): list of dictionary items containing rankins & corresponding team 
 
 Returns:
-   def_rush_rank, def_pass_rank (tuple): rankings of the teams offense 
+   None
 '''
-def calculate_def_rankings(team_game_logs: list):
+def update_teams_rankings(rankings: list):
    return None
