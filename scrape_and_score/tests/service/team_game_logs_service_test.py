@@ -40,7 +40,7 @@ def test_remove_previously_inserted_games_skips_removal_when_not_recent_games(mo
       'opp_rush_yds': [100, 232],
    }
    team_metrics = [{"team_name": "My Team", "team_metrics": pd.DataFrame(data=data)}]
-   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024)
+   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024, [])
    assert mock_is_game_log_persisted.call_count == 0 # skips when not only recent games 
 
 @patch('service.team_game_logs_service.is_game_log_persisted', return_value = True) 
@@ -66,9 +66,9 @@ def test_remove_previously_inserted_games_calls_expected_functions(mock_get_id, 
    }
    team_metrics = [{"team_name": "My Team", "team_metrics": pd.DataFrame(data=data)}]
 
-   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024)
+   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024, [])
 
-   mock_is_game_log_persisted.assert_called_once_with({"team_id": 14, "week": 1, "year": 2024})
+   mock_is_game_log_persisted.assert_called_once_with({"team_id": 14, "week": '1', "year": 2024})
    mock_get_game_log_year.assert_called_once()
    mock_get_id.assert_called_once()
 
@@ -79,7 +79,7 @@ def test_remove_previously_inserted_games__deletes_entries_from_player_metrics(m
    data = { 'week': [2] }
    team_metrics = [{"team_name": "My Team", "team_metrics": pd.DataFrame(data=data)}]
 
-   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024)
+   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024, [])
 
    assert len(team_metrics) == 0
 
@@ -106,7 +106,7 @@ def test_remove_previously_inserted_games__deletes_entries_from_player_metrics(m
    }
    team_metrics = [{"team_name": "My Team", "team_metrics": pd.DataFrame(data=data)}]
 
-   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024)
+   team_game_logs_service.remove_previously_inserted_game_logs(team_metrics, 2024, [])
 
    assert len(team_metrics) == 1
 

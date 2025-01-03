@@ -248,6 +248,111 @@ def remove_previously_inserted_games(player_metrics, depth_charts):
          logging.debug(f'Player game log corresponding to PK [{player_metric_pks[index]}] not persisted; inserting new game log')
          index +=1
 
+'''
+Functionaltiy to calculate the fantasy points for players 
 
- 
+TODO (FFM-128): Account for 2-Pt Conversions
+
+Args:
+   recent_game (bool): flag to indicate if we should only be accounting for most recent game or all games 
+   year (int): year that game log occured 
+
+Returns:
+   None
+'''
+def calculate_fantasy_points(recent_game: bool, year: int):
+   if recent_game:
+      player_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(year)
+   else:
+      player_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(year)
+   logging.info(f'Successfully fetched {len(player_game_logs)} player game logs')
    
+   passing_yd_pts, passing_td_pts, passing_int_pts, rushing_yd_pts, rushing_td_pts, receiving_yd_pts, receiving_td_pts, receiving_pts = get_offensive_point_configs()
+   
+   players_points = [] 
+   for player_game_log in player_game_logs:
+      points = calculate_point_total(player_game_log, passing_yd_pts, passing_td_pts, passing_int_pts, rushing_yd_pts, rushing_td_pts, receiving_yd_pts, receiving_td_pts, receiving_pts)
+      players_points.append({"player_id": player_game_log['player_id'], "week": player_game_log['week'], "year": player_game_log['year'], "fantasy_points": points})
+   
+   insert_fantasy_points(players_points)
+   
+
+'''
+Functionality to calculate the total points a player
+
+
+TODO (FFM-128): Account for 2-Pt Conversions and Fumbles 
+
+Args:
+   player_game_log (dict): item containing all relevant stats needed to make calculations 
+   passing_yd_pts (float): # of fantasy points for a passing yard
+   passing_td_pts (int): # of fantasy points for a passing td 
+   passing_int_pts (int): # of fantasy points for a passing interception
+   rushing_yd_pts (float): # of fantasy points for a rushing yard
+   rushing_td_pts (int): # of fantasy points for a rushing td 
+   receiving_yd_pts (float): # of fantasy points for a receiving yard
+   receiving_td_pts (int): # of fantasy points for a receiving td 
+   receiving_pts (int): # of fantasy points for a reception
+   
+Returns:
+   points (float): total fantasy points for a player based on their game log
+'''
+def calculate_point_total(player_game_log, passing_yd_pts, passing_td_pts, passing_int_pts, rushing_yd_pts, rushing_td_pts, receiving_yd_pts, receiving_td_pts, receiving_pts):
+   return round(
+      ((player_game_log.get('interceptions', 0) or 0) * passing_int_pts) + \
+      ((player_game_log.get('pass_yd', 0) or 0) * passing_yd_pts) + \
+      ((player_game_log.get('pass_td', 0) or 0) * passing_td_pts) + \
+      ((player_game_log.get('rush_yds', 0) or 0) * rushing_yd_pts) + \
+      ((player_game_log.get('rush_tds', 0) or 0) * rushing_td_pts) + \
+      ((player_game_log.get('rec_yd', 0) or 0) * receiving_yd_pts) + \
+      ((player_game_log.get('rec_td', 0) or 0) * receiving_td_pts) + \
+      ((player_game_log.get('rec', 0) or 0) * receiving_pts), 2
+   )
+
+'''
+Functionality to insert a fantasy points into our DB 
+
+Args:
+   points (list): list of dictionaries containing player_game_log PK & corresponding fantasy points for that week
+
+Returns:
+   None
+'''
+def insert_fantasy_points(points: list):
+   if points == []:
+      logging.info('No fantasy points were calculated; skipping insertion')
+      return 
+   
+   logging.info(f'Attempting to insert plaers fantasy points into our DB')
+   insert_data.add_fantasy_points(points)
+
+
+'''
+Utility function to retrieve fantasy points scoring configs 
+
+Args:
+   None
+
+Returns:
+   passing_yd_pts, passing_td_pts, passing_int_pts, rushing_yd_pts, rushing_td_pts, receiving_yd_pts, receiving_td_pts, receiving_pts (tuple): 
+      scoring system for offensive player
+'''
+def get_offensive_point_configs():
+   passing_yd_pts = props.get_config('scoring.offense.passing.yard')
+   passing_td_pts = props.get_config('scoring.offense.passing.td')
+   passing_int_pts = props.get_config('scoring.offense.passing.int')
+   
+   rushing_yd_pts = props.get_config('scoring.offense.rushing.yard')
+   rushing_td_pts = props.get_config('scoring.offense.rushing.td')
+   
+   receiving_yd_pts = props.get_config('scoring.offense.receiving.yard')
+   receiving_td_pts = props.get_config('scoring.offense.receiving.td')
+   receiving_pts = props.get_config('scoring.offense.receiving.rec')
+   
+   logging.info(f'Configured offensive fantasy points scoring: '
+            f'[Passing Yd: {passing_yd_pts}, Passing TD: {passing_td_pts}, '
+            f'Passing INT: {passing_int_pts}, Rushing Yd: {rushing_yd_pts}, '
+            f'Rushing TD: {rushing_td_pts}, Receiving Yd: {receiving_yd_pts}, '
+            f'Receiving TD: {receiving_td_pts}, Receiving Rec: {receiving_pts}]')
+   
+   return passing_yd_pts, passing_td_pts, passing_int_pts, rushing_yd_pts, rushing_td_pts, receiving_yd_pts, receiving_td_pts, receiving_pts

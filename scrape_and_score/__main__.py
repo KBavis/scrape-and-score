@@ -22,6 +22,7 @@ def main():
    
       template_url = get_config('website.fantasy-pros.urls.depth-chart')
       teams = [team['name'] for team in get_config('nfl.teams')] # extract teams from configs
+      year = get_config('nfl.current-year')
       team_names_and_ids = []
    
       # check if teams are persisted; if not, persist relevant teams
@@ -51,6 +52,7 @@ def main():
       depth_charts = fetch_all_players() 
       
       # fetch relevant team and player metrics 
+      #TODO: Fetch player game logs for given year and check if we have these persisted
       if player_game_logs_service.is_player_game_logs_empty(): # scrape & persist all game logs if none persisted
          team_metrics, player_metrics = pfr.scrape_all(depth_charts, teams)
          logging.info(f"Successfully retrieved metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
@@ -58,23 +60,29 @@ def main():
          # insert into player_game_log & team_game_log
          player_game_logs_service.insert_multiple_players_game_logs(player_metrics, depth_charts)
          team_game_logs_service.insert_multiple_teams_game_logs(team_metrics, team_names_and_ids)
+         
+         #calculate fantasy points for each week
+         player_game_logs_service.calculate_fantasy_points(False, year) 
       else :
          logging.info('All previous games fetched; fetching metrics for most recent week')
          team_metrics, player_metrics = pfr.scrape_recent()
          logging.info(f"Successfully retrieved most recent game log metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
          
-         # TODO: check if this week already inserted
          # insert into player_game_log & team_game_log
-         player_game_logs_service.insert_multiple_players_game_logs(player_metrics, depth_charts)
-         team_game_logs_service.insert_multiple_teams_game_logs(team_metrics, team_names_and_ids)
+         player_game_logs_service.insert_multiple_players_game_logs(player_metrics, depth_charts) 
+         team_game_logs_service.insert_multiple_teams_game_logs(team_metrics, team_names_and_ids) 
          logging.info('Successfully persisted most recent player & game log metrics')
+         
+         # calculate fantasy points for recent week 
+         player_game_logs_service.calculate_fantasy_points(True, year)
+         
          
       
 
       logging.info(f'Application took {(datetime.now() - start_time).seconds} seconds to complete')
    
    except Exception as e:
-      logging.error('An exception occured while executing the main script', e)
+      logging.error(f'An exception occured while executing the main script: {e}')
    finally:
       connection.close_connection()
    

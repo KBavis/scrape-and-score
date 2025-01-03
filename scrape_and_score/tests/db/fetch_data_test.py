@@ -211,7 +211,7 @@ def test_fetch_team_by_name_returns_no_team(mock_get_connection):
 @patch('db.fetch_data.get_connection', side_effect=Exception('Database connection failed'))
 def test_fetch_team_by_name_throws_exception(mock_get_connection):
     try:
-        actual_team = fetch_data.fetch_team_by_name('Team A') 
+        fetch_data.fetch_team_by_name('Team A') 
     except Exception as e:
         assert str(e) == 'Database connection failed'
 
@@ -457,4 +457,159 @@ def test_fetch_one_player_game_log_when_no_records_persisted(mock_get_connection
     actual_player_game_log = fetch_data.fetch_one_player_game_log()
     
     assert actual_player_game_log == expected_player_game_log
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_all_player_game_logs_for_recent_week_returns_expected_list(mock_get_connection):
+    expected_player_game_log = {
+        'player_id': 527,
+        'week': 2,
+        'day': 16,
+        'year': 2024,
+        'home_team': True,
+        'opp': 45,
+        'result': 'W',
+        'points_for': 30,
+        'points_allowed': 20,
+        'completions': 25,
+        'attempts': 35,
+        'pass_yd': 300,
+        'pass_td': 3,
+        'interceptions': 1,
+        'rating': 105.5,
+        'sacked': 2,
+        'rush_att': 10,
+        'rush_yds': 50,
+        'rush_tds': 1,
+        'tgt': 5,
+        'rec': 4,
+        'rec_yd': 60,
+        'rec_td': 1,
+        'snap_pct': 85.0
+    }
+    expected_game_logs = [expected_player_game_log]
     
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchall.return_value = [(527, 2, 16, 2024, True, 45, 'W', 30, 20, 25, 35, 300, 3, 1, 105.5, 2, 10, 50, 1, 5, 4, 60, 1, 85.0)]
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    actual_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(2024)
+    
+    assert actual_game_logs == expected_game_logs
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_all_player_game_logs_for_recent_week_executes_expected_sql(mock_get_connection): 
+    
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchall.return_value = None
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_all_player_game_logs_for_recent_week(2024)
+    
+    mock_cursor.execute.assert_called_once_with(
+        'SELECT * FROM player_game_log WHERE year=%s AND week=(SELECT MAX(week) FROM player_game_log)',
+        (2024,)
+    )
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_all_player_game_logs_for_recent_week_calls_expected_functions(mock_get_connection): 
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchall.return_value = None
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_all_player_game_logs_for_recent_week(2024)
+    
+    mock_get_connection.assert_called_once()
+
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_all_player_game_logs_for_given_year_returns_expected_list(mock_get_connection):
+    expected_player_game_log = {
+        'player_id': 527,
+        'week': 2,
+        'day': 16,
+        'year': 2024,
+        'home_team': True,
+        'opp': 45,
+        'result': 'W',
+        'points_for': 30,
+        'points_allowed': 20,
+        'completions': 25,
+        'attempts': 35,
+        'pass_yd': 300,
+        'pass_td': 3,
+        'interceptions': 1,
+        'rating': 105.5,
+        'sacked': 2,
+        'rush_att': 10,
+        'rush_yds': 50,
+        'rush_tds': 1,
+        'tgt': 5,
+        'rec': 4,
+        'rec_yd': 60,
+        'rec_td': 1,
+        'snap_pct': 85.0
+    }
+    expected_game_logs = [expected_player_game_log]
+    
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchall.return_value = [(527, 2, 16, 2024, True, 45, 'W', 30, 20, 25, 35, 300, 3, 1, 105.5, 2, 10, 50, 1, 5, 4, 60, 1, 85.0)]
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    actual_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(2024)
+    
+    assert actual_game_logs == expected_game_logs
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_all_player_game_logs_for_given_year_executes_expected_sql(mock_get_connection): 
+    
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchall.return_value = None
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_all_player_game_logs_for_given_year(2024)
+    
+    mock_cursor.execute.assert_called_once_with(
+        'SELECT * FROM player_game_log WHERE year=%s',
+        (2024,)
+    )
+
+@patch('db.fetch_data.get_connection')
+def test_fetch_all_player_game_logs_for_given_year_calls_expected_functions(mock_get_connection): 
+    mock_connection = MagicMock() 
+    
+    mock_cursor = MagicMock() 
+    mock_cursor.execute.return_value = None
+    mock_cursor.fetchall.return_value = None
+    
+    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor 
+    mock_get_connection.return_value = mock_connection
+    
+    fetch_data.fetch_all_player_game_logs_for_given_year(2024)
+    
+    mock_get_connection.assert_called_once()
