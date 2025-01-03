@@ -410,3 +410,55 @@ def fetch_all_player_game_logs_for_given_year(year: int):
       raise e
    
    return player_game_logs
+
+
+'''
+Functionality to retrieve teams game logs for a particular season 
+
+Args:
+   year (int): year to fetch team game logs for 
+   team_id (int): team to fetch game logs for 
+
+Returns
+   game_logs (list): list of game_logs for a particular season/team
+'''
+def fetch_all_teams_game_logs_for_season(team_id: int, year:int): 
+   team_game_logs = []
+   sql = 'SELECT * FROM team_game_log WHERE team_id = %s AND year=%s'
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.execute(sql, (team_id, year)) 
+         rows = cur.fetchall()
+         
+         for row in rows:
+            team_game_log = {
+               'team_id': row[0],
+               'week': row[1],
+               'day': row[2],
+               'year': row[3],
+               'rest_days': row[4],
+               'home_team': row[5],
+               'distance_traveled': row[6],
+               'opp': row[7],
+               'result': row[8],
+               'points_for': row[9],
+               'points_allowed': row[10],
+               'tot_yds': row[11],
+               'pass_yds': row[12],
+               'rush_yds': row[13],
+               'opp_tot_yds': row[14],
+               'opp_pass_yds': row[15],
+               'opp_rush_yds': row[16]
+            }
+
+            team_game_logs.append(team_game_log)
+
+   except Exception as e:
+      logging.error(f"An error occurred while fetching the team game logs corresponding to team {team_id} and year {year}: {e}")
+      raise e
+   
+   return team_game_logs
+   
