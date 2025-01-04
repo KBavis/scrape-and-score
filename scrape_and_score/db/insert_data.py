@@ -246,3 +246,28 @@ def add_fantasy_points(fantasy_points: list):
    except Exception as e:
       logging.error(f"An exception occurred while inserting the follwoing fantasy points: {fantasy_points}", exc_info=True)
       raise e
+
+
+'''
+Update 'team' record with newly determined rankings 
+
+Args:
+   rankings (list): list of rankings to persist 
+   col (str): column in 'team' to update based on rankings
+'''
+def update_team_rankings(rankings: list, col: str):
+   sql = f'UPDATE team SET {col} = %s WHERE team_id = %s'
+   
+   try:
+      connection = get_connection()
+      
+      params = [(rank['rank'], rank['team_id']) for rank in rankings] # create tuple needed to update records
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, params)
+         connection.commit()
+         logging.info(f"Successfully updated {len(rankings)} {col} rankings in the database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the following rankings: {rankings}", exc_info=True)
+      raise e
