@@ -31,6 +31,11 @@ scoring:
          td: 6
          two_pt_conversion: 2
 
+rankings:
+  weights:
+    td: 0.6
+    yards: 0.4
+
 # NFL teams
 nfl:
    current-year: 2024
