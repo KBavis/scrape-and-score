@@ -52,7 +52,6 @@ def main():
       depth_charts = fetch_all_players() 
       
       # fetch relevant team and player metrics 
-      #TODO: Fetch player game logs for given year and check if we have these persisted
       if player_game_logs_service.is_player_game_logs_empty(): # scrape & persist all game logs if none persisted
          team_metrics, player_metrics = pfr.scrape_all(depth_charts, teams)
          logging.info(f"Successfully retrieved metrics for {len(team_metrics)} teams and {len(player_metrics)} players")
@@ -76,7 +75,8 @@ def main():
          # calculate fantasy points for recent week 
          player_game_logs_service.calculate_fantasy_points(True, year)
          
-         
+
+      team_game_logs_service.calculate_all_teams_rankings(year)  
       
 
       logging.info(f'Application took {(datetime.now() - start_time).seconds} seconds to complete')
