@@ -236,3 +236,37 @@ def test_get_team_id_by_name_returns_expected_id_when_name_exists():
 def test_get_team_id_by_name_returns_none_when_name_doesnt_exist():
    teams_and_ids = [{"name": "Colts", "team_id": 12}, {"name": "Random", "team_id": 14}]
    assert team_game_logs_service.get_team_id_by_name('Fake', teams_and_ids) == None
+
+
+# def test_normalize_and_apply_weights_correctly_normalized_values(): 
+
+# def test_normalize_and_apply_weights_calls_expected_functions(): 
+
+# def test_apply_weights_returns_expected_dict(): 
+
+# def test_get_aggregate_season_metrics_returns_expected_aggregates(): 
+
+# def test_calculate_rankings_returns_expected_rankings(): 
+
+
+@patch('service.team_game_logs_service.update_teams_rankings')
+@patch('service.team_game_logs_service.calculate_rankings')
+@patch('service.team_game_logs_service.get_teams_game_logs_for_season')
+@patch('service.team_game_logs_service.get_aggregate_season_metrics')
+@patch('service.team_game_logs_service.team_service.get_all_teams')
+def test_calculate_all_team_rankings_calls_expected_functions(mock_get_all_teams, mock_get_aggregate_season_metrics, mock_get_team_game_logs, mock_calculate_rankings, mock_update_team_rankings): 
+   mock_list_of_dict = [{'team_id': '1'}]
+   
+   mock_get_all_teams.return_value = mock_list_of_dict
+   mock_get_aggregate_season_metrics.return_value =  mock_list_of_dict
+   mock_get_team_game_logs.return_value = mock_list_of_dict
+   mock_calculate_rankings.return_value = [{'team_id': 1}], [{'team_id': 1}], [{'team_id': 1}], [{'team_id': 1}]
+   
+   team_game_logs_service.calculate_all_teams_rankings(2024)
+   
+   mock_get_all_teams.assert_called_once()
+   mock_get_team_game_logs.assert_called_once()
+   mock_calculate_rankings.assert_called_once()
+   mock_get_aggregate_season_metrics.assert_called_once()
+   mock_update_team_rankings.assert_called_once() 
+   
