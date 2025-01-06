@@ -236,3 +236,158 @@ def test_get_team_id_by_name_returns_expected_id_when_name_exists():
 def test_get_team_id_by_name_returns_none_when_name_doesnt_exist():
    teams_and_ids = [{"name": "Colts", "team_id": 12}, {"name": "Random", "team_id": 14}]
    assert team_game_logs_service.get_team_id_by_name('Fake', teams_and_ids) == None
+
+
+
+
+@patch('service.team_game_logs_service.apply_weights', side_effect=lambda team, keys, team_id: {**team, "team_id": team_id})
+def test_normalize_metrics_and_apply_weights(mock_apply_weights):
+   team_metrics = [
+      {
+         "team_id": 1,
+         "points_for": 50,
+         "points_against": 30,
+         "rush_yards_for": 200,
+         "rush_yards_against": 150,
+         "pass_yards_for": 300,
+         "pass_yards_against": 250,
+      },
+      {
+         "team_id": 2,
+         "points_for": 70,
+         "points_against": 20,
+         "rush_yards_for": 180,
+         "rush_yards_against": 120,
+         "pass_yards_for": 320,
+         "pass_yards_against": 280,
+      },
+   ]
+
+   keys = [
+      "points_for",
+      "points_against",
+      "rush_yards_for",
+      "rush_yards_against",
+      "pass_yards_for",
+      "pass_yards_against",
+   ]
+
+   
+   result = team_game_logs_service.normalize_metrics_and_apply_weights(team_metrics)
+
+   expected_metrics = [
+      {
+         "team_id": 1,
+         "points_for": 0.0,  # (50 - 50) / (70 - 50)
+         "points_against": 1.0,  # (30 - 20) / (30 - 20)
+         "rush_yards_for": 1.0,  # (200 - 180) / (200 - 180)
+         "rush_yards_against": 1.0,  # (150 - 120) / (150 - 120)
+         "pass_yards_for": 0.0,  # (300 - 300) / (320 - 300)
+         "pass_yards_against": 0.0,  # (250 - 250) / (280 - 250)
+      },
+      {
+         "team_id": 2,
+         "points_for": 1.0,  # (70 - 50) / (70 - 50)
+         "points_against": 0.0,  # (20 - 20) / (30 - 20)
+         "rush_yards_for": 0.0,  # (180 - 180) / (200 - 180)
+         "rush_yards_against": 0.0,  # (120 - 120) / (150 - 120)
+         "pass_yards_for": 1.0,  # (320 - 300) / (320 - 300)
+         "pass_yards_against": 1.0,  # (280 - 250) / (280 - 250)
+      },
+   ]
+
+   for i, team in enumerate(result):
+      for key in keys:
+         assert team[key] == expected_metrics[i][key], f"Mismatch for {key} in team {team['team_id']}"
+
+
+
+@patch('service.team_game_logs_service.props.get_config', return_value = .5)
+def test_apply_weights_returns_expected_dict(mock_get_config): 
+   metrics = {
+      "points_for": 0.5,
+      "points_against": 0.5,
+      "rush_yards_for": 0.5,
+      "rush_yards_against": 0.5,
+      "pass_yards_for": 0.5,
+      "pass_yards_against":0.5 
+   }
+   keys = ["points_for", "points_against", "rush_yards_for", "rush_yards_against", "pass_yards_for", "pass_yards_against"]
+   
+   actual_metrics = team_game_logs_service.apply_weights(metrics, keys, 1)
+   
+   expected_metrics = {
+      "team_id": 1,
+      "points_for": 0.25,
+      "points_against": 0.25,
+      "rush_yards_for": 0.25,
+      "rush_yards_against": 0.25,
+      "pass_yards_for": 0.25,
+      "pass_yards_against":0.25 
+   }
+   
+   assert actual_metrics == expected_metrics
+
+
+
+@patch('service.team_game_logs_service.normalize_metrics_and_apply_weights')
+def test_calculate_rankings_returns_expected_rankings(mock_normalize_metrics): 
+   '''
+   Best off_rush & off_pass should be team 2, best defense should be team 1
+   '''
+   weighted_metrics = [
+   {
+      "team_id": 1,
+      "points_for": 0.5,
+      "points_against": 0.5,
+      "rush_yards_for": 0.5,
+      "rush_yards_against": 0.5,
+      "pass_yards_for": 0.5,
+      "pass_yards_against":0.5 
+   },
+   {
+      "team_id": 2,
+      "points_for": 0.75,
+      "points_against": 0.75,
+      "rush_yards_for": 0.75,
+      "rush_yards_against": 0.75,
+      "pass_yards_for": 0.75,
+      "pass_yards_against":0.75 
+   }]
+   
+   mock_normalize_metrics.return_value = weighted_metrics
+   
+   off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks = team_game_logs_service.calculate_rankings(weighted_metrics)
+   
+   assert off_rush_ranks == [{'team_id': 2, "rank": 1}, {'team_id': 1, "rank": 2}]
+   assert off_pass_ranks == [{'team_id': 2, "rank": 1}, {'team_id': 1, "rank": 2}]
+   assert def_rush_ranks == [{'team_id': 1, "rank": 1}, {'team_id': 2, "rank": 2}]
+   assert def_pass_ranks == [{'team_id': 1, "rank": 1}, {'team_id': 2, "rank": 2}]
+   
+   
+   
+   
+   
+
+
+@patch('service.team_game_logs_service.update_teams_rankings')
+@patch('service.team_game_logs_service.calculate_rankings')
+@patch('service.team_game_logs_service.get_teams_game_logs_for_season')
+@patch('service.team_game_logs_service.get_aggregate_season_metrics')
+@patch('service.team_game_logs_service.team_service.get_all_teams')
+def test_calculate_all_team_rankings_calls_expected_functions(mock_get_all_teams, mock_get_aggregate_season_metrics, mock_get_team_game_logs, mock_calculate_rankings, mock_update_team_rankings): 
+   mock_list_of_dict = [{'team_id': '1'}]
+   
+   mock_get_all_teams.return_value = mock_list_of_dict
+   mock_get_aggregate_season_metrics.return_value =  mock_list_of_dict
+   mock_get_team_game_logs.return_value = mock_list_of_dict
+   mock_calculate_rankings.return_value = [{'team_id': 1}], [{'team_id': 1}], [{'team_id': 1}], [{'team_id': 1}]
+   
+   team_game_logs_service.calculate_all_teams_rankings(2024)
+   
+   mock_get_all_teams.assert_called_once()
+   mock_get_team_game_logs.assert_called_once()
+   mock_calculate_rankings.assert_called_once()
+   mock_get_aggregate_season_metrics.assert_called_once()
+   mock_update_team_rankings.assert_called_once() 
+   
