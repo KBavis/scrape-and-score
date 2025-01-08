@@ -1,5 +1,7 @@
 import logging 
-from .connection import get_connection, close_connection
+import pandas as pd
+from .connection import get_connection
+import warnings
 
 '''
 Functionality to fetch multiple teams 
@@ -461,4 +463,51 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year:int):
       raise e
    
    return team_game_logs
+
+
+'''
+Functionality to retrieve the needed dependent and independent variables needed 
+to create our multiple linear regression based model 
+
+Args:
+   None 
+
+Returns:
+   df (pd.DataFrame): data frame containing results of query 
+
+'''
+def fetch_independent_and_dependent_variables_for_mult_lin_regression():  
+   sql = '''
+      SELECT
+         p.player_id,
+         p.position,
+         pgl.fantasy_points,
+         t.off_rush_rank,
+         t.off_pass_rank,
+         td.def_rush_rank,
+         td.def_pass_rank
+      FROM
+         player_game_log pgl
+      JOIN 
+         player p ON p.player_id = pgl.player_id 
+      JOIN 
+         team t ON p.team_id = t.team_id
+      JOIN 
+         team td ON pgl.opp = td.team_id
+   '''
+
+   df = None
    
+   try:
+      connection = get_connection()
+      
+      # filter warnings regarding using pyscopg2 connection
+      with warnings.catch_warnings():
+         warnings.filterwarnings('ignore')
+         df = pd.read_sql_query(sql, connection)
+      
+   except Exception as e:
+      logging.error(f"An error occurred while fetching the data needed to create mutliple linear regression model: {e}")
+      raise e
+   
+   return df
