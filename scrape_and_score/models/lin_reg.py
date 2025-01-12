@@ -38,7 +38,7 @@ class LinReg:
       inputs (pd.DataFrame): inputs from data frame
    ''' 
    def scale_inputs(self, df: pd.DataFrame): 
-      inputs = df[(df['log_avg_fantasy_points'].notnull() | df['log_ratio_rank'].notnull())]
+      inputs = df.drop(['log_fantasy_points'], axis=1)
       scaler = StandardScaler() 
       scaler.fit(inputs)
       
