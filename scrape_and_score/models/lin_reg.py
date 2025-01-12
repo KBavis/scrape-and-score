@@ -5,6 +5,7 @@ from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import seaborn as sns 
 import logging 
+import numpy as np
 import os
 
 
@@ -29,6 +30,8 @@ class LinReg:
       self.rb_regression = None
       self.wr_regression = None
       self.te_regression = None
+      
+      self.split_data = None
 
    '''
    Functionality to scale inputs 
@@ -60,6 +63,17 @@ class LinReg:
       rb_x_train, rb_x_test, rb_y_train, rb_y_test = train_test_split(self.rb_inputs_scaled, self.rb_targets, test_size=0.2, random_state=365)
       wr_x_train, wr_x_test, wr_y_train, wr_y_test = train_test_split(self.wr_inputs_scaled, self.wr_targets, test_size=0.2, random_state=365)
       te_x_train, te_x_test, te_y_train, te_y_test = train_test_split(self.te_inputs_scaled, self.te_targets, test_size=0.2, random_state=365)
+      
+      
+      # reset indices
+      qb_y_test = qb_y_test.reset_index(drop=True)
+      qb_y_train = qb_y_train.reset_index(drop=True)
+      rb_y_train = rb_y_train.reset_index(drop=True)
+      rb_y_test = rb_y_test.reset_index(drop=True)
+      wr_y_test = wr_y_test.reset_index(drop=True)
+      wr_y_train = wr_y_train.reset_index(drop=True)
+      te_y_test = te_y_test.reset_index(drop=True)
+      te_y_train = te_y_train.reset_index(drop=True)
       
       return {
          "QB": {
@@ -100,6 +114,8 @@ class LinReg:
    '''
    def create_regressions(self):
       split_data = self.create_training_and_testing_split()
+      self.split_data = split_data
+      
       positions = ['QB', 'RB', 'WR', 'TE']
       
       regression_model_mapping = {}
@@ -178,6 +194,7 @@ class LinReg:
    '''
    def create_position_regression(self, x_train, y_train, position):
       regression = LinearRegression() 
+      
       regression.fit(x_train, y_train) # train model 
       y_hat = regression.predict(x_train) # test model against trained data
       
@@ -208,6 +225,7 @@ class LinReg:
       sns.displot(df)
       
       plt.savefig(file_path)
+      plt.figure() # create new figure
 
    
    '''
@@ -230,5 +248,76 @@ class LinReg:
       plt.scatter(y, y_hat)  
       plt.xlabel('Targets (y)', size=18)
       plt.ylabel('Predictions (y_hat)', size=18)
+      plt.xlim(0,5)
+      plt.ylim(0,10)
       plt.savefig(file_path)
+      plt.figure()
+
+
+   '''
+   Test each of our regressions against our testing data 
+
+   Args:
+      None
+
+   Returns:
+      None
+   '''
+   def test_regressions(self):
+      qb_y_test = self.split_data['QB']['y_test']
+      rb_y_test = self.split_data['RB']['y_test']
+      wr_y_test = self.split_data['WR']['y_test']
+      te_y_test = self.split_data['TE']['y_test']
       
+      qb_y_hat_test = self.qb_regression.predict(self.split_data['QB']['x_test'])
+      te_y_hat_test = self.te_regression.predict(self.split_data['TE']['x_test'])
+      wr_y_hat_test = self.wr_regression.predict(self.split_data['WR']['x_test'])
+      rb_y_hat_test = self.rb_regression.predict(self.split_data['RB']['x_test'])
+   
+      self.create_prediction_scatter_plot(qb_y_test, qb_y_hat_test, "QB_testing_predictions")
+      self.create_prediction_scatter_plot(rb_y_test, rb_y_hat_test, "RB_testing_predictions")
+      self.create_prediction_scatter_plot(wr_y_test, wr_y_hat_test, "WR_testing_predictions")
+      self.create_prediction_scatter_plot(te_y_test, te_y_hat_test, "TE_testing_predictions")
+      
+      df_qb_predictions = pd.DataFrame(np.exp(qb_y_hat_test), columns=['Predictions'])
+      df_qb_predictions['Target'] = np.exp(qb_y_test)
+      
+      df_rb_predictions = pd.DataFrame(np.exp(rb_y_hat_test), columns=['Predictions'])
+      df_rb_predictions['Target'] = np.exp(rb_y_test)
+      
+      df_wr_predictions = pd.DataFrame(np.exp(wr_y_hat_test), columns=['Predictions'])
+      df_wr_predictions['Target'] = np.exp(wr_y_test)
+      
+      df_te_predictions = pd.DataFrame(np.exp(te_y_hat_test), columns=['Predictions'])
+      df_te_predictions['Target'] = np.exp(te_y_test)
+      
+      df_qb_predictions['Residual'] = df_qb_predictions['Target'] - df_qb_predictions['Predictions']
+      df_rb_predictions['Residual'] = df_rb_predictions['Target'] - df_rb_predictions['Predictions']
+      df_wr_predictions['Residual'] = df_wr_predictions['Target'] - df_wr_predictions['Predictions']
+      df_te_predictions['Residual'] = df_te_predictions['Target'] - df_te_predictions['Predictions']
+      
+      df_qb_predictions['Difference %'] = np.absolute(df_qb_predictions['Residual'] / df_qb_predictions['Target'] * 100)
+      df_rb_predictions['Difference %'] = np.absolute(df_rb_predictions['Residual'] / df_rb_predictions['Target'] * 100)
+      df_wr_predictions['Difference %'] = np.absolute(df_wr_predictions['Residual'] / df_wr_predictions['Target'] * 100)
+      df_te_predictions['Difference %'] = np.absolute(df_te_predictions['Residual'] / df_te_predictions['Target'] * 100)
+      
+      
+      pd.options.display.max_rows = 999 # view all rows 
+      pd.set_option('display.float_format', lambda x: '%.2f' % x)
+
+      sorted_qb_df_predictions = df_qb_predictions.sort_values(by=['Difference %'])
+      sorted_rb_df_predictions = df_rb_predictions.sort_values(by=['Difference %'])
+      sorted_wr_df_predictions= df_wr_predictions.sort_values(by=['Difference %'])
+      sorted_te_df_predictions = df_te_predictions.sort_values(by=['Difference %'])
+      
+      print('\n\nQB Testing Predictions')
+      print(sorted_qb_df_predictions)
+      
+      print('\n\nRB Testing Predictions')
+      print(sorted_rb_df_predictions)
+      
+      print('\n\nWR Testing Predictions')
+      print(sorted_wr_df_predictions)
+      
+      print('\n\nTE Testing Predictions')
+      print(sorted_te_df_predictions)
