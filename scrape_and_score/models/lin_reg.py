@@ -4,6 +4,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import seaborn as sns 
+import logging 
+import os
 
 
 class LinReg:
@@ -87,32 +89,146 @@ class LinReg:
       }
    
    
+   '''
+   Functionality to create all multiple linear regression models for each NFL relevant position 
+   
+   Args:
+      None
+   
+   Returns:
+      None
+   '''
    def create_regressions(self):
       split_data = self.create_training_and_testing_split()
+      positions = ['QB', 'RB', 'WR', 'TE']
       
-      self.qb_regression = LinearRegression()
-      qb_x_train = split_data['QB']['x_train']
-      qb_y_train = split_data['QB']['y_train']
-      print(qb_x_train)
-      print(qb_y_train)
+      regression_model_mapping = {}
+      for position in positions: 
+         regression_model_mapping[position] = self.create_position_regression(split_data[position]['x_train'], split_data[position]['y_train'], position)
       
-      self.qb_regression.fit(qb_x_train, qb_y_train)
-      qb_y_hat = self.qb_regression.predict(qb_x_train)
+      self.qb_regression = regression_model_mapping['QB']
+      self.rb_regression = regression_model_mapping['RB']
+      self.te_regression = regression_model_mapping['TE']
+      self.wr_regression = regression_model_mapping['WR']
       
-      #TODO: Repeat for other positions
+      self.log_regression_metrics()
+   
+   
+   '''
+   Log out relevant regression bias/weights associated with model
+   
+   Args:
+      None
+   
+   Returns:
+      None
+   '''
+   def log_regression_metrics(self):
+      # QB 
+      print('\n\n')
+      logging.info('QB Regression Model Metrics')
+      logging.info(f'Bias Of Regression (Y-Intercept): {self.qb_regression.intercept_}')
       
+      inputs = self.qb_data.drop(['log_fantasy_points'], axis=1)
+      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
+      reg_summary['Weights'] = self.qb_regression.coef_
+      logging.info(f'{reg_summary}')
       
-      #TODO: Create seperate scatter plot creation function
-      plt.scatter(qb_y_train, qb_y_hat)
+      # RB 
+      print('\n\n')
+      logging.info('RB Regression Model Metrics')
+      logging.info(f'Bias Of Regression (Y-Intercept): {self.rb_regression.intercept_}')
       
+      inputs = self.rb_data.drop(['log_fantasy_points'], axis=1)
+      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
+      reg_summary['Weights'] = self.rb_regression.coef_
+      logging.info(f'{reg_summary}')
       
-      plt.xlabel('Targets (y_train)', size=18)
+      # WR 
+      print('\n\n')
+      logging.info('WR Regression Model Metrics')
+      logging.info(f'Bias Of Regression (Y-Intercept): {self.wr_regression.intercept_}')
+      
+      inputs = self.wr_data.drop(['log_fantasy_points'], axis=1)
+      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
+      reg_summary['Weights'] = self.wr_regression.coef_
+      logging.info(f'{reg_summary}')
+      
+      # TE
+      print('\n\n')
+      logging.info('TE Regression Model Metrics')
+      logging.info(f'Bias Of Regression (Y-Intercept): {self.te_regression.intercept_}')
+      
+      inputs = self.te_data.drop(['log_fantasy_points'], axis=1)
+      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
+      reg_summary['Weights'] = self.te_regression.coef_
+      logging.info(f'{reg_summary}')
+      
+   
+      '''
+   Helper function for creating the position specific regression models
+   
+   Args:
+      x_train (pandas.DataFrame): data frame containing x training data 
+      y_train (pandas.DataFrame): data frame containing y training data 
+      position (str): position this model is created for 
+   
+   Returns:
+      regression_model (sklearn.linear_model.LinearRegression): linear regression model used for predictions
+   '''
+   def create_position_regression(self, x_train, y_train, position):
+      regression = LinearRegression() 
+      regression.fit(x_train, y_train) # train model 
+      y_hat = regression.predict(x_train) # test model against trained data
+      
+      # create relevant graphs
+      self.create_prediction_scatter_plot(y_train, y_hat, f"{position}_training_predictions") 
+      df = y_train - y_hat
+      self.create_residuals_dist(df, f"{position}_residuals") 
+      
+      logging.info(f'R-squared for {position} multiple linear regression model: {regression.score(x_train, y_train)}')
+      return regression
+   
+   '''
+   Create distribution plot of residuals (predicted - expected)
+   
+   Args:
+      df (pd.DataFrame): data frame containing residuals
+      file_name (str): file name 
+   
+   Returns:
+      None
+   '''
+   def create_residuals_dist(self, df: pd.DataFrame, file_name: str):
+      relative_dir = "./data/distributions"
+      pdf = f"{file_name}.pdf"
+      os.makedirs(relative_dir, exist_ok=True)
+      file_path = os.path.join(relative_dir, pdf)
+      
+      sns.displot(df)
+      
+      plt.savefig(file_path)
+
+   
+   '''
+   Functionality to create & save scatter plot for model predictions vs actual values 
+   
+   Args:
+      y (pd.DataFrame) : data frame containing actual values 
+      y_hat (pd.DataFrame): data frame containing predicted values 
+      file_name (str): file name to save scatter plot as
+   
+   Returns:
+      None
+   '''
+   def create_prediction_scatter_plot(self, y, y_hat, file_name):
+      relative_dir = "./data/scatter"
+      pdf = f"{file_name}.pdf"
+      os.makedirs(relative_dir, exist_ok=True)
+      file_path = os.path.join(relative_dir, pdf)
+      
+      plt.scatter(y, y_hat)  
+      plt.xlabel('Targets (y)', size=18)
       plt.ylabel('Predictions (y_hat)', size=18)
+      plt.savefig(file_path)
       
-      # plt.xlim(6, 13)
-      # plt.ylim(6,13)
-      
-      plt.savefig('linregqb.pdf')
-      
-      sns.displot(qb_y_train - qb_y_hat)
-      plt.savefig('residuals.pdf')
