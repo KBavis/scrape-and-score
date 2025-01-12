@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import logging
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+import os
 
 
 '''
@@ -22,20 +24,76 @@ def pre_process_data():
    
    filtered_df = filter_data(df)
    
-   transformed_data = transform_data(filtered_df)
+   qb_data, rb_data, te_data, wr_data = split_data_by_position(filtered_df)
    
-   encoded_data = encode_positions(transformed_data)
+   transformed_qb_data, transformed_rb_data, transformed_wr_data, transformed_te_data = transform_data(qb_data, rb_data, wr_data, te_data)
+   tranformed_data = [transformed_qb_data, transformed_rb_data, transformed_wr_data, transformed_te_data]
    
-   data_with_ratio_ranks = get_position_relevant_ranks(encoded_data)
+   ols_validated_data = [] 
+   for df in tranformed_data:
+      df.drop(columns=['player_id', 'fantasy_points', 'off_rush_rank', 'off_pass_rank', 'def_rush_rank', 'def_pass_rank']) # drop un-needed columns
+      ols_validated_data.append(validate_ols_assumptions(df))
    
-   # plot(transformed_data['log_fantasy_points'], 'log_fantasy_points_distribution')
-   # plot(transformed_data['log_avg_fantasy_points'], 'log_avg_fantasy_points_distribution')
+   cols = ['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank']
+   preprocessed_data = [df[cols] for df in ols_validated_data] 
    
-   #TODO: Consider transforming ratio ranks so distributed better 
+   # return tuple of pre-processed data
+   return preprocessed_data[0], preprocessed_data[1], preprocessed_data[2], preprocessed_data[3]
+
+
+
+'''
+Functionality to vlaidate multicollinearity & other OLS assumptions 
+
+Args:
+   df (pd.DataFrame): data frame to validate 
+
+Returns:
+   updated_df (pd.DataFrame): updated df (if there weren't anym then return original)
+'''
+def validate_ols_assumptions(df: pd.DataFrame):
+   variables = df[['log_avg_fantasy_points', 'log_ratio_rank']]
    
-   #TODO: Create pre-processed_inputs variable that just has inputs 
+   vif = pd.DataFrame() 
    
-   create_plots(data_with_ratio_ranks)
+   vif['VIF'] = [variance_inflation_factor(variables.values, i) for i in range(variables.shape[1])]
+   vif["Features"] = variables.columns
+   
+   
+   features_to_remove = vif[vif['VIF'] > 5]["Features"].tolist()
+   if features_to_remove:
+      logging.info(f'Removing the following columns due to high VIFs: [{features_to_remove}]')
+   else:
+      logging.info("No features need to be removed to validate OLS assumptions; returning original DataFrame")
+      
+   return df.drop(columns=features_to_remove)
+   
+
+'''
+Split dataframes into position specific data due to fantasy points 
+vary signficantly by position and invoke functionality to get ranking ratios
+
+Args:
+   df (pd.DataFrame): dataframe to split 
+
+Returns
+   qb_data, rb_data, te_data, wr_data (tuple): split dataframes by position
+'''
+def split_data_by_position(df: pd.DataFrame): 
+   # split data by position
+   qb_data = df[df['position'] == 'QB']
+   rb_data = df[df['position'] == 'RB']
+   wr_data = df[df['position'] == 'WR']
+   te_data = df[df['position'] == 'TE']
+   
+   # drop un-needed position column
+   new_qb_data = qb_data.drop('position', axis=1)
+   new_rb_data = rb_data.drop('position', axis=1)
+   new_wr_data = wr_data.drop('position', axis=1)
+   new_te_data = te_data.drop('position', axis=1)
+   
+   return get_rankings_ratios(new_qb_data, new_rb_data, new_wr_data, new_te_data)
+   
    
 
 '''
@@ -49,7 +107,7 @@ Returns:
 '''
 def filter_data(df: pd.DataFrame):
    df = df.dropna() 
-   non_zero_data = df[(df['fantasy_points'] > 0) & (df['avg_fantasy_points'] > 3)] 
+   non_zero_data = df[(df['fantasy_points'] > 0) & (df['avg_fantasy_points'] > 5)] 
    
    
    upper_fantasy_points_outliers = non_zero_data['fantasy_points'].quantile(.99)
@@ -71,32 +129,29 @@ def filter_data(df: pd.DataFrame):
 Remove any skewed nature from our features 
 
 Args:
-   df (pd.DataFrame): dataframe to transform 
-
+   qb_data (pd.DataFrame): qb dataframe to transform 
+   rb_data (pd.DataFrame): rb dataframe to transform 
+   wr_data (pd.DataFrame): wr dataframe to transform 
+   te_data (pd.DataFrame): te dataframe to transform 
 Returns:
    None
 '''
-def transform_data(df: pd.DataFrame):
-   logged_fantasy_points = np.log1p(df['fantasy_points'])
-   df['log_fantasy_points'] = logged_fantasy_points
+def transform_data(qb_data: pd.DataFrame, rb_data: pd.DataFrame, wr_data: pd.DataFrame, te_data: pd.DataFrame):
+   for df in [qb_data, rb_data, wr_data, te_data]:
+      logged_avg_fantasy_points = np.log1p(df['avg_fantasy_points'])
+      logged_fantasy_points = np.log1p(df['fantasy_points'])
+      
+      if 'rush_ratio_rank' in df.columns:
+         logged_ratio_rank = np.log1p(df['rush_ratio_rank'])
+      else:
+         logged_ratio_rank = np.log1p(df['pass_ratio_rank'])
+         
+      df['log_avg_fantasy_points'] = logged_avg_fantasy_points
+      df['log_fantasy_points'] = logged_fantasy_points
+      df['log_ratio_rank'] = logged_ratio_rank 
    
-   logged_avg_fantasy_points = np.log1p(df['avg_fantasy_points'])
-   df['log_avg_fantasy_points'] = logged_avg_fantasy_points
-   return df
-
-
-'''
-Encode 'position' due to it being a categorical feature 
-
-Args:
-   df (pd.DataFrame): dataframe to transform 
-
-Returns:
-   None
-'''
-def encode_positions(df: pd.DataFrame): 
-   encoded_data = pd.get_dummies(df)
-   return encoded_data.reset_index(drop=True).astype(int) # reset indices
+   
+   return qb_data, rb_data, wr_data, te_data
 
 
 '''
@@ -104,23 +159,20 @@ Calculate ratio of relevant defensive ranking to relevant offensive ranking
 
 Args:
    df (pd.DataFrame): dataframe to generate relevant ranks for 
+   is_rushing (bool): boolean to determine if we are calculating this for rushing or for passing
 
 Returns:
    updated_df (pd.DataFrame): dataframe with correct rank ratios
 '''
-def get_position_relevant_ranks(df: pd.DataFrame): 
-   rush_ratio_rank = df.loc[df['position_RB'] == 1, 'def_rush_rank'] / df.loc[df['position_RB'] == 1, 'off_rush_rank']
-   df.loc[df['position_RB'] == 1, 'rush_ratio_rank'] = rush_ratio_rank
+def get_rankings_ratios(qb_data: pd.DataFrame, rb_data: pd.DataFrame, wr_data: pd.DataFrame, te_data: pd.DataFrame): 
+   rush_ratio_rank = rb_data['def_rush_rank'] / rb_data['off_rush_rank']
+   rb_data['rush_ratio_rank'] = rush_ratio_rank
    
-   
-   pass_positions = (df['position_WR'] == 1) | (df['position_TE'] == 1) | (df['position_QB'] == 1)
-   pass_ratio_rank = df.loc[pass_positions, 'def_pass_rank'] / df.loc[pass_positions, 'off_pass_rank']
-   df.loc[pass_positions, 'pass_ratio_rank'] = pass_ratio_rank
-   
-   df['rush_ratio_rank'] = df['rush_ratio_rank'].fillna(0)
-   df['pass_ratio_rank'] = df['pass_ratio_rank'].fillna(0)
-   return df
+   for df in [qb_data, wr_data, te_data]:
+      pass_ratio_rank = df['def_pass_rank'] / df['off_pass_rank']
+      df['pass_ratio_rank'] = pass_ratio_rank
 
+   return qb_data, rb_data, wr_data, te_data
    
 
 '''
@@ -133,7 +185,7 @@ Returns:
    df (pd.DataFrame): updated data frame 
 '''
 def include_averages(df: pd.DataFrame):
-   player_avg_points = df.groupby('player_id')['fantasy_points'].mean().round(2) 
+   player_avg_points = df.groupby('player_id')['fantasy_points'].mean()
    df['avg_fantasy_points'] = df['player_id'].map(player_avg_points)
    return df
 
@@ -149,8 +201,15 @@ Returns:
    None
 '''
 def plot(series: pd.Series, pdf_name: str):
-   sns.displot(series)
-   plt.savefig(f"{pdf_name}.pdf")
+   sns.displot(series, kind="hist", kde=True, bins=10, 
+            color="skyblue", edgecolor="white")
+   
+   relative_dir = "./data/distributions"
+   file_name = f"{pdf_name}.pdf"
+   os.makedirs(relative_dir, exist_ok=True)
+   file_path = os.path.join(relative_dir, file_name)
+   
+   plt.savefig(file_path)
    plt.close()
    
 
@@ -164,16 +223,23 @@ Args:
 Returns:
    None
 '''
-def create_plots(data: pd.DataFrame, output_file: str = 'featureplots.pdf'):
-   f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize =(15,3))
-   ax1.scatter(data['avg_fantasy_points'],data['log_fantasy_points'])
-   ax1.set_title('Log Fantasy Points and Avg Fantasy Points')
-   ax2.scatter(data['rush_ratio_rank'],data['log_fantasy_points'])
-   ax2.set_title('Log Fantasy Points and Rush Ratio Rank')
-   ax3.scatter(data['pass_ratio_rank'],data['log_fantasy_points'])
-   ax3.set_title('Log Fantasy Points and Pass Ratio Rank')
+def create_plots(data: pd.DataFrame, position: str):
+   f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize =(15,6))
+   ax1.scatter(data['log_avg_fantasy_points'],data['log_fantasy_points'])
+   ax1.set_title('Log Fantasy Points and Log Avg Fantasy Points')
+   
+   ax2.scatter(data['log_ratio_rank'],data['log_fantasy_points'])
+   ax2.set_title('Log Fantasy Points and Log Ratio Rank')
 
-   plt.savefig(output_file)
+   relative_dir = "./data/scatter"
+   file_name = f"{position}_features_plot.pdf"
+   os.makedirs(relative_dir, exist_ok=True)
+   file_path = os.path.join(relative_dir, file_name)
+   f.tight_layout()
+   
+   plt.savefig(file_path)
+
+
 
 '''
 Functionality to retrieve pandas df, containing independent & dependent variable(s)
