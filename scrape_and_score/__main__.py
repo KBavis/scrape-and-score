@@ -5,6 +5,8 @@ from db import connection, is_player_empty, is_team_empty, insert_teams, fetch_a
 from config import load_configs, get_config
 from datetime import datetime
 from service import player_game_logs_service, team_game_logs_service
+from data import preprocess
+from models.lin_reg import LinReg
 import logging
 
 
@@ -23,8 +25,7 @@ def main():
       template_url = get_config('website.fantasy-pros.urls.depth-chart')
       teams = [team['name'] for team in get_config('nfl.teams')] # extract teams from configs
       year = get_config('nfl.current-year')
-      team_names_and_ids = []
-   
+      team_names_and_ids = []  
       # check if teams are persisted; if not, persist relevant teams
       if is_team_empty():
          logging.info('No teams persisted; persisting all configured NFL teams to our database')
@@ -77,6 +78,11 @@ def main():
          
 
       team_game_logs_service.calculate_all_teams_rankings(year)  
+      qb_pre_processed_data, rb_pre_processed_data, wr_pre_processed_data, te_pre_processed_data = preprocess.pre_process_data()
+      
+      linear_regressions = LinReg(qb_pre_processed_data, rb_pre_processed_data, wr_pre_processed_data, te_pre_processed_data)
+      linear_regressions.create_regressions()
+      linear_regressions.test_regressions()
       
 
       logging.info(f'Application took {(datetime.now() - start_time).seconds} seconds to complete')
