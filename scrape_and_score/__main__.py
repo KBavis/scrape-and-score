@@ -8,6 +8,7 @@ from service import player_game_logs_service, team_game_logs_service
 from data import preprocess
 from models.lin_reg import LinReg
 import logging
+import sys
 
 
 '''
@@ -15,9 +16,33 @@ import logging
    persisting of data, generation of model, generation of predictions, and generating output
 '''
 def main():
+      
+   # parse command line args
+   args = ['--help', '--recent', '--new', '--test', '--single-player', '--all-players']
+   cl_args = sys.argv[1:]
+   n = len(cl_args)
+   
+   if n == 0:
+      print(f"Error: Please pass in one of the following command line args: {args}")
+      exit(-1)
+   else:
+      if args[0] in cl_args: 
+         msg = '''
+            Utilize one of the followinging command line arguments to invoke this application 
+            
+            --help: indicates possible command line args and their purpose 
+            --recent: scrape most recent game logs for teams & players 
+            --new: scrape for all available NFL players & teams, along with all their corresponding game logs 
+            --test: skip scraping altogether and test our regression against via our test data 
+            --single-player: prompt user to enter a single players name & matchup and indicate fantasy point prediction 
+            --all-players: automatically fetch all upcoming matchups for fantasy relevant players and generate predictions
+         '''
+         print(msg)
+         exit(1)
    
    try:
       configure_logging()
+      
       load_configs() 
       connection.init()
       start_time = datetime.now()
