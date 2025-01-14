@@ -11,3 +11,4 @@ rapidfuzz
 psycopg2
 pytest
 python-dotenv
+statsmodels
