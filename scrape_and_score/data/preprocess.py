@@ -43,7 +43,7 @@ def pre_process_data():
 
 
 '''
-Functionality to vlaidate multicollinearity & other OLS assumptions 
+Functionality to validate multicollinearity & other OLS assumptions 
 
 Args:
    df (pd.DataFrame): data frame to validate 
