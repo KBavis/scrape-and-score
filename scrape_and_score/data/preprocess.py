@@ -43,7 +43,7 @@ def pre_process_data():
 
 
 '''
-Functionality to vlaidate multicollinearity & other OLS assumptions 
+Functionality to validate multicollinearity & other OLS assumptions 
 
 Args:
    df (pd.DataFrame): data frame to validate 
@@ -106,18 +106,24 @@ Returns:
    filtered_df (pd.DataFrame): data frame with records filtered
 '''
 def filter_data(df: pd.DataFrame):
+   logging.info('Removing all records where fantasy points equal 0 of avg fantasy points less than 5')
    df = df.dropna() 
    non_zero_data = df[(df['fantasy_points'] > 0) & (df['avg_fantasy_points'] > 5)] 
    
    
    upper_fantasy_points_outliers = non_zero_data['fantasy_points'].quantile(.99)
    lower_fantasy_points_outliers = non_zero_data['fantasy_points'].quantile(.01)
+   logging.info(f'Upper 99% Fantasy Points Outliers: [{upper_fantasy_points_outliers}]')
+   logging.info(f'Lower 1% Fantasy Points Outliers: [{lower_fantasy_points_outliers}]')
    
    # remove top 99% and bottom 1% of fantasy points
    no_fantasy_points_outliers = non_zero_data[(non_zero_data['fantasy_points'] < upper_fantasy_points_outliers) & (non_zero_data['fantasy_points'] > lower_fantasy_points_outliers)]
    
    upper_avg_fantasy_points_outliers = no_fantasy_points_outliers['avg_fantasy_points'].quantile(.99)
    lower_avg_fantasy_points_outliers = no_fantasy_points_outliers['avg_fantasy_points'].quantile(.01)
+
+   logging.info(f'Upper 99% Avg Fantasy Points Outliers: [{upper_avg_fantasy_points_outliers}]')
+   logging.info(f'Lower 1% Avg Fantasy Points Outliers: [{lower_avg_fantasy_points_outliers}]')
    
    # remove top 99% and bottom 1% of avg_fantasy_points
    no_outlier_data = no_fantasy_points_outliers[(no_fantasy_points_outliers['avg_fantasy_points'] < upper_avg_fantasy_points_outliers) & (no_fantasy_points_outliers['avg_fantasy_points'] > lower_avg_fantasy_points_outliers)]
