@@ -4,10 +4,11 @@ pandas
 numpy
 matplotlib
 seaborn
-scikit-learns
+scikit-learn
 PyYAML
 haversine
 rapidfuzz
 psycopg2
 pytest
 python-dotenv
+statsmodels

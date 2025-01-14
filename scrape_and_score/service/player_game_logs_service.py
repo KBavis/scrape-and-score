@@ -323,7 +323,7 @@ def insert_fantasy_points(points: list):
       logging.info('No fantasy points were calculated; skipping insertion')
       return 
    
-   logging.info(f'Attempting to insert plaers fantasy points into our DB')
+   logging.info(f'Attempting to insert players calculated fantasy points into our DB')
    insert_data.add_fantasy_points(points)
 
 
