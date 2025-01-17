@@ -15,7 +15,7 @@ Args:
    None 
 
 Returns:
-   None
+   qb_data, rb_data, wr_data, te_data (tuple(pd.DataFrame, ...)): tuple containing pre-processed data
 '''
 def pre_process_data(): 
    sns.set_theme()
