@@ -513,3 +513,53 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
       raise e
    
    return df
+
+
+'''
+Retrieve relevant inputs for a player in order to make prediction
+
+Args:
+   team_name (str) : NFL team name corresponding to players opponent 
+   player_name (str): name of the player we want to predict fantasy points for 
+
+Returns:
+   df (pd.DataFrame): data frame containing relevant inputs
+'''
+def fetch_inputs_for_prediction(team_name: str, player_name: str):
+   sql = '''
+      SELECT
+         p.position,
+         ROUND(CAST(AVG(pgl.fantasy_points) AS NUMERIC), 2) AS avg_fantasy_points,
+         t.off_rush_rank,
+         t.off_pass_rank,
+         df.def_rush_rank,
+         df.def_pass_rank
+      FROM
+         player_game_log pgl
+      JOIN 
+         player p ON p.player_id = pgl.player_id 
+      JOIN 
+         team t ON p.team_id = t.team_id
+      JOIN 
+         team df ON df.name = %s
+      WHERE 
+         p.name = %s
+      GROUP BY 
+         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank
+   '''
+
+   df = None
+   
+   try:
+      connection = get_connection()
+      
+      # filter warnings regarding using pyscopg2 connection
+      with warnings.catch_warnings():
+         warnings.filterwarnings('ignore')
+         df = pd.read_sql_query(sql, connection, params=(team_name, player_name))
+      
+   except Exception as e:
+      logging.error(f"An error occurred while fetching the data needed to make prediction via our linear regression model: {e}")
+      raise e
+   
+   return df
