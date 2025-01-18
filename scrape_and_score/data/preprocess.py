@@ -142,10 +142,16 @@ Args:
 Returns:
    None
 '''
-def transform_data(qb_data: pd.DataFrame, rb_data: pd.DataFrame, wr_data: pd.DataFrame, te_data: pd.DataFrame):
+def transform_data(qb_data: pd.DataFrame = None, rb_data: pd.DataFrame = None, wr_data: pd.DataFrame = None, te_data: pd.DataFrame = None):
    for df in [qb_data, rb_data, wr_data, te_data]:
+      if df is None:
+         continue
+      
       logged_avg_fantasy_points = np.log1p(df['avg_fantasy_points'])
-      logged_fantasy_points = np.log1p(df['fantasy_points'])
+      
+      # only account for fantasy points if passed as input
+      if 'fantasy_points' in df.columns:
+         logged_fantasy_points = np.log1p(df['fantasy_points'])
       
       if 'rush_ratio_rank' in df.columns:
          logged_ratio_rank = np.log1p(df['rush_ratio_rank'])
@@ -153,8 +159,11 @@ def transform_data(qb_data: pd.DataFrame, rb_data: pd.DataFrame, wr_data: pd.Dat
          logged_ratio_rank = np.log1p(df['pass_ratio_rank'])
          
       df['log_avg_fantasy_points'] = logged_avg_fantasy_points
-      df['log_fantasy_points'] = logged_fantasy_points
       df['log_ratio_rank'] = logged_ratio_rank 
+      
+      # only add log fantasy points if passed in input data
+      if 'fantasy_points' in df.columns:
+         df['log_fantasy_points'] = logged_fantasy_points
    
    
    return qb_data, rb_data, wr_data, te_data
