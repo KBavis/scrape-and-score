@@ -103,7 +103,7 @@ def main():
       if cl_args.single_player:
          # prompt user to input player name & matchup 
          logging.info('Prompting user to input player name & matchup ...')
-         prediction.make_single_player_prediction()
+         prediction.make_single_player_prediction(linear_regressions)
          
       elif cl_args.all_players:
          # fetch upcoming matchups and make predictions 
