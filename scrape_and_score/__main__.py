@@ -9,6 +9,7 @@ from data import preprocess
 from models.lin_reg import LinReg
 from util import args
 import logging
+from predictions import prediction
 
       
 
@@ -102,6 +103,8 @@ def main():
       if cl_args.single_player:
          # prompt user to input player name & matchup 
          logging.info('Prompting user to input player name & matchup ...')
+         prediction.make_single_player_prediction(linear_regressions)
+         
       elif cl_args.all_players:
          # fetch upcoming matchups and make predictions 
          logging.info('Fetching upcoming matchups for fantasy relevant players and predicting their fantasy points ...')
