@@ -8,6 +8,9 @@ website:
    fantasy-pros:
       urls:
          depth-chart: "https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php"
+   rotowire:
+      urls:
+         historical-odds: "https://www.rotowire.com/betting/nfl/tables/games-archive.php"
 
 # scraping
 scraping:
@@ -32,9 +35,9 @@ scoring:
          two_pt_conversion: 2
 
 rankings:
-  weights:
-    td: 0.6
-    yards: 0.4
+   weights:
+      td: 0.6
+      yards: 0.4
 
 # NFL teams
 nfl:
