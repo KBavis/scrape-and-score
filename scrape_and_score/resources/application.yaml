@@ -116,7 +116,7 @@ nfl:
       - name: New Orleans Saints
         acronym: nor
         pfr_acronym: NOR
-        rotowire: NO
+        rotowire: "NO"
       - name: New York Giants
         acronym: nyg
         pfr_acronym: NYG
