@@ -79,6 +79,7 @@ nfl:
       - name: Green Bay Packers
         acronym: gnb
         pfr_acronym: GNB
+        rotowire: GB
       - name: Houston Texans
         acronym: htx
         pfr_acronym: HOU
@@ -91,9 +92,11 @@ nfl:
       - name: Kansas City Chiefs
         acronym: kan
         pfr_acronym: KAN
+        rotowire: KC
       - name: Las Vegas Raiders
         acronym: rai
         pfr_acronym: LVR
+        rotowire: LV
       - name: Los Angeles Chargers
         acronym: sdg
         pfr_acronym: LAC
@@ -109,9 +112,11 @@ nfl:
       - name: New England Patriots
         acronym: nwe
         pfr_acronym: NWE
+        rotowire: NE
       - name: New Orleans Saints
         acronym: nor
         pfr_acronym: NOR
+        rotowire: NO
       - name: New York Giants
         acronym: nyg
         pfr_acronym: NYG
@@ -127,12 +132,14 @@ nfl:
       - name: San Francisco 49ers
         acronym: sfo
         pfr_acronym: SFO
+        rotowire: SF
       - name: Seattle Seahawks
         acronym: sea
         pfr_acronym: SEA
       - name: Tampa Bay Buccaneers
         acronym: tam
         pfr_acronym: TAM
+        rotowire: TB
       - name: Tennessee Titans
         acronym: oti
         pfr_acronym: TEN
