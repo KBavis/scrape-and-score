@@ -147,7 +147,7 @@ Args:
 Returns:
    df (pd.DataFrame): data frame with relevant avg columns added 
 '''
-def calculate_avg_lines(home_df: pd.DataFrame, away_df: pd.DataFrame): 
+def calculate_avg_lines(home_df: pd.DataFrame): 
    # calculate avg O/U line based on available lines 
    over_under_line_total = 0
    over_under_line_count = 0
