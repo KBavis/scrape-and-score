@@ -271,3 +271,33 @@ def update_team_rankings(rankings: list, col: str):
    except Exception as e:
       logging.error(f"An exception occurred while inserting the following rankings: {rankings}", exc_info=True)
       raise e
+
+
+'''
+Functionality to insert historical betting odds into our DB 
+
+Args:
+   betting_odds (list): list of historical betting odds 
+
+Returns:
+   None
+'''
+def insert_teams_historical_odds(betting_odds: list):
+   sql = '''
+      INSERT INTO team_betting_odds (home_team_id, away_team_id, home_team_score, away_team_score, week, year, game_over_under, favorite_team_id, spread, total_points, over_hit, under_hit, favorite_covered, underdog_covered)
+      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+   '''
+   
+   params = [(odds['home_team_id'], odds['away_team_id'], odds['home_team_score'], odds['away_team_score'], odds['week'], odds['year'], odds['game_over_under'], odds['favorite_team_id'], odds['spread'], odds['total_points'], odds['over_hit'], odds['under_hit'], odds['favorite_covered'], odds['underdog_covered']) for odds in betting_odds]
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, params)
+         connection.commit()
+         logging.info(f"Successfully insert {len(betting_odds)} team historical odds into our database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the following historical team odds: {betting_odds}", exc_info=True)
+      raise e
