@@ -4,6 +4,7 @@ import logging
 from config import props
 from service import team_service
 from db import insert_data
+from db import fetch_data
 
 '''
 Fetch all historical odds for the current year
@@ -84,7 +85,7 @@ def create_team_id_mapping(week_one_data: pd.DataFrame):
    return mappings
 
 '''
-Fetch odds for the most recent week 
+Fetch odds for the most recent games played 
 
 Args:
    None
@@ -92,6 +93,43 @@ Args:
 Returns:
    None
 '''
-def fetch_recent(): 
+def scrape_recent(): 
    # determine recent week 
    logging.info('implement me')
+
+
+'''
+Fetch odds for upcoming game that is to be played so we can make predicitions 
+
+Args:
+   None 
+
+Returns:
+   None
+'''
+def scrape_upcoming():
+   # extract configs 
+   url = props.get_config('website.rotowire.urls.upcoming-odds') 
+   curr_year = props.get_config('nfl.current-year')
+   
+   # extract latest week that we have bet data persisted 
+   week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(curr_year)
+   week_to_fetch = week + 1 # fetch data for next week
+   
+   # fetch upcoming odds 
+   params = {
+      "week": week_to_fetch
+   }
+   jsonData = requests.get(url, params=params).json()
+   df = pd.DataFrame(jsonData)
+   
+   # extract relevant columns and create new dataframe 
+   
+   # for each unique game_id in dataframe, yank out to rows, and call helper function to calculate avgs (i.e avg money line, avg_teamtotalOver, etc)
+   
+   # with these average create a persistable team_betting_odds record that we can persist 
+   
+   # persist all records and return 
+   
+   
+   
