@@ -123,13 +123,36 @@ def scrape_upcoming():
    jsonData = requests.get(url, params=params).json()
    df = pd.DataFrame(jsonData)
    
-   # extract relevant columns and create new dataframe 
    
    # for each unique game_id in dataframe, yank out to rows, and call helper function to calculate avgs (i.e avg money line, avg_teamtotalOver, etc)
+   '''
+   1. Yank Out Unique Game Ids Into A List 
+   2. Loop Through List Of Unique IDs & Filter Dataframe By Game_ID Column 
+   3. Call Calculate Avg Lines With First Row of Filtered Dataframe 
+   '''
+   upcoming_lines_avgs = calculate_avg_lines()
+
    
    # with these average create a persistable team_betting_odds record that we can persist 
    
    # persist all records and return 
    
-   
+
+'''
+Calculate the avg O/U and avg spread based on each available lines from relevant bookies 
+
+Args:
+   home_df (pd.DataFrame): data frame containing home teams lines 
+
+Returns:
+   df (pd.DataFrame): data frame with relevant avg columns added 
+'''
+def calculate_avg_lines(home_df: pd.DataFrame, away_df: pd.DataFrame): 
+   # calculate avg O/U line based on available lines 
+   over_under_line_total = 0
+   over_under_line_count = 0
+
+   if(home_df['betrivers_has_ou'] == True): #TODO: make sure this doesnt needed to be "true" instead
+      # add to total and increment count
+
    
