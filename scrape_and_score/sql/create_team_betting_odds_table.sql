@@ -1,8 +1,8 @@
 CREATE TABLE team_betting_odds (
 	home_team_id INT NOT NULL,
 	away_team_id INT NOT NULL, 
-	home_team_score INT NOT NULL,
-	away_team_score INT NOT NULL,
+	home_team_score INT,
+	away_team_score INT,
 	week INT NOT NULL, 
 	year INT NOT NULL,
 	game_over_under FLOAT NOT NULL, 
