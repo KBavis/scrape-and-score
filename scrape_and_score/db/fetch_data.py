@@ -563,3 +563,36 @@ def fetch_inputs_for_prediction(team_name: str, player_name: str):
       raise e
    
    return df
+
+
+'''
+Retrieve the latest week we have persisted data in our 'team_betting_odds' table 
+
+Args:
+   year (int): season to retrieve data for 
+
+Return:
+   week (int): the latest week persisted in our db table
+'''
+def fetch_max_week_persisted_in_team_betting_odds_table(year: int):
+   sql = 'SELECT week FROM team_betting_odds WHERE year = %s AND week = (SELECT MAX(week) FROM team_betting_odds)'
+   
+   try:
+      connection = get_connection()
+      
+      with connection.cursor() as cur:
+         cur.execute(sql, (year,)) 
+         row = cur.fetchone()
+         
+         if row: 
+            week = row[0]
+            
+            if week:
+               return int(week) 
+         
+         raise Exception('Unable to extract week from team_betting_odds table')
+      
+   except Exception as e:
+      logging.error(f"An error occurred while fetching the latest week persisted in team_betting_odds for year {year}: {e}")
+      raise e
+      
