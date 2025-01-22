@@ -11,6 +11,7 @@ website:
    rotowire:
       urls:
          historical-odds: "https://www.rotowire.com/betting/nfl/tables/games-archive.php"
+         upcoming-odds: "https://www.rotowire.com/betting/nfl/tables/nfl-games-by-market.php?week={WEEK}"
 
 # scraping
 scraping:
