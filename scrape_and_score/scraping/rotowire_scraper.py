@@ -154,5 +154,4 @@ def calculate_avg_lines(home_df: pd.DataFrame, away_df: pd.DataFrame):
 
    if(home_df['betrivers_has_ou'] == True): #TODO: make sure this doesnt needed to be "true" instead
       # add to total and increment count
-
-   
+      logging.info('Betrivers has O/U; accounted for in average line')
