@@ -94,8 +94,30 @@ Returns:
    None
 '''
 def update_recent_betting_records(): 
+   # load configs
+   url = props.get_config('website.rotowire.urls.historical-odds') 
+   curr_year = props.get_config('nfl.current-year')
+
    # determine recent week 
-   logging.info('implement me')
+   recent_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table()
+
+   # retrieve historical odds
+   jsonData = requests.get(url).json()
+   df = pd.DataFrame(jsonData)
+
+   # create ID mapping 
+   mapping = create_team_id_mapping(df[df['week'] == '1'] and df['season'] == str(curr_year))
+   
+   # filter out records based on year & recent week
+   curr_year_data = df[df['season'] == str(curr_year) and df['week'] == str(recent_week)] 
+
+   #TODO: from curr_year data, yank out relevant data needed to update our persisted record in our dbs (that were persited by scrape_upcoming)
+
+
+
+
+
+
 
 
 '''
