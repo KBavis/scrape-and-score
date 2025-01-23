@@ -30,7 +30,7 @@ def scrape_all():
    
    # insert into our db
    logging.info('Inserting all teams historical odds into our database')
-   insert_data.insert_teams_historical_odds(team_betting_odds_records)
+   insert_data.insert_teams_odds(team_betting_odds_records)
    
    
 '''
@@ -85,7 +85,7 @@ def create_team_id_mapping(week_one_data: pd.DataFrame):
    return mappings
 
 '''
-Fetch odds for the most recent games played 
+Update persisted betting records with relevant information (under/over hit, coverd, total score, etc)
 
 Args:
    None
@@ -93,7 +93,7 @@ Args:
 Returns:
    None
 '''
-def scrape_recent(): 
+def update_recent_betting_records(): 
    # determine recent week 
    logging.info('implement me')
 
@@ -123,35 +123,142 @@ def scrape_upcoming():
    jsonData = requests.get(url, params=params).json()
    df = pd.DataFrame(jsonData)
    
+   # extract unique game IDs 
+   game_ids = df['gameID'].unique() 
+   logging.info(f'Unique game IDs representing upcoming NFL games: {game_ids}')
    
-   # for each unique game_id in dataframe, yank out to rows, and call helper function to calculate avgs (i.e avg money line, avg_teamtotalOver, etc)
-   '''
-   1. Yank Out Unique Game Ids Into A List 
-   2. Loop Through List Of Unique IDs & Filter Dataframe By Game_ID Column 
-   3. Call Calculate Avg Lines With First Row of Filtered Dataframe 
-   '''
-   upcoming_lines_avgs = calculate_avg_lines()
+   # calculate avg o/u & spreads for each game 
+   df['avg_ou'] = None
+   df['avg_spread'] = None 
 
-   
-   # with these average create a persistable team_betting_odds record that we can persist 
-   
-   # persist all records and return 
+   for game_id in game_ids:
+      game_betting_lines = df[df['gameID'] == game_id]
+      
+      if len(game_betting_lines) == 2:
+         avg_ou, avg_spread = calculate_avg_lines(game_betting_lines)
+         df.loc[df['gameID'] == game_id, 'avg_ou'] = avg_ou
+         df.loc[df['gameID'] == game_id, 'avg_spread'] = avg_spread
+      else:
+         raise Exception(f'Unable to retrieve two unique records corresponding to game ID {game_id}')
+
+   # create persistable record s
+   upcoming_betting_odds = get_upcoming_betting_odds_records(df, game_ids, week_to_fetch, curr_year) 
+
+   insert_data.insert_teams_odds(upcoming_betting_odds, True)
    
 
 '''
-Calculate the avg O/U and avg spread based on each available lines from relevant bookies 
+Generate upcoming betting odds records to persist to our DB 
 
 Args:
-   home_df (pd.DataFrame): data frame containing home teams lines 
+   df (pd.DataFrame): data frame containing relevant metrics regarding upcoming game odds 
+   game_ids (list): list of unique game IDs to generate records for 
+   week (int): week corresponding to betting odds 
+   year (int): season correspondign to betting odds 
 
 Returns:
-   df (pd.DataFrame): data frame with relevant avg columns added 
+   records (list): list of betting odds to persist
 '''
-def calculate_avg_lines(home_df: pd.DataFrame): 
-   # calculate avg O/U line based on available lines 
-   over_under_line_total = 0
-   over_under_line_count = 0
+def get_upcoming_betting_odds_records(df: pd.DataFrame, game_ids: list, week: int, year: int):
+   logging.info('Attempting to generate upcoming betting odds records to persist to our DB')
 
-   if(home_df['betrivers_has_ou'] == True): #TODO: make sure this doesnt needed to be "true" instead
-      # add to total and increment count
-      logging.info('Betrivers has O/U; accounted for in average line')
+   records = []
+
+   for game_id in game_ids:
+      game_df = df[df['gameID'] == game_id]
+
+      if len(game_df) != 2:
+         raise Exception('More than two records associated with game ID')
+
+      # determine who is home vs away
+      if game_df.iloc[0]['homeAway'] == 'home':
+         home_team_id = team_service.get_team_id_by_name(game_df.iloc[0]['name'])
+         away_team_id = team_service.get_team_id_by_name(game_df.iloc[1]['name'])
+      else:
+         away_team_id = team_service.get_team_id_by_name(game_df.iloc[0]['name'])
+         home_team_id = team_service.get_team_id_by_name(game_df.iloc[1]['name'])
+
+      favorite_team_id = get_favorite_team_id(game_df)
+
+      # create & append record
+      record = {
+         "home_team_id": home_team_id,
+         "away_team_id": away_team_id,
+         "week": week,
+         "year": year,
+         "favorite_team_id": favorite_team_id,
+         "game_over_under": df.iloc[0]['avg_ou'],
+         "spread": df.iloc[0]['avg_spread'],
+      }
+      records.append(record)
+   
+   return records
+
+
+'''
+Funcionality to retrieve the team ID of the favorite based on datafrmae game lines 
+
+Args:
+   game_df (pd.DataFrame): data frame containing team odds 
+
+Returns:
+   team_id (int): ID of the team who is favorited
+'''
+def get_favorite_team_id(game_df: pd.DataFrame):
+   bookies = ['betrivers', 'mgm', 'draftkings', 'fanduel', 'best']
+
+   for bookie in bookies:
+      has_ml = f"{bookie}_has_spread" 
+      ml = f"{bookie}_spread"
+
+      if game_df.iloc[0][has_ml]:
+         if float(game_df.iloc[0][ml]) > 0:
+            return team_service.get_team_id_by_name(game_df.iloc[1]['name'])
+         else:
+            return team_service.get_team_id_by_name(game_df.iloc[0]['name'])
+   
+   raise Exception('No bookies have available money lines; unable to determine favorited team')
+
+'''
+Calculate the avg O/U, avg spread, and avg_money line based on each available lines from relevant bookies 
+
+Args:
+   game_df (pd.DataFrame): data frame containing game betting lines for both home & away team
+
+Returns:
+   avg_ou, avg_spread (tuple): calculated avgs
+'''
+def calculate_avg_lines(game_df: pd.DataFrame): 
+   # list of possible bookies
+   bookies = ['betrivers', 'mgm', 'draftkings', 'fanduel', 'best']
+
+   ou_count = 0
+   ou_amount = 0
+   spread_count = 0
+   spread_amount= 0
+   ml_count = 0
+   ml_amount = 0
+
+   for bookie in bookies:
+      has_spread = f"{bookie}_has_spread" 
+      spread = f"{bookie}_spread"
+      has_ou = f"{bookie}_has_ou" 
+      ou = f"{bookie}_ou"
+
+      if has_ou in game_df.columns and ou in game_df.columns and game_df.iloc[0].get(has_ou, False):
+         ou_count+=1
+         ou_amount+=float(game_df.iloc[0][ou])
+      
+      if has_spread in game_df.columns and spread in game_df.columns and game_df.iloc[0].get(has_spread, False):
+         spread_count+=1 
+         spread_amount+=float(game_df.iloc[0][spread])
+   
+       # Safely calculate averages to avoid division by zero
+   avg_ou = ou_amount / ou_count if ou_count > 0 else None
+   avg_spread = spread_amount / spread_count if spread_count > 0 else None
+   avg_ml = ml_amount / ml_count if ml_count > 0 else None
+
+   return avg_ou, avg_spread
+   
+
+      
