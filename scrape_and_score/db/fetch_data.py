@@ -487,7 +487,13 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          t.off_rush_rank,
          t.off_pass_rank,
          td.def_rush_rank,
-         td.def_pass_rank
+         td.def_pass_rank,
+         tbo.game_over_under,
+         tbo.spread,
+         CASE
+            WHEN tbo.favorite_team_id = t.team_id THEN 1
+			ELSE 0
+         END AS is_favroited
       FROM
          player_game_log pgl
       JOIN 
@@ -496,6 +502,12 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          team t ON p.team_id = t.team_id
       JOIN 
          team td ON pgl.opp = td.team_id
+      JOIN 
+         team_betting_odds tbo 
+      ON 
+				(tbo.home_team_id = t.team_id OR tbo.home_team_id = td.team_id)
+               AND 
+				(tbo.away_team_id = t.team_id OR tbo.away_team_id = td.team_id);	
    '''
 
    df = None
