@@ -16,6 +16,7 @@ class LinReg:
       self.wr_data = wr_data 
       self.te_data = te_data
       
+      #TODO: attempt to remove inputs one by one and compare adjusted r2 value
       self.qb_inputs_scaled = self.scale_inputs(qb_data)   
       self.rb_inputs_scaled = self.scale_inputs(rb_data)   
       self.wr_inputs_scaled = self.scale_inputs(wr_data)   
