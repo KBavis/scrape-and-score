@@ -493,7 +493,7 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          CASE
             WHEN tbo.favorite_team_id = t.team_id THEN 1
 			ELSE 0
-         END AS is_favroited
+         END AS is_favorited
       FROM
          player_game_log pgl
       JOIN 
