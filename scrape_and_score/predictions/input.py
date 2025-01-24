@@ -20,6 +20,8 @@ def get_user_input():
     nfl_teams = props.get_config('nfl.teams')
     teams = [team['name'] for team in nfl_teams]
 
+    #TODO: Make user input week/year combo and player on one of the teams (validate this is the case). Then we can check if we have entry in team_betting_odds corresponding to this
+
     while not name_valid and players_name != 'exit':
         players_name = input("\n\n\nPlease enter the players full name (first & last) that you would like us to predict fantasy points for:\n")
         name_valid = validate_players_name(players_name)
