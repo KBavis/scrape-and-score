@@ -302,8 +302,8 @@ def insert_teams_odds(betting_odds: list, upcoming=False):
       with connection.cursor() as cur:
          cur.executemany(sql, params)
          connection.commit()
-         logging.info(f"Successfully insert {len(betting_odds)} team {"historical" if not upcoming else "upcoming"} odds into our database")
+         logging.info(f"Successfully inserted {len(betting_odds)} team {'historical' if not upcoming else 'upcoming'} odds into our database")
 
    except Exception as e:
-      logging.error(f"An exception occurred while inserting the following  {"historical" if not upcoming else "upcoming"} team odds: {betting_odds}", exc_info=True)
+      logging.error(f"An exception occurred while inserting the following  {'historical' if not upcoming else 'upcoming'} team odds: {betting_odds}", exc_info=True)
       raise e
