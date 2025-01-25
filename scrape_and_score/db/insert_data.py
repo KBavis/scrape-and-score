@@ -285,13 +285,13 @@ Returns:
 def insert_teams_odds(betting_odds: list, upcoming=False):
    if not upcoming:
       sql = '''
-         INSERT INTO team_betting_odds (home_team_id, away_team_id, home_team_score, away_team_score, week, year, game_over_under, favorite_team_id, spread, total_points, over_hit, under_hit, favorite_covered, underdog_covered)
+         INSERT INTO team_betting_odds (home_team_id, away_team_id, home_team_score, away_team_score, week, season, game_over_under, favorite_team_id, spread, total_points, over_hit, under_hit, favorite_covered, underdog_covered)
          VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
       '''
       params = [(odds['home_team_id'], odds['away_team_id'], odds['home_team_score'], odds['away_team_score'], odds['week'], odds['year'], odds['game_over_under'], odds['favorite_team_id'], odds['spread'], odds['total_points'], odds['over_hit'], odds['under_hit'], odds['favorite_covered'], odds['underdog_covered']) for odds in betting_odds]
    else:
       sql = '''
-         INSERT INTO team_betting_odds (home_team_id, away_team_id, week, year, game_over_under, favorite_team_id, spread)
+         INSERT INTO team_betting_odds (home_team_id, away_team_id, week, season, game_over_under, favorite_team_id, spread)
          VALUES (%s, %s, %s, %s, %s, %s, %s)
       '''
       params = [(odds['home_team_id'], odds['away_team_id'], odds['week'], odds['year'], odds['game_over_under'], odds['favorite_team_id'], odds['spread']) for odds in betting_odds]
