@@ -2,6 +2,7 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from sklearn.feature_selection import f_regression
 import matplotlib.pyplot as plt
 import seaborn as sns 
 import logging 
@@ -16,11 +17,13 @@ class LinReg:
       self.wr_data = wr_data 
       self.te_data = te_data
       
-      #TODO: attempt to remove inputs one by one and compare adjusted r2 value
-      self.qb_inputs_scaled = self.scale_inputs(qb_data)   
-      self.rb_inputs_scaled = self.scale_inputs(rb_data)   
-      self.wr_inputs_scaled = self.scale_inputs(wr_data)   
-      self.te_inputs_scaled = self.scale_inputs(te_data)   
+      # drop features which were determine to be insignficant to prediction
+      self.drop_statistically_insignificant_features() 
+      
+      self.qb_inputs_scaled = self.scale_inputs(self.qb_data)   
+      self.rb_inputs_scaled = self.scale_inputs(self.rb_data)   
+      self.wr_inputs_scaled = self.scale_inputs(self.wr_data)   
+      self.te_inputs_scaled = self.scale_inputs(self.te_data)   
       
       self.qb_targets = qb_data['log_fantasy_points']
       self.rb_targets = rb_data['log_fantasy_points']
@@ -31,7 +34,7 @@ class LinReg:
       self.rb_regression = None
       self.wr_regression = None
       self.te_regression = None
-      
+
       self.split_data = None
 
    '''
@@ -141,46 +144,33 @@ class LinReg:
       None
    '''
    def log_regression_metrics(self):
-      # QB 
-      print('\n\n')
-      logging.info('QB Regression Model Metrics')
-      logging.info(f'Bias Of Regression (Y-Intercept): {self.qb_regression.intercept_}')
+      # Define positions and their corresponding regression models and data
+      positions = {
+         'QB': (self.qb_regression, self.qb_data),
+         'RB': (self.rb_regression, self.rb_data),
+         'WR': (self.wr_regression, self.wr_data),
+         'TE': (self.te_regression, self.te_data),
+      }
       
-      inputs = self.qb_data.drop(['log_fantasy_points'], axis=1)
-      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
-      reg_summary['Weights'] = self.qb_regression.coef_
-      logging.info(f'{reg_summary}')
-      
-      # RB 
-      print('\n\n')
-      logging.info('RB Regression Model Metrics')
-      logging.info(f'Bias Of Regression (Y-Intercept): {self.rb_regression.intercept_}')
-      
-      inputs = self.rb_data.drop(['log_fantasy_points'], axis=1)
-      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
-      reg_summary['Weights'] = self.rb_regression.coef_
-      logging.info(f'{reg_summary}')
-      
-      # WR 
-      print('\n\n')
-      logging.info('WR Regression Model Metrics')
-      logging.info(f'Bias Of Regression (Y-Intercept): {self.wr_regression.intercept_}')
-      
-      inputs = self.wr_data.drop(['log_fantasy_points'], axis=1)
-      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
-      reg_summary['Weights'] = self.wr_regression.coef_
-      logging.info(f'{reg_summary}')
-      
-      # TE
-      print('\n\n')
-      logging.info('TE Regression Model Metrics')
-      logging.info(f'Bias Of Regression (Y-Intercept): {self.te_regression.intercept_}')
-      
-      inputs = self.te_data.drop(['log_fantasy_points'], axis=1)
-      reg_summary = pd.DataFrame(inputs.columns.values, columns=['Features'])
-      reg_summary['Weights'] = self.te_regression.coef_
-      logging.info(f'{reg_summary}')
-      
+      for position, (regression, data) in positions.items():
+         print('\n\n')
+         logging.info(f'{position} Regression Model Metrics')
+         logging.info(f'Bias Of Regression (Y-Intercept): {regression.intercept_}')
+
+         # Drop the target variable to get feature names
+         inputs = data.drop(['log_fantasy_points'], axis=1)
+         
+         print(len(inputs.columns))
+         print(len(regression.coef_))
+         
+         # Create a DataFrame with feature names and corresponding weights
+         reg_summary = pd.DataFrame({
+            'Features': inputs.columns,
+            'Weights': regression.coef_
+         })
+         
+         logging.info(f'\n{reg_summary}')
+
    
       '''
    Helper function for creating the position specific regression models
@@ -322,3 +312,50 @@ class LinReg:
       
       print('\n\nTE Testing Predictions')
       print(sorted_te_df_predictions)
+   
+   
+   '''
+   Determine which features are benefiting our regression model. A feature with a p-value > 0.5 is determined to be a useless 
+   variable in terms of benefitting our regression
+   
+   Args:
+      None
+   
+   Returns:
+      None
+   '''  
+   def determine_feature_selection_significance(self):
+      position_data = {
+         'QB': self.qb_data,
+         'RB': self.rb_data,
+         'TE': self.te_data, 
+         'WR': self.wr_data
+      }
+      
+      for position, data in position_data.items(): 
+         p_values = f_regression(self.split_data[position]['x_train'], self.split_data[position]['y_train'])[1]
+         
+         data = data.drop(['log_fantasy_points'], axis=1)
+         
+         df = pd.DataFrame(data = [p_values], columns=data.columns.values)
+         print(f'\n\n{position} Regression Feature Signficance')
+         print(f'\n{df}')
+
+
+
+   '''
+   Drop features that are deemed insignificant by 'determine_feature_selection_signficance'
+   
+   TODO: Make this more configurable or just remove features in pre-processing instead 
+   
+   Args:
+      None 
+   
+   Returns:
+      None
+   '''
+   def drop_statistically_insignificant_features(self):
+      self.qb_data = self.qb_data[['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited']]
+      self.rb_data = self.rb_data[['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited']]
+      self.wr_data = self.wr_data[['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under']]
+      self.te_data = self.te_data[['log_fantasy_points', 'log_avg_fantasy_points', 'game_over_under']]
