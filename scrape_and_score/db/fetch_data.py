@@ -632,6 +632,9 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
             df = pd.read_sql_query(sql, connection, params=(player_name, player_name, week, season))
+            
+            if df.empty:
+                raise Exception(f'Unable to extract relevant prediction inputs for player {player_name} for the week/season {week} {season}')
 
     except Exception as e:
         logging.error(
