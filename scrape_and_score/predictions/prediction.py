@@ -6,6 +6,7 @@ import logging
 from sklearn.preprocessing import StandardScaler
 from models.lin_reg import LinReg
 import numpy as np
+from config import props
 
 '''
 Functionality to make a prediction for a single players # of fantasy points based on their matchup
@@ -18,10 +19,11 @@ Returns:
 '''
 def make_single_player_prediction(linear_regressions: LinReg):
    week, player_name = input.get_user_input()
+   season = props.get_config('nfl.current-year')
    
    # fetch model corresponding to players position 
    logging.info(f'Fetching independent variables corresponding to player {player_name}...')
-   independent_vars = fetch_data.fetch_inputs_for_prediction(week, player_name)
+   independent_vars = fetch_data.fetch_inputs_for_prediction(week,season,player_name)
    
    logging.info(f'Calculating ratio rank for player {player_name}')
    inputs_with_ratio_rank = calc_rankings_ratio(independent_vars)
@@ -33,10 +35,10 @@ def make_single_player_prediction(linear_regressions: LinReg):
    
    
    col_mappings = {
-      "QB": ['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited'],
-      "RB": ['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited'],
-      "WR": ['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under'],
-      "TE": ['log_fantasy_points', 'log_avg_fantasy_points', 'game_over_under']
+      "QB": ['log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited'],
+      "RB": ['log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited'],
+      "WR": ['log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under'],
+      "TE": ['log_avg_fantasy_points', 'game_over_under']
    }
    inputs = transformed_inputs[col_mappings[position]]
    
