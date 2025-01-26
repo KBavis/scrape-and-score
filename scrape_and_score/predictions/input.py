@@ -8,19 +8,17 @@ Args:
     None 
 
 Returns: 
-    opp_name, player_name (tuple): validated opponent name and player name
+    week, player_name (tuple): validated week and player name
 '''
 def get_user_input():
     name_valid = False
-    opp_valid = False
-    
     players_name = ''
-    opp_name = ''
     
-    nfl_teams = props.get_config('nfl.teams')
-    teams = [team['name'] for team in nfl_teams]
-
-    #TODO: Make user input week/year combo and player on one of the teams (validate this is the case). Then we can check if we have entry in team_betting_odds corresponding to this
+    week = ''
+    week_valid = False
+    
+    year = props.get_config('nfl.current-year')
+    
 
     while not name_valid and players_name != 'exit':
         players_name = input("\n\n\nPlease enter the players full name (first & last) that you would like us to predict fantasy points for:\n")
@@ -31,33 +29,38 @@ def get_user_input():
     if(players_name == 'exit'):
         exit(-1)
     
-    while not opp_valid and opp_name != 'exit':
-        opp_name = input("\nPlease enter the opposing teams full name (i.e Baltimore Ravens, New York Giants, etc) that you your player is going up against:\n")
-        opp_valid = validate_nfl_team_name(teams, opp_name)
-        if not opp_valid:
-            print(f'The NFL team name {opp_name} is not valid, please try a different NFL team name.')
+    while not week_valid and week != 'exit':
+        week = input("\nPlease enter the week that your players matchup is taking place:\n")
+        week_valid = validate_week_and_player_name(players_name, week, year)
+        if not week_valid:
+            print(f"The week {week} is not valid. Either you specified an invalid week, or no matchup regarding your specified player & this week is taking place. Please try a different week.")
 
-    return opp_name.title(), players_name.title()
+    return week, players_name.title()
+
 
 '''
-Functionaltiy to validate an NFL team name passed in 
+Functionality to validate that the specified week has a matchup taking place with the specified player 
 
 Args:
-    teams (list): valid NFL team name 
-    team_name (str): name inputed by user 
+    player_name (str): the players name to ensure is playing in the given week
+    week (str): the week of the matchup we need to account for 
+    year (int): year to account for 
 
 Returns:
-    valid (bool): whether name is valid or not
+    valid (bool): validity of the week given the players name
 '''
-def validate_nfl_team_name(teams: list, team_name: str):
-    if not team_name:
+def validate_week_and_player_name(player_name: str, week: str, year: int): 
+    # ensure week is numeric
+    try: 
+        week_casted = int(week)
+    except ValueError:
         return False
     
-    capitalized_team_name = team_name.title()
     
-    if capitalized_team_name not in teams:
-        return False 
-    return True
+    # ensure player has matchup in given week 
+    valid = fetch_data.validate_week_and_corresponding_player_entry_exists(player_name, week_casted, year)
+    return valid
+    
 
 '''
 Determine if inputed player's name is valid or not (i.e we have persisted data on specified player)
