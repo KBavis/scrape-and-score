@@ -593,7 +593,10 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         df.def_pass_rank,
         tbo.game_over_under,
         tbo.spread,
-        tbo.favorite_team_id
+        CASE 
+            WHEN tbo.favorite_team_id = t.team_id THEN 1
+            ELSE 0
+        END AS is_favorited
     FROM
         player_game_log pgl
     JOIN 
