@@ -623,7 +623,7 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         tbo.week = %s AND tbo.season = %s
     GROUP BY 
         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank, 
-        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points;
+        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited;
     """
 
     df = None
