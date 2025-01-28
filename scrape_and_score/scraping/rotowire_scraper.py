@@ -99,23 +99,60 @@ def update_recent_betting_records():
    curr_year = props.get_config('nfl.current-year')
 
    # determine recent week 
-   recent_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table()
+   recent_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(curr_year)
 
    # retrieve historical odds
    jsonData = requests.get(url).json()
    df = pd.DataFrame(jsonData)
+   print(df)
 
    # create ID mapping 
-   mapping = create_team_id_mapping(df[df['week'] == '1'] and df['season'] == str(curr_year))
+   mapping = create_team_id_mapping(df[(df['week'] == '1') & (df['season'] == str(curr_year))])
+   print(mapping)
    
    # filter out records based on year & recent week
-   curr_year_data = df[df['season'] == str(curr_year) and df['week'] == str(recent_week)] 
+   recent_data = df[(df['season'] == str(curr_year)) & (df['week'] == str(recent_week))] 
 
-   #TODO: from curr_year data, yank out relevant data needed to update our persisted record in our dbs (that were persited by scrape_upcoming)
+   # insert updates
+   records = generate_update_records(recent_data, mapping, curr_year, recent_week)
+   insert_data.update_team_betting_odds_records_with_outcomes(records)
+   
+   
 
 
+'''
+Generate records to update 'team_betting_odds' records that games have been completed 
 
-
+Args:
+   recent_data (pd.DataFrame): dataframe containing team betting odds information from most recent week & year 
+   mapping (dict) : mapping of a teams acronym to its corresponding team_id
+   year (int): season the updated records correspond to 
+   week (int): the week these records correspond to
+   
+Returns:
+   None
+'''
+def generate_update_records(recent_data: pd.DataFrame, mapping: dict, year: int, week: int):
+   update_records = [
+   {
+      "home_team_id": mapping[row['home_team_stats_id']],
+      "visit_team_id": mapping[row['visit_team_stats_id']],
+      "total_points": row['total'],
+      "over_hit": row['over_hit'],
+      "under_hit": row['under_hit'],
+      "favorite_covered": row['favorite_covered'],
+      "underdog_covered": row['underdog_covered'],
+      "home_team_score": row['home_team_score'],
+      "visit_team_score": row['visit_team_score'],
+      "year": year,
+      "week": week
+   }
+   for _, row in recent_data.iterrows()
+   ]
+   
+   return update_records
+   
+   
 
 
 
