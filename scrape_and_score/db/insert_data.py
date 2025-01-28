@@ -271,3 +271,85 @@ def update_team_rankings(rankings: list, col: str):
    except Exception as e:
       logging.error(f"An exception occurred while inserting the following rankings: {rankings}", exc_info=True)
       raise e
+
+
+'''
+Functionality to insert historical betting odds into our DB 
+
+Args:
+   betting_odds (list): list of historical betting odds 
+
+Returns:
+   None
+'''
+def insert_teams_odds(betting_odds: list, upcoming=False):
+   if not upcoming:
+      sql = '''
+         INSERT INTO team_betting_odds (home_team_id, away_team_id, home_team_score, away_team_score, week, season, game_over_under, favorite_team_id, spread, total_points, over_hit, under_hit, favorite_covered, underdog_covered)
+         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+      '''
+      params = [(odds['home_team_id'], odds['away_team_id'], odds['home_team_score'], odds['away_team_score'], odds['week'], odds['year'], odds['game_over_under'], odds['favorite_team_id'], odds['spread'], odds['total_points'], odds['over_hit'], odds['under_hit'], odds['favorite_covered'], odds['underdog_covered']) for odds in betting_odds]
+   else:
+      sql = '''
+         INSERT INTO team_betting_odds (home_team_id, away_team_id, week, season, game_over_under, favorite_team_id, spread)
+         VALUES (%s, %s, %s, %s, %s, %s, %s)
+      '''
+      params = [(odds['home_team_id'], odds['away_team_id'], odds['week'], odds['year'], odds['game_over_under'], odds['favorite_team_id'], odds['spread']) for odds in betting_odds]
+   
+   try:
+      connection = get_connection()
+
+      with connection.cursor() as cur:
+         cur.executemany(sql, params)
+         connection.commit()
+         logging.info(f"Successfully inserted {len(betting_odds)} team {'historical' if not upcoming else 'upcoming'} odds into our database")
+
+   except Exception as e:
+      logging.error(f"An exception occurred while inserting the following  {'historical' if not upcoming else 'upcoming'} team odds: {betting_odds}", exc_info=True)
+      raise e
+
+   
+'''
+   Update exisiting team_betting_odds records with the outcomes of each game
+   
+   Args:
+      update_records (list): list of records to update 
+   
+   Returns:
+      None
+'''
+def update_team_betting_odds_records_with_outcomes(update_records: list): 
+   sql = f'''
+            UPDATE team_betting_odds
+            SET 
+               home_team_score = %s,
+               away_team_score = %s, 
+	            total_points = %s, 
+	            over_hit = %s,
+	            under_hit = %s,
+	            favorite_covered = %s, 
+	            underdog_covered = %s
+            WHERE 
+               home_team_id = %s 
+               AND 
+               away_team_id = %s
+               AND 
+               season = %s
+               AND 
+               week = %s
+         '''
+
+   try:
+      connection = get_connection()
+   
+      params = [(record['home_team_score'], record['visit_team_score'], record['total_points'], record['over_hit'], \
+                 record['under_hit'], record['favorite_covered'], record['underdog_covered'], record['home_team_id'], \
+                 record['visit_team_id'], record['year'], record['week']) for record in update_records]
+      
+      with connection.cursor() as cur:
+         cur.executemany(sql, params)
+         connection.commit()
+         logging.info(f"Successfully updated {len(update_records)} team betting odds records in the database")
+   except Exception as e:
+      logging.error(f"An exception occurred while updating the following team_betting_odds: {update_records}", exc_info=True)
+      raise e

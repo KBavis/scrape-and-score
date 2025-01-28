@@ -96,7 +96,7 @@ Returns:
 '''
 def validate_proxy(proxy):
    try:
-      ip = requests.get("http://checkip.amazonaws.com", proxies = proxy, timeout=2) 
+      ip = requests.get("http://checkip.amazonaws.com", proxies = proxy, timeout=1) 
       ip.raise_for_status()
       
       # valid IPv4 address contains three '.'

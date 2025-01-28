@@ -74,7 +74,7 @@ Args:
    year (int): current year we are fetching metrics for
 '''
 def get_game_log_year(week: str, year: int):
-   if week == '18':
+   if week == '18' or week == 18:
       return year + 1 # next year only if past week 18
    else :
       return year

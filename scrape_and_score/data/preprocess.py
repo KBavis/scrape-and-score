@@ -34,10 +34,10 @@ def pre_process_data():
       df.drop(columns=['player_id', 'fantasy_points', 'off_rush_rank', 'off_pass_rank', 'def_rush_rank', 'def_pass_rank']) # drop un-needed columns
       ols_validated_data.append(validate_ols_assumptions(df))
    
-   cols = ['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank']
+   cols = ['log_fantasy_points', 'log_avg_fantasy_points', 'log_ratio_rank', 'game_over_under', 'is_favorited', 'spread']
    preprocessed_data = [df[cols] for df in ols_validated_data] 
    
-   # return tuple of pre-processed data
+   # # return tuple of pre-processed data
    return preprocessed_data[0], preprocessed_data[1], preprocessed_data[2], preprocessed_data[3]
 
 
@@ -239,20 +239,47 @@ Returns:
    None
 '''
 def create_plots(data: pd.DataFrame, position: str):
-   f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize =(15,6))
-   ax1.scatter(data['log_avg_fantasy_points'],data['log_fantasy_points'])
-   ax1.set_title('Log Fantasy Points and Log Avg Fantasy Points')
-   
-   ax2.scatter(data['log_ratio_rank'],data['log_fantasy_points'])
-   ax2.set_title('Log Fantasy Points and Log Ratio Rank')
+    f, axes = plt.subplots(2, 3, figsize=(18, 12))
+    axes = axes.flatten()
 
-   relative_dir = "./data/scatter"
-   file_name = f"{position}_features_plot.pdf"
-   os.makedirs(relative_dir, exist_ok=True)
-   file_path = os.path.join(relative_dir, file_name)
-   f.tight_layout()
-   
-   plt.savefig(file_path)
+    axes[0].scatter(data['log_avg_fantasy_points'], data['log_fantasy_points'])
+    axes[0].set_title('Log Fantasy Points vs. Log Avg Fantasy Points')
+    axes[0].set_xlabel('Log Avg Fantasy Points')
+    axes[0].set_ylabel('Log Fantasy Points')
+
+    axes[1].scatter(data['log_ratio_rank'], data['log_fantasy_points'])
+    axes[1].set_title('Log Fantasy Points vs. Log Ratio Rank')
+    axes[1].set_xlabel('Log Ratio Rank')
+    axes[1].set_ylabel('Log Fantasy Points')
+
+    axes[2].scatter(data['spread'], data['log_fantasy_points'])
+    axes[2].set_title('Log Fantasy Points vs. Spread')
+    axes[2].set_xlabel('Spread')
+    axes[2].set_ylabel('Log Fantasy Points')
+
+    axes[3].scatter(data['game_over_under'], data['log_fantasy_points'])
+    axes[3].set_title('Log Fantasy Points vs. Game Over/Under')
+    axes[3].set_xlabel('Game Over/Under')
+    axes[3].set_ylabel('Log Fantasy Points')
+
+    axes[4].scatter(data['is_favorited'].astype(int), data['log_fantasy_points'])
+    axes[4].set_title('Log Fantasy Points vs. Is Favorited')
+    axes[4].set_xlabel('Is Favorited (0 = False, 1 = True)')
+    axes[4].set_ylabel('Log Fantasy Points')
+    axes[4].set_xticks([0, 1])
+    axes[4].set_xticklabels(['False', 'True'])
+
+    if len(axes) > 5:
+        axes[5].axis('off')
+
+    relative_dir = "./data/scatter"
+    file_name = f"{position}_features_plot.pdf"
+    os.makedirs(relative_dir, exist_ok=True)
+    file_path = os.path.join(relative_dir, file_name)
+    f.tight_layout()
+
+    plt.savefig(file_path)
+    plt.close(f)
 
 
 
