@@ -10,6 +10,7 @@ from models.lin_reg import LinReg
 from util import args
 import logging
 from predictions import prediction
+from scraping import rotowire_scraper
 
       
 
@@ -93,11 +94,17 @@ def main():
       # generate our position specific regressions 
       linear_regressions = LinReg(qb_pre_processed_data, rb_pre_processed_data, wr_pre_processed_data, te_pre_processed_data)
       linear_regressions.create_regressions()
+      
+      if cl_args.upcoming:
+         rotowire_scraper.scrape_upcoming() 
+      elif cl_args.update_odds:
+         rotowire_scraper.update_recent_betting_records()
+      elif cl_args.historical:
+         rotowire_scraper.scrape_all()
 
       # determine if we want to test our regression 
       if cl_args.test:
          linear_regressions.test_regressions()
-      
 
       # determine inputs
       if cl_args.single_player:
