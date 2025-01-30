@@ -16,7 +16,7 @@ website:
       market-ids: "73:74:102:103:100:333:101:106:107:76:105:75:104:66:71:78:253"
       api-key: "CHi8Hy5CEE4khd46XNYL23dCFX96oUdw6qOt1Dnh"
       urls:
-         historical-odds: "https://api.bettingpros.com/v3/offers?sport=NFL&market_id={MARKET_IDS}&player_slug={PLAYER_SLUG}&event_id={EVENT_IDS}&location=NY&limit=5&page=1"
+         historical-odds: "https://api.bettingpros.com/v3/offers?sport=NFL&market_id={MARKET_IDS}&player_slug={PLAYER_SLUG}&event_id={EVENT_IDS}&location=NY&limit=5&page={PAGE}"
          events: "https://api.bettingpros.com/v3/events?sport=NFL&week={WEEK}&season={YEAR}"
 
 # scraping
