@@ -651,6 +651,51 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
 
     return df
 
+""" 
+Retrieve all relevant player names that are active in a specified year 
+
+Args:
+    year (int): season to retrieve data for 
+
+Return
+    players_names (list): all relevant player names 
+"""
+def fetch_player_names_active_in_specified_year(year):
+    sql = '''
+      SELECT 
+	    DISTINCT name
+      FROM 
+	    player p
+      JOIN player_game_log pgl 
+	    ON pgl.player_id = p.player_id
+      WHERE 
+	    pgl.year = %s
+    '''
+    
+    names = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                names.append(row[0])
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching the relevant player names corresponding to year {year}: {e}"
+        )
+        raise e
+
+    return names 
+    
+    
+
 
 """
 Retrieve the latest week we have persisted data in our 'team_betting_odds' table 
