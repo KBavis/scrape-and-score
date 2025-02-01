@@ -652,7 +652,7 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     return df
 
 """ 
-Retrieve all relevant player names that are active in a specified year 
+Retrieve all relevant player names & ids that are active in a specified year 
 
 Args:
     year (int): season to retrieve data for 
@@ -660,10 +660,11 @@ Args:
 Return
     players_names (list): all relevant player names 
 """
-def fetch_player_names_active_in_specified_year(year):
+def fetch_players_active_in_specified_year(year):
     sql = '''
       SELECT 
-	    DISTINCT name
+	    DISTINCT p.name,
+        p.player_id
       FROM 
 	    player p
       JOIN player_game_log pgl 
@@ -682,13 +683,13 @@ def fetch_player_names_active_in_specified_year(year):
             rows = cur.fetchall()
             
             for row in rows: 
-                names.append(row[0])
+                names.append({"name": row[0], "id": row[1]})
                 
 
 
     except Exception as e:
         logging.error(
-            f"An error occurred while fetching the relevant player names corresponding to year {year}: {e}"
+            f"An error occurred while fetching the relevant player names & ids corresponding to year {year}: {e}"
         )
         raise e
 
