@@ -73,6 +73,10 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
 
     # fetch initial data from first page
     data = get_data(parsed_url.replace("{PAGE}", str(1)))
+    
+    if not data:
+        return None
+    
     num_pages = determine_number_of_pages(data)
     
     # no data for this player in the specified week 
