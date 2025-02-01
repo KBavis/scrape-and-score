@@ -1,6 +1,6 @@
 from config import props
 import requests
-from db import fetch_data
+from db import fetch_data, insert_data
 import logging
 import time
 
@@ -21,19 +21,18 @@ def fetch_historical_odds(season: int):
 
     players = fetch_data.fetch_players_active_in_specified_year(season)
 
-    # iterate thorugh each player
+    # iterate through each potential player
     for player in players:
         player_name = player['name']
         logging.info(f'Fetching player props for the player "{player_name}" for the {season} season')
 
-        first_and_last = player_name.lower().split(" ")
+        first_and_last = player_name.lower().split(" ")[:2]
         player_slug = "-".join(first_and_last)
 
         # iterate through each relevant week in specified season
         player_props = {"player_id": player['id'], "player_name": player_name}
         season_odds = []
         for week in range(1, max_week + 1):
-            logging.info(f'\n\n Fetching player props for week {week}')
             event_ids = fetch_event_ids_for_week(week, season)
             betting_odds = get_player_betting_odds(player_slug, event_ids, markets)
             
@@ -42,10 +41,12 @@ def fetch_historical_odds(season: int):
                 continue
             else:
                 season_odds.append({"week": week, "week_odds": betting_odds})
-                print(betting_odds)
         
-        # TODO: persist player props
-        player_props.update({"season_odds": season_odds})      
+        player_props.update({"season_odds": season_odds})    
+        
+        # insert season long props into db
+        logging.info(f'Attempting to insert player props for player {player_name} for the {season} season...')  
+        insert_data.insert_player_props(player_props, season)
 
 
 """
@@ -176,7 +177,12 @@ def get_odds(data: dict, market_ids: dict):
             
             # loop through available bookies & find the best line
             bookies = selection['books']
+            best_found = False
             for book in bookies:
+                # stop looping if we found best line 
+                if best_found:
+                    break
+                
                 lines = book['lines']
             
                 # loop through available lines for a bookie 
@@ -184,6 +190,8 @@ def get_odds(data: dict, market_ids: dict):
                     # only account for best lines
                     if line['best'] == True: 
                         odds.append({"label": full_prop_name, "cost": line['cost'], "line": line['line']})
+                        best_found = True
+                        break
                     
     return odds
 
