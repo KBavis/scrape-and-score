@@ -6,6 +6,6 @@ CREATE TABLE player_betting_odds (
 	line FLOAT NOT NULL,
 	week INT NOT NULL, 
 	season INT NOT NULL,
-	PRIMARY KEY (week, season, label), 
+	PRIMARY KEY (week, season, label, player_id), 
 	FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE
 )
