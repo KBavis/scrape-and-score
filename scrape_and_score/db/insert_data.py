@@ -343,6 +343,60 @@ def update_team_rankings(rankings: list, col: str):
 
 
 """
+Functionality to insert historical player props into our DB 
+
+Args:
+    player_props (dict):  relevant season long player props to persist
+    season (int): relevant season
+
+Returns:
+    None
+"""
+
+
+def insert_player_props(player_props: dict, season: int):
+    sql = """
+        INSERT INTO player_betting_odds (player_id, player_name, label, cost, line, week, season) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    player_id = player_props['player_id']
+    player_name = player_props['player_name']
+    
+    params = [
+        (
+            player_id,
+            player_name,
+            odds['label'],
+            odds['cost'],
+            odds['line'],
+            week_data['week'],
+            season
+        )
+        for week_data in player_props['season_odds']
+        for odds in week_data['week_odds']
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(params)} player historical odds into our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following historical player odds: {player_props}",
+            exc_info=True,
+        )
+        raise e
+    
+    
+
+
+"""
 Functionality to insert historical betting odds into our DB 
 
 Args:
