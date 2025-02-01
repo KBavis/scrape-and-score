@@ -19,28 +19,33 @@ def fetch_historical_odds(season: int):
     max_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(season)
     markets = props.get_config("website.betting-pros.market-ids")
 
-    player_names = fetch_data.fetch_player_names_active_in_specified_year(season)
+    players = fetch_data.fetch_players_active_in_specified_year(season)
 
     # iterate thorugh each player
-    for player in player_names:
-        logging.info(f'Fetching player props for the player "{player}" for the {season} season')
+    for player in players:
+        player_name = player['name']
+        logging.info(f'Fetching player props for the player "{player_name}" for the {season} season')
 
-        first_and_last = player.lower().split(" ")
+        first_and_last = player_name.lower().split(" ")
         player_slug = "-".join(first_and_last)
 
         # iterate through each relevant week in specified season
+        player_props = {"player_id": player['id'], "player_name": player_name}
+        season_odds = []
         for week in range(1, max_week + 1):
             logging.info(f'\n\n Fetching player props for week {week}')
             event_ids = fetch_event_ids_for_week(week, season)
             betting_odds = get_player_betting_odds(player_slug, event_ids, markets)
             
             if betting_odds == None:
-                logging.info(f'No betting odds retrieved for player {player} for week {week} in {season} season')
+                logging.info(f'No betting odds retrieved for player {player_name} for week {week} in {season} season')
                 continue
-            
-            print(betting_odds)
-            
-            #TODO: persist betting odds
+            else:
+                season_odds.append({"week": week, "week_odds": betting_odds})
+                print(betting_odds)
+        
+        # TODO: persist player props
+        player_props.update({"season_odds": season_odds})      
 
 
 """
@@ -82,7 +87,7 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
         page_odds = get_odds(data, market_id_mapping)
         
         # account for additional odds available 
-        odds.update(page_odds)
+        odds.extend(page_odds)
     
     return odds
 
@@ -151,7 +156,7 @@ Returns:
 
 
 def get_odds(data: dict, market_ids: dict):
-    odds = {}
+    odds = []
     
     # loop through available offers
     offers = data['offers']
@@ -178,7 +183,7 @@ def get_odds(data: dict, market_ids: dict):
                 for line in lines:
                     # only account for best lines
                     if line['best'] == True: 
-                        odds[full_prop_name] = {"cost": line['cost'], "line": line['line']}
+                        odds.append({"label": full_prop_name, "cost": line['cost'], "line": line['line']})
                     
     return odds
 
@@ -195,7 +200,7 @@ Returns:
 
 
 def get_data(url: str):
-    time.sleep(.5) #TODO: Make this a config
+    time.sleep(.25) #TODO: Make this a config
     headers = {"x-api-key": props.get_config("website.betting-pros.api-key")}
     jsonData = requests.get(url, headers=headers).json()
     return jsonData
