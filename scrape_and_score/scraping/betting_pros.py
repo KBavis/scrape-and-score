@@ -7,6 +7,8 @@ import time
 """
 Fetch all historical player odds 
 
+TODO: superrrrr slow, need to add some concurrency to this
+
 Args:
     season (int): season to retrieve player odds for 
 
@@ -20,13 +22,16 @@ def fetch_historical_odds(season: int):
     markets = props.get_config("website.betting-pros.market-ids")
 
     players = fetch_data.fetch_players_active_in_specified_year(season)
+    players = [{'name': 'Amari Cooper', 'id': 59}]
 
     # iterate through each potential player
+    #TODO: account for najee harris slug being 'najee-harris-rb'
+    #TODO: get metrics for amari cooper, tim patrick, samjae perine, noah brown, jahan dotson, hassan haskins, peyton hendershot, calvin ridley, jack stoll, jaelon darden, laviska shenault
     for player in players:
         player_name = player['name']
         logging.info(f'Fetching player props for the player "{player_name}" for the {season} season')
 
-        first_and_last = player_name.lower().split(" ")[:2]
+        first_and_last = player_name.replace("'", "").replace(".", "").lower().split(" ")[:2] 
         player_slug = "-".join(first_and_last)
 
         # iterate through each relevant week in specified season
@@ -109,8 +114,9 @@ Returns:
 
 
 def determine_number_of_pages(data: dict):
-    if data and data["_pagination"]:
-        return data["_pagination"]["total_pages"]
+    if data and data.get("_pagination"):
+        return data["_pagination"].get("total_pages", 0)
+    return 0
 
 
 """
