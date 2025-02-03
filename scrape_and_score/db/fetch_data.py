@@ -614,7 +614,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
             pgl.player_id, 
             AVG(pgl.fantasy_points) AS avg_fantasy_points
             FROM player_game_log pgl
-            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = %s) 
+            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = %s)
+            AND pgl.year = %s 
             GROUP BY pgl.player_id
     ) player_avg 
     ON player_avg.player_id = pgl.player_id
@@ -635,7 +636,7 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
             df = pd.read_sql_query(
-                sql, connection, params=(player_name, player_name, week, season)
+                sql, connection, params=(player_name, season, player_name, week, season)
             )
 
             if df.empty:
