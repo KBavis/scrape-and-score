@@ -22,7 +22,6 @@ def fetch_historical_odds(season: int):
     markets = props.get_config("website.betting-pros.market-ids")
 
     players = fetch_data.fetch_players_active_in_specified_year(season)
-    players = [{'name': 'Amari Cooper', 'id': 59}]
 
     # iterate through each potential player
     #TODO: account for najee harris slug being 'najee-harris-rb'
