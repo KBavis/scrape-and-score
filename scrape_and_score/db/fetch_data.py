@@ -520,7 +520,24 @@ Returns:
 
 def fetch_independent_and_dependent_variables_for_mult_lin_regression():
     sql = """
-      SELECT
+    WITH PlayerProps AS (
+        SELECT 
+            pbo.player_name,
+            pbo.week,
+            pbo.season,
+            jsonb_agg(
+                json_build_object(
+                    'label', pbo.label,
+                    'line', pbo.line,
+                    'cost', pbo.cost
+                )
+            ) AS props
+        FROM 
+            player_betting_odds pbo
+        GROUP BY
+            pbo.player_name, pbo.week, pbo.season
+    )
+	  SELECT
          p.player_id,
          p.position,
          pgl.fantasy_points,
@@ -533,7 +550,8 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          CASE
             WHEN tbo.favorite_team_id = t.team_id THEN 1
 			ELSE 0
-         END AS is_favorited
+         END AS is_favorited,
+		 pp.props
       FROM
          player_game_log pgl
       JOIN 
@@ -542,7 +560,9 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          team t ON p.team_id = t.team_id
       JOIN 
          team td ON pgl.opp = td.team_id
-      JOIN 
+      JOIN
+	  	 PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season
+	  JOIN 
          team_betting_odds tbo 
       ON 
 				(tbo.home_team_id = t.team_id OR tbo.home_team_id = td.team_id)
