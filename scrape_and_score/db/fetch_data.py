@@ -584,6 +584,29 @@ Returns:
 
 def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     sql = """
+    WITH PlayerProps AS (
+        SELECT 
+            pbo.player_name,
+            pbo.week,
+            pbo.season,
+            jsonb_agg(
+                json_build_object(
+                    'label', pbo.label,
+                    'line', pbo.line,
+                    'cost', pbo.cost
+                )
+            ) AS props
+        FROM 
+            player_betting_odds pbo
+        WHERE
+            pbo.player_name = %s
+        AND
+            pbo.week = %s
+        AND 
+            pbo.season = %s
+        GROUP BY
+            pbo.player_name, pbo.week, pbo.season
+    )
     SELECT
         p.position,
         ROUND(CAST(player_avg.avg_fantasy_points AS NUMERIC), 2) AS avg_fantasy_points,
@@ -596,7 +619,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         CASE 
             WHEN tbo.favorite_team_id = t.team_id THEN 1
             ELSE 0
-        END AS is_favorited
+        END AS is_favorited,
+        pp.props
     FROM
         player_game_log pgl
     JOIN 
@@ -618,13 +642,16 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
             AND pgl.year = %s 
             GROUP BY pgl.player_id
     ) player_avg 
-    ON player_avg.player_id = pgl.player_id
+    ON 
+        player_avg.player_id = pgl.player_id
+    JOIN PlayerProps pp 
+        ON pp.player_name = p.name AND pp.week = tbo.week AND pp.season = tbo.season
     WHERE 
         p.name = %s AND
         tbo.week = %s AND tbo.season = %s
     GROUP BY 
         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank, 
-        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited;
+        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props;
     """
 
     df = None
@@ -636,7 +663,7 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
             df = pd.read_sql_query(
-                sql, connection, params=(player_name, season, player_name, week, season)
+                sql, connection, params=(player_name, week, season, player_name, season, player_name, week, season)
             )
 
             if df.empty:
