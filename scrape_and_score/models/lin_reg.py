@@ -402,7 +402,6 @@ class LinReg:
                 "log_fantasy_points",
                 "log_avg_fantasy_points",
                 "log_ratio_rank",
-                "game_over_under",
                 "is_favorited",
             ]
         ]
@@ -411,7 +410,6 @@ class LinReg:
                 "log_fantasy_points",
                 "log_avg_fantasy_points",
                 "log_ratio_rank",
-                "game_over_under",
                 "is_favorited",
             ]
         ]
@@ -420,9 +418,8 @@ class LinReg:
                 "log_fantasy_points",
                 "log_avg_fantasy_points",
                 "log_ratio_rank",
-                "game_over_under",
             ]
         ]
         self.te_data = self.te_data[
-            ["log_fantasy_points", "log_avg_fantasy_points", "game_over_under"]
+            ["log_fantasy_points", "log_avg_fantasy_points"]
         ]
