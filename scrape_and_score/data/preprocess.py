@@ -8,6 +8,40 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import os
 
 
+# constant
+relevant_props = {
+    "QB": [
+        "rushing_attempts_over_under",
+        "rushing_yards_over_under",
+        "anytime_touchdown_scorer",
+        "passing_yards_over_under",
+        "passing_touchdowns_over_under",
+        "passing_attempts_over_under",
+        "fantasy_points_over_under",
+    ],
+    "RB": [
+        "rushing_attempts_over_under",
+        "rushing_yards_over_under",
+        "anytime_touchdown_scorer",
+        "receiving_yards_over_under",
+        "receptions_over_under",
+        "fantasy_points_over_under",
+    ],
+    "WR": [
+        "anytime_touchdown_scorer",
+        "receiving_yards_over_under",
+        "receptions_over_under",
+        "fantasy_points_over_under",
+    ],
+    "TE": [
+        "anytime_touchdown_scorer",
+        "receiving_yards_over_under",
+        "receptions_over_under",
+        "fantasy_points_over_under",
+    ],
+}
+
+
 """
 Main functionality of module to kick of data fetching and pre-procesing 
 
@@ -41,7 +75,6 @@ def pre_process_data():
         transformed_te_data,
     ]
 
-    ols_validated_data = []
     for df in tranformed_data:
         df.drop(
             columns=[
@@ -51,42 +84,81 @@ def pre_process_data():
                 "off_pass_rank",
                 "def_rush_rank",
                 "def_pass_rank",
-            ]
-        )  # drop un-needed columns
-        ols_validated_data.append(validate_ols_assumptions(df))
+            ],
+            inplace=True
+        )
 
-    cols = [
+    validated_qb_data = validate_ols_assumptions(tranformed_data[0], "QB")
+    validated_rb_data = validate_ols_assumptions(tranformed_data[1], "RB")
+    validated_wr_data = validate_ols_assumptions(tranformed_data[2], "WR")
+    validated_te_data = validate_ols_assumptions(tranformed_data[3], "TE")
+
+    print("now here")
+
+    qb_cols = [
         "log_fantasy_points",
         "log_avg_fantasy_points",
         "log_ratio_rank",
-        "game_over_under",
         "is_favorited",
-        "spread",
-    ]
-    preprocessed_data = [df[cols] for df in ols_validated_data]
+        "game_over_under"
+    ] + [f"{prop}_ratio" for prop in relevant_props["QB"]]
+
+    rb_cols = [
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "log_ratio_rank",
+        "is_favorited",
+        "game_over_under"
+    ] + [f"{prop}_ratio" for prop in relevant_props["RB"]]
+
+    wr_cols = [
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "log_ratio_rank",
+        "is_favorited",
+        "game_over_under"
+    ] + [f"{prop}_ratio" for prop in relevant_props["WR"]]
+    te_cols = [
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "log_ratio_rank",
+        "is_favorited",
+        "game_over_under"
+    ] + [f"{prop}_ratio" for prop in relevant_props["QB"]]
+
+    #TODO: Determine how to handle high VIFs
+    preprocessed_qb_data = [validated_qb_data[qb_cols]]
+    preprocessed_rb_data = [validated_rb_data[rb_cols]]
+    preprocessed_wr_data = [validated_wr_data[wr_cols]]
+    preprocessed_te_data = [validated_te_data[te_cols]]
 
     # # return tuple of pre-processed data
     return (
-        preprocessed_data[0],
-        preprocessed_data[1],
-        preprocessed_data[2],
-        preprocessed_data[3],
+        preprocessed_qb_data,
+        preprocessed_rb_data,
+        preprocessed_wr_data,
+        preprocessed_te_data,
     )
 
 
 """
 Functionality to validate multicollinearity & other OLS assumptions 
 
+
 Args:
    df (pd.DataFrame): data frame to validate 
+   position (str): position to validate
 
 Returns:
    updated_df (pd.DataFrame): updated df (if there weren't anym then return original)
 """
 
 
-def validate_ols_assumptions(df: pd.DataFrame):
-    variables = df[["log_avg_fantasy_points", "log_ratio_rank"]]
+def validate_ols_assumptions(df: pd.DataFrame, position: str):
+    variables = df[
+        ["log_ratio_rank", "log_avg_fantasy_points", "is_favorited", "game_over_under"]
+        + [f"{prop}_ratio" for prop in relevant_props[position]]
+    ]  # account for position specific columns
 
     vif = pd.DataFrame()
 
@@ -95,6 +167,7 @@ def validate_ols_assumptions(df: pd.DataFrame):
         for i in range(variables.shape[1])
     ]
     vif["Features"] = variables.columns
+    print(vif)
 
     features_to_remove = vif[vif["VIF"] > 5]["Features"].tolist()
     if features_to_remove:
@@ -134,7 +207,65 @@ def split_data_by_position(df: pd.DataFrame):
     new_wr_data = wr_data.drop("position", axis=1)
     new_te_data = te_data.drop("position", axis=1)
 
-    return get_rankings_ratios(new_qb_data, new_rb_data, new_wr_data, new_te_data)
+    qb_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_qb_data, "QB")
+    rb_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_rb_data, "RB")
+    wr_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_wr_data, "WR")
+    te_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_te_data, "TE")
+
+    return get_rankings_ratios(
+        qb_data_with_relevant_prop_ratios,
+        rb_data_with_relevant_prop_ratios,
+        wr_data_with_relevant_prop_ratios,
+        te_data_with_relevant_prop_ratios,
+    )
+
+
+""" 
+Generate relevant player props ratios that reward low COSTS and higher LINES 
+
+NOTE: Do not use this functionality for props such as interceptions 
+
+Args:
+    df (pd.DataFrame): position specific data 
+
+Returns:
+    updated (pd.DataFrame): updated data frame with new ratio columns 
+"""
+
+
+def get_relevant_props_ratios(df: pd.DataFrame, position: str):
+    selected_props = relevant_props[position]
+
+    # calculate relevant ratios
+    for prop in selected_props:
+        cost_col = f"{prop}_(over)_cost"
+        line_col = f"{prop}_(over)_line"
+        ratio_col = f"{prop}_ratio"
+
+        if prop == "anytime_touchdown_scorer":
+            cost_col = f"{prop}_cost"
+            line_col = f"{prop}_line"
+
+        if cost_col in df.columns and line_col in df.columns:
+            df[ratio_col] = df[line_col] / df[cost_col].abs()
+
+    # remove un-needed columns
+    selected_props_cols = [f"{prop}_ratio" for prop in selected_props]
+    keep_columns = [
+        "player_id",
+        "fantasy_points",
+        "off_rush_rank",
+        "off_pass_rank",
+        "def_rush_rank",
+        "def_pass_rank",
+        "game_over_under",
+        "spread",
+        "is_favorited",
+        "avg_fantasy_points",
+    ] + selected_props_cols
+    
+    # return expected column without N/A values
+    return df[keep_columns].dropna()
 
 
 """
@@ -152,7 +283,10 @@ def filter_data(df: pd.DataFrame):
     logging.info(
         "Removing all records where fantasy points equal 0 of avg fantasy points less than 5"
     )
-    df = df.dropna()
+    df = df.dropna(
+        subset=["fantasy_points", "avg_fantasy_points"]
+    )  # remove rows with N/A fantasy points
+
     non_zero_data = df[(df["fantasy_points"] > 0) & (df["avg_fantasy_points"] > 5)]
 
     upper_fantasy_points_outliers = non_zero_data["fantasy_points"].quantile(0.99)
@@ -259,12 +393,20 @@ def get_rankings_ratios(
     wr_data: pd.DataFrame,
     te_data: pd.DataFrame,
 ):
-    rush_ratio_rank = rb_data["def_rush_rank"] / rb_data["off_rush_rank"]
-    rb_data["rush_ratio_rank"] = rush_ratio_rank
+    # Ensure modifications are applied to a copy, preventing SettingWithCopyWarning
+    rb_data = rb_data.copy()
+    qb_data = qb_data.copy()
+    wr_data = wr_data.copy()
+    te_data = te_data.copy()
 
+    # Compute rush ratio rank for RBs
+    rb_data.loc[:, "rush_ratio_rank"] = (
+        rb_data["def_rush_rank"] / rb_data["off_rush_rank"]
+    )
+
+    # Compute pass ratio rank for QBs, WRs, and TEs
     for df in [qb_data, wr_data, te_data]:
-        pass_ratio_rank = df["def_pass_rank"] / df["off_pass_rank"]
-        df["pass_ratio_rank"] = pass_ratio_rank
+        df.loc[:, "pass_ratio_rank"] = df["def_pass_rank"] / df["off_pass_rank"]
 
     return qb_data, rb_data, wr_data, te_data
 
@@ -317,55 +459,65 @@ Create scatter plots for features vs dependent variable
 
 Args:
    data (pd.DataFrame): dataframe to yank tdata from 
-   output_file (str): file name
+   independet_var (str): value to plot against fantasy points 
+   position (str); position of player 
 
 Returns:
    None
 """
 
 
-def create_plots(data: pd.DataFrame, position: str):
-    f, axes = plt.subplots(2, 3, figsize=(18, 12))
-    axes = axes.flatten()
+def create_plot(data: pd.DataFrame, independent_var: str, position: str):
+    plt.figure(figsize=(8, 6))
 
-    axes[0].scatter(data["log_avg_fantasy_points"], data["log_fantasy_points"])
-    axes[0].set_title("Log Fantasy Points vs. Log Avg Fantasy Points")
-    axes[0].set_xlabel("Log Avg Fantasy Points")
-    axes[0].set_ylabel("Log Fantasy Points")
-
-    axes[1].scatter(data["log_ratio_rank"], data["log_fantasy_points"])
-    axes[1].set_title("Log Fantasy Points vs. Log Ratio Rank")
-    axes[1].set_xlabel("Log Ratio Rank")
-    axes[1].set_ylabel("Log Fantasy Points")
-
-    axes[2].scatter(data["spread"], data["log_fantasy_points"])
-    axes[2].set_title("Log Fantasy Points vs. Spread")
-    axes[2].set_xlabel("Spread")
-    axes[2].set_ylabel("Log Fantasy Points")
-
-    axes[3].scatter(data["game_over_under"], data["log_fantasy_points"])
-    axes[3].set_title("Log Fantasy Points vs. Game Over/Under")
-    axes[3].set_xlabel("Game Over/Under")
-    axes[3].set_ylabel("Log Fantasy Points")
-
-    axes[4].scatter(data["is_favorited"].astype(int), data["log_fantasy_points"])
-    axes[4].set_title("Log Fantasy Points vs. Is Favorited")
-    axes[4].set_xlabel("Is Favorited (0 = False, 1 = True)")
-    axes[4].set_ylabel("Log Fantasy Points")
-    axes[4].set_xticks([0, 1])
-    axes[4].set_xticklabels(["False", "True"])
-
-    if len(axes) > 5:
-        axes[5].axis("off")
+    plt.scatter(data[independent_var], data["log_fantasy_points"])
+    plt.title(f"Log Fantasy Points vs. {independent_var}")
+    plt.xlabel(independent_var)
+    plt.ylabel("Log Fantasy Points")
 
     relative_dir = "./data/scatter"
-    file_name = f"{position}_features_plot.pdf"
+    file_name = f"{position}_{independent_var}_plot.pdf"
     os.makedirs(relative_dir, exist_ok=True)
     file_path = os.path.join(relative_dir, file_name)
-    f.tight_layout()
 
     plt.savefig(file_path)
-    plt.close(f)
+    plt.close()
+
+
+"""
+Parse player props retrieved from DB 
+
+Args:
+    df (pd.DataFrame): data frame containing player props 
+
+Returns:
+    df (pd.DataFrame): data frame with relevant player props columns
+"""
+
+
+def parse_player_props(df: pd.DataFrame):
+
+    parsed_data = []
+
+    for idx, row in df.iterrows():
+        week_props = row["props"]
+
+        row_data = {}
+
+        for prop in week_props:
+            label = prop["label"].lower().replace(" ", "_").replace("/", "_")
+            cost = prop["cost"]
+            line = prop["line"]
+
+            row_data[f"{label}_cost"] = cost
+            row_data[f"{label}_line"] = line
+
+        parsed_data.append(row_data)
+
+    parsed_df = pd.DataFrame(parsed_data)
+
+    df = df.drop(columns=["props"])
+    return pd.concat([df, parsed_df], axis=1)
 
 
 """
@@ -381,5 +533,6 @@ Returns:
 
 def get_data():
     df = fetch_data.fetch_independent_and_dependent_variables_for_mult_lin_regression()
-    updated_df = include_averages(df)
+    dfs_with_player_props = parse_player_props(df)
+    updated_df = include_averages(dfs_with_player_props)
     return updated_df
