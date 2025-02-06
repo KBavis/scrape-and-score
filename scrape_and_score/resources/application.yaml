@@ -23,6 +23,15 @@ website:
 scraping:
    delay: 3
 
+# weights for ratios
+weights:
+   scoring_environment:
+      log_avg_fantasy_points: 0.8
+      game_over_under: 0.2
+   rushing_volume:
+      rushing_attempts_over_under_ratio: 0.3
+      rushing_yards_over_under_ratio: 0.7
+
 # scoring
 scoring:
    offense:
