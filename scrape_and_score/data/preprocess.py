@@ -6,6 +6,7 @@ import numpy as np
 import logging
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import os
+from config import props
 
 
 # constant
@@ -75,7 +76,8 @@ def pre_process_data():
         transformed_te_data,
     ]
 
-    for df in tranformed_data:
+    positions = ['QB', 'RB', 'WR', 'TE']
+    for i, df in enumerate(tranformed_data):
         df.drop(
             columns=[
                 "player_id",
@@ -87,13 +89,16 @@ def pre_process_data():
             ],
             inplace=True
         )
+        
+        # generate ratios to avoid multicollinearity
+        tranformed_data[i] = generate_ratios(df, positions[i])
+    
+    
 
     validated_qb_data = validate_ols_assumptions(tranformed_data[0], "QB")
     validated_rb_data = validate_ols_assumptions(tranformed_data[1], "RB")
     validated_wr_data = validate_ols_assumptions(tranformed_data[2], "WR")
     validated_te_data = validate_ols_assumptions(tranformed_data[3], "TE")
-
-    print("now here")
 
     qb_cols = [
         "log_fantasy_points",
@@ -155,10 +160,19 @@ Returns:
 
 
 def validate_ols_assumptions(df: pd.DataFrame, position: str):
+    # variables = df[
+    #     ["log_ratio_rank", "log_avg_fantasy_points", "is_favorited", "game_over_under"]
+    #     + [f"{prop}_ratio" for prop in relevant_props[position]]
+    # ]  # account for position specific columns
+    
+    if position == 'QB' or position =='RB':
+        extra_cols = ['rushing_volume']
+    else:
+        extra_cols = ['receiving_yards_over_under_ratio', 'receptions_over_under_ratio']
+
     variables = df[
-        ["log_ratio_rank", "log_avg_fantasy_points", "is_favorited", "game_over_under"]
-        + [f"{prop}_ratio" for prop in relevant_props[position]]
-    ]  # account for position specific columns
+        ["log_ratio_rank", "is_favorited", "scoring_environment"] + extra_cols
+    ]
 
     vif = pd.DataFrame()
 
@@ -180,6 +194,37 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
         )
 
     return df.drop(columns=features_to_remove)
+
+
+""" 
+Generate necessary ratios and add them to our data frame as features.
+This is done to take into account multiple features in a single feature, removing multicollinearity 
+
+Args:
+    df (pd.DataFrame): data frame to generate ratios for 
+    position (str): position to generate ratios for 
+
+Returns:
+    ratios_df (pd.DataFrame); data frame with ratios included 
+"""
+def generate_ratios(df: pd.DataFrame, position: str): 
+    
+    # generic ratio to add
+    log_avg_fantasy_points_weight = props.get_config('weights.scoring_environment.log_avg_fantasy_points')
+    game_over_under_weight = props.get_config('weights.scoring_environment.game_over_under')
+    df['scoring_environment'] = (log_avg_fantasy_points_weight * df['log_avg_fantasy_points']) + (game_over_under_weight * df['game_over_under'])
+
+    # account for rushing volume 
+    if position == 'RB' or position == 'QB': 
+        # generate rushing volume column
+        rushing_yards_over_under_ratio_weight = props.get_config('weights.rushing_volume.rushing_yards_over_under_ratio')
+        rushing_attempts_over_under_ratio_weight = props.get_config('weights.rushing_volume.rushing_attempts_over_under_ratio')
+        df['rushing_volume'] = (rushing_yards_over_under_ratio_weight * df['rushing_yards_over_under_ratio']) + (rushing_attempts_over_under_ratio_weight * df['rushing_attempts_over_under_ratio'])
+        
+        # TODO: Combine scoring environment and rushing volume 
+        
+    
+    return df.drop(columns=['log_avg_fantasy_points', 'game_over_under'])#TODO: Account for additional columns
 
 
 """
@@ -499,7 +544,7 @@ def parse_player_props(df: pd.DataFrame):
 
     parsed_data = []
 
-    for idx, row in df.iterrows():
+    for _, row in df.iterrows():
         week_props = row["props"]
 
         row_data = {}
