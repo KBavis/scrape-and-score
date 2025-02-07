@@ -291,21 +291,6 @@ def split_data_by_position(df: pd.DataFrame):
 
 
 """ 
-Helper function to calculate implied probability of a line 
-
-Args:
-    cost (int): the cost of a given line 
-
-Returns:
-    prob (float): implied probability
-"""
-def calculate_implied_probability(cost: int): 
-    if cost < 0:
-        return abs(cost) / (abs(cost) + 100)
-    else:
-        return 100 / (cost + 100)
-
-""" 
 Generate relevant player props ratios that reward low COSTS and higher LINES 
 
 NOTE: Do not use this functionality for props such as interceptions 
