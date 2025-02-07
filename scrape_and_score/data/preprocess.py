@@ -76,7 +76,7 @@ def pre_process_data():
         transformed_te_data,
     ]
 
-    positions = ['QB', 'RB', 'WR', 'TE']
+    positions = ["QB", "RB", "WR", "TE"]
     for i, df in enumerate(tranformed_data):
         df.drop(
             columns=[
@@ -87,9 +87,9 @@ def pre_process_data():
                 "def_rush_rank",
                 "def_pass_rank",
             ],
-            inplace=True
+            inplace=True,
         )
-        
+
         # generate ratios to avoid multicollinearity
         tranformed_data[i] = generate_and_combine_ratios(df, positions[i])
     
@@ -100,12 +100,27 @@ def pre_process_data():
     validated_wr_data = validate_ols_assumptions(tranformed_data[2], "WR")
     validated_te_data = validate_ols_assumptions(tranformed_data[3], "TE")
 
-
-    qb_cols = ['log_fantasy_points', 'log_ratio_rank', 'is_favorited', 'total_scoring_interaction_qb']
-    rb_cols = ['log_fantasy_points','log_ratio_rank', 'is_favorited', 'total_scoring_interaction_rb']
-    te_cols = ['log_fantasy_points', 'log_ratio_rank', 'scoring_receiving_interaction'] # is_favorited is insignifcant when predicting TE
-    wr_cols = ['log_fantasy_points', 'scoring_receiving_interaction'] # log_ratio_rank & is_favorited is insignficant when predicting WR fantasy points
-
+    qb_cols = [
+        "log_fantasy_points",
+        "log_ratio_rank",
+        "is_favorited",
+        "total_scoring_interaction_qb",
+    ]
+    rb_cols = [
+        "log_fantasy_points",
+        "log_ratio_rank",
+        "is_favorited",
+        "total_scoring_interaction_rb",
+    ]
+    te_cols = [
+        "log_fantasy_points",
+        "log_ratio_rank",
+        "scoring_receiving_interaction",
+    ]  # is_favorited is insignifcant when predicting TE
+    wr_cols = [
+        "log_fantasy_points",
+        "scoring_receiving_interaction",
+    ]  # log_ratio_rank & is_favorited is insignficant when predicting WR fantasy points
 
     preprocessed_qb_data = validated_qb_data[qb_cols]
     preprocessed_rb_data = validated_rb_data[rb_cols]
@@ -181,75 +196,146 @@ Args:
 Returns:
     ratios_df (pd.DataFrame); data frame with ratios included 
 """
+
+
 def generate_and_combine_ratios(df: pd.DataFrame, position: str):
     print(position)
-    print(df.columns) 
-    
+    print(df.columns)
+
     # generic ratio to add
-    log_avg_fantasy_points_weight = props.get_config('weights.scoring_environment.log_avg_fantasy_points')
-    game_over_under_weight = props.get_config('weights.scoring_environment.game_over_under')
-    anytime_touchdown_scorer_weight = props.get_config( 'weights.scoring_environment.anytime_touchdown_scorer_ratio')
-    fantasy_points_over_under_weight = props.get_config('weights.scoring_environment.fantasy_points_over_under_ratio')
-    df['scoring_environment'] = (log_avg_fantasy_points_weight * df['log_avg_fantasy_points']) + (game_over_under_weight * df['game_over_under']) + (anytime_touchdown_scorer_weight * df['anytime_touchdown_scorer_ratio']) + (fantasy_points_over_under_weight * df['fantasy_points_over_under_ratio'])
+    log_avg_fantasy_points_weight = props.get_config(
+        "weights.scoring_environment.log_avg_fantasy_points"
+    )
+    game_over_under_weight = props.get_config(
+        "weights.scoring_environment.game_over_under"
+    )
+    anytime_touchdown_scorer_weight = props.get_config(
+        "weights.scoring_environment.anytime_touchdown_scorer_ratio"
+    )
+    fantasy_points_over_under_weight = props.get_config(
+        "weights.scoring_environment.fantasy_points_over_under_ratio"
+    )
+    df["scoring_environment"] = (
+        (log_avg_fantasy_points_weight * df["log_avg_fantasy_points"])
+        + (game_over_under_weight * df["game_over_under"])
+        + (anytime_touchdown_scorer_weight * df["anytime_touchdown_scorer_ratio"])
+        + (fantasy_points_over_under_weight * df["fantasy_points_over_under_ratio"])
+    )
 
-    # account for rushing volume 
-    if position == 'RB' or position == 'QB': 
+    # account for rushing volume
+    if position == "RB" or position == "QB":
         # generate rushing volume column
-        rushing_yards_over_under_ratio_weight = props.get_config('weights.rushing_volume.rushing_yards_over_under_ratio')
-        rushing_attempts_over_under_ratio_weight = props.get_config('weights.rushing_volume.rushing_attempts_over_under_ratio')
-        df['rushing_volume'] = (rushing_yards_over_under_ratio_weight * df['rushing_yards_over_under_ratio']) + (rushing_attempts_over_under_ratio_weight * df['rushing_attempts_over_under_ratio'])
-        
-        # combine scoring environment and rushing volume into single variable
-        df['scoring_rush_interaction'] = df['scoring_environment'] * df['rushing_volume']
-        
-        # drop un-needed columns
-        df.drop(columns=['rushing_volume'], inplace=True)
-        
-    
-    # account for receiving volume
-    if position == 'RB' or position == 'WR' or position == 'TE':
-        # generate receiving volume column
-        receptions_over_under_ratio_weight = props.get_config('weights.receiving_volume.receptions_over_under_ratio')
-        receiving_yards_over_under_ratio_weight = props.get_config('weights.receiving_volume.receiving_yards_over_under_ratio')
-        df['receiving_volume'] = (receptions_over_under_ratio_weight * df['receptions_over_under_ratio']) + (receiving_yards_over_under_ratio_weight * df['receiving_yards_over_under_ratio'])
-        
-        # combine scoring environment
-        df['scoring_receiving_interaction'] = df['scoring_environment'] * df['receiving_volume']    
-        
-        # combine scoring_receiving_interaction and scoring_rush_interaction into single variable for RBs
-        if position == 'RB':
-            scoring_receiving_interaction_weight = props.get_config('weights.total_scoring_interaction_rb.scoring_receiving_interaction')
-            scoring_rush_interaction_weight = props.get_config('weights.total_scoring_interaction_rb.scoring_rush_interaction')
-            df['total_scoring_interaction_rb'] = (scoring_receiving_interaction_weight * df['scoring_receiving_interaction']) + (scoring_rush_interaction_weight * df['scoring_rush_interaction'])
-            
-            df.drop(columns=['scoring_receiving_interaction', 'scoring_rush_interaction'], inplace=True)
-            
-        
-        df.drop(columns=['receiving_volume'], inplace=True) # drop un-needed columns
-    
-    
-    # account for passing volume
-    if position == 'QB':
-        # generate passing volume column 
-        passing_touchdowns_weight = props.get_config('weights.passing_volume.passing_touchdowns_over_under_ratio')
-        passing_attempts_weight = props.get_config('weights.passing_volume.passing_attempts_over_under_ratio')
-        passing_yards_weight = props.get_config('weights.passing_volume.passing_yards_over_under_ratio')
-        df['passing_volume'] = (passing_touchdowns_weight * df['passing_touchdowns_over_under_ratio']) + (passing_attempts_weight * df['passing_attempts_over_under_ratio']) + (passing_yards_weight * df['passing_yards_over_under_ratio'])
-        
-        # combine scoring environment 
-        df['scoring_passing_interaction'] = df['scoring_environment'] * df['passing_volume']
-        
-        # create total scoring interaction (combines passing & rushing)
-        scoring_rush_interaction_weight = props.get_config('weights.total_scoring_interaction_qb.scoring_rush_interaction')
-        scoring_passing_interaction_weight = props.get_config('weights.total_scoring_interaction_qb.scoring_passing_interaction')
+        rushing_yards_over_under_ratio_weight = props.get_config(
+            "weights.rushing_volume.rushing_yards_over_under_ratio"
+        )
+        rushing_attempts_over_under_ratio_weight = props.get_config(
+            "weights.rushing_volume.rushing_attempts_over_under_ratio"
+        )
+        df["rushing_volume"] = (
+            rushing_yards_over_under_ratio_weight * df["rushing_yards_over_under_ratio"]
+        ) + (
+            rushing_attempts_over_under_ratio_weight
+            * df["rushing_attempts_over_under_ratio"]
+        )
 
-        df['total_scoring_interaction_qb'] = (scoring_rush_interaction_weight * df['scoring_rush_interaction']) + (scoring_passing_interaction_weight * df['scoring_passing_interaction'])
-        
-        df.drop(columns=['scoring_passing_interaction', 'scoring_rush_interaction'], inplace=True)
-        
-        
-    
-    return df.drop(columns=['log_avg_fantasy_points', 'game_over_under', 'scoring_environment', 'anytime_touchdown_scorer_ratio', 'fantasy_points_over_under_ratio'])
+        # combine scoring environment and rushing volume into single variable
+        df["scoring_rush_interaction"] = (
+            df["scoring_environment"] * df["rushing_volume"]
+        )
+
+        # drop un-needed columns
+        df.drop(columns=["rushing_volume"], inplace=True)
+
+    # account for receiving volume
+    if position == "RB" or position == "WR" or position == "TE":
+        # generate receiving volume column
+        receptions_over_under_ratio_weight = props.get_config(
+            "weights.receiving_volume.receptions_over_under_ratio"
+        )
+        receiving_yards_over_under_ratio_weight = props.get_config(
+            "weights.receiving_volume.receiving_yards_over_under_ratio"
+        )
+        df["receiving_volume"] = (
+            receptions_over_under_ratio_weight * df["receptions_over_under_ratio"]
+        ) + (
+            receiving_yards_over_under_ratio_weight
+            * df["receiving_yards_over_under_ratio"]
+        )
+
+        # combine scoring environment
+        df["scoring_receiving_interaction"] = (
+            df["scoring_environment"] * df["receiving_volume"]
+        )
+
+        # combine scoring_receiving_interaction and scoring_rush_interaction into single variable for RBs
+        if position == "RB":
+            scoring_receiving_interaction_weight = props.get_config(
+                "weights.total_scoring_interaction_rb.scoring_receiving_interaction"
+            )
+            scoring_rush_interaction_weight = props.get_config(
+                "weights.total_scoring_interaction_rb.scoring_rush_interaction"
+            )
+            df["total_scoring_interaction_rb"] = (
+                scoring_receiving_interaction_weight
+                * df["scoring_receiving_interaction"]
+            ) + (scoring_rush_interaction_weight * df["scoring_rush_interaction"])
+
+            df.drop(
+                columns=["scoring_receiving_interaction", "scoring_rush_interaction"],
+                inplace=True,
+            )
+
+        df.drop(columns=["receiving_volume"], inplace=True)  # drop un-needed columns
+
+    # account for passing volume
+    if position == "QB":
+        # generate passing volume column
+        passing_touchdowns_weight = props.get_config(
+            "weights.passing_volume.passing_touchdowns_over_under_ratio"
+        )
+        passing_attempts_weight = props.get_config(
+            "weights.passing_volume.passing_attempts_over_under_ratio"
+        )
+        passing_yards_weight = props.get_config(
+            "weights.passing_volume.passing_yards_over_under_ratio"
+        )
+        df["passing_volume"] = (
+            (passing_touchdowns_weight * df["passing_touchdowns_over_under_ratio"])
+            + (passing_attempts_weight * df["passing_attempts_over_under_ratio"])
+            + (passing_yards_weight * df["passing_yards_over_under_ratio"])
+        )
+
+        # combine scoring environment
+        df["scoring_passing_interaction"] = (
+            df["scoring_environment"] * df["passing_volume"]
+        )
+
+        # create total scoring interaction (combines passing & rushing)
+        scoring_rush_interaction_weight = props.get_config(
+            "weights.total_scoring_interaction_qb.scoring_rush_interaction"
+        )
+        scoring_passing_interaction_weight = props.get_config(
+            "weights.total_scoring_interaction_qb.scoring_passing_interaction"
+        )
+
+        df["total_scoring_interaction_qb"] = (
+            scoring_rush_interaction_weight * df["scoring_rush_interaction"]
+        ) + (scoring_passing_interaction_weight * df["scoring_passing_interaction"])
+
+        df.drop(
+            columns=["scoring_passing_interaction", "scoring_rush_interaction"],
+            inplace=True,
+        )
+
+    return df.drop(
+        columns=[
+            "log_avg_fantasy_points",
+            "game_over_under",
+            "scoring_environment",
+            "anytime_touchdown_scorer_ratio",
+            "fantasy_points_over_under_ratio",
+        ]
+    )
 
 
 """
@@ -307,7 +393,7 @@ Returns:
 
 def get_relevant_props_ratios(df: pd.DataFrame, position: str):
     selected_props = relevant_props[position]
-    
+
     # TODO: make this a config
     k = 100
 
@@ -322,11 +408,13 @@ def get_relevant_props_ratios(df: pd.DataFrame, position: str):
             line_col = f"{prop}_line"
 
         if cost_col in df.columns and line_col in df.columns:
-            df['adjusted_cost'] = df[cost_col].apply(lambda x: abs(x) if x < 0 else x + k)
-            df[ratio_col] = df[line_col] / df['adjusted_cost']
-            
+            df["adjusted_cost"] = df[cost_col].apply(
+                lambda x: abs(x) if x < 0 else x + k
+            )
+            df[ratio_col] = df[line_col] / df["adjusted_cost"]
+
             # drop adjusted cost column each time
-            df.drop(columns=['adjusted_cost'], inplace=True)
+            df.drop(columns=["adjusted_cost"], inplace=True)
 
     # remove un-needed columns
     selected_props_cols = [f"{prop}_ratio" for prop in selected_props]
@@ -342,7 +430,7 @@ def get_relevant_props_ratios(df: pd.DataFrame, position: str):
         "is_favorited",
         "avg_fantasy_points",
     ] + selected_props_cols
-    
+
     # return expected column without N/A values
     return df[keep_columns].dropna()
 
