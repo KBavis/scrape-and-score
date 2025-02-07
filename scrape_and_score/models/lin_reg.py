@@ -17,9 +17,6 @@ class LinReg:
         self.wr_data = wr_data
         self.te_data = te_data
 
-        # drop features which were determine to be insignficant to prediction
-        self.drop_statistically_insignificant_features()
-
         self.qb_inputs_scaled = self.scale_inputs(self.qb_data)
         self.rb_inputs_scaled = self.scale_inputs(self.rb_data)
         self.wr_inputs_scaled = self.scale_inputs(self.wr_data)
@@ -145,6 +142,7 @@ class LinReg:
         self.wr_regression = regression_model_mapping["WR"]
 
         self.log_regression_metrics()
+        self.determine_feature_selection_significance()
 
     """
    Log out relevant regression bias/weights associated with model
@@ -383,43 +381,3 @@ class LinReg:
             df = pd.DataFrame(data=[p_values], columns=data.columns.values)
             print(f"\n\n{position} Regression Feature Signficance")
             print(f"\n{df}")
-
-    """
-   Drop features that are deemed insignificant by 'determine_feature_selection_signficance'
-   
-   TODO: Make this more configurable or just remove features in pre-processing instead 
-   
-   Args:
-      None 
-   
-   Returns:
-      None
-   """
-
-    def drop_statistically_insignificant_features(self):
-        self.qb_data = self.qb_data[
-            [
-                "log_fantasy_points",
-                "log_avg_fantasy_points",
-                "log_ratio_rank",
-                "is_favorited",
-            ]
-        ]
-        self.rb_data = self.rb_data[
-            [
-                "log_fantasy_points",
-                "log_avg_fantasy_points",
-                "log_ratio_rank",
-                "is_favorited",
-            ]
-        ]
-        self.wr_data = self.wr_data[
-            [
-                "log_fantasy_points",
-                "log_avg_fantasy_points",
-                "log_ratio_rank",
-            ]
-        ]
-        self.te_data = self.te_data[
-            ["log_fantasy_points", "log_avg_fantasy_points"]
-        ]
