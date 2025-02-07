@@ -295,6 +295,8 @@ Generate relevant player props ratios that reward low COSTS and higher LINES
 
 NOTE: Do not use this functionality for props such as interceptions 
 
+TODO: Refactor this functionality to use helper function so it can be used by prediction.py
+
 Args:
     df (pd.DataFrame): position specific data 
 
