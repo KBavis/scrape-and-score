@@ -103,8 +103,8 @@ def pre_process_data():
 
     qb_cols = ['log_fantasy_points', 'log_ratio_rank', 'is_favorited', 'total_scoring_interaction_qb']
     rb_cols = ['log_fantasy_points','log_ratio_rank', 'is_favorited', 'total_scoring_interaction_rb']
-    te_cols = ['log_fantasy_points', 'log_ratio_rank', 'scoring_receiving_interaction'] # is_favorited is insignifcant when p[redicitng TE
-    wr_cols = ['log_fantasy_points', 'scoring_receiving_interaction'] # log_ratio_rank & is_favorited is insignficant when predicitng WR fantasy points
+    te_cols = ['log_fantasy_points', 'log_ratio_rank', 'scoring_receiving_interaction'] # is_favorited is insignifcant when predicting TE
+    wr_cols = ['log_fantasy_points', 'scoring_receiving_interaction'] # log_ratio_rank & is_favorited is insignficant when predicting WR fantasy points
 
 
     preprocessed_qb_data = validated_qb_data[qb_cols]
