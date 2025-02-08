@@ -123,6 +123,8 @@ def main():
             wr_pre_processed_data,
             te_pre_processed_data,
         ) = preprocess.pre_process_data()
+        
+        logging.info('Successfully pre-processed all data')
 
         # generate our position specific regressions
         linear_regressions = LinReg(
