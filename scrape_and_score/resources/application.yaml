@@ -25,27 +25,42 @@ scraping:
 
 # weights for feature manipulation
 weights:
-   scoring_environment:
-      log_avg_fantasy_points: 0.35
-      fantasy_points_over_under_ratio: 0.45
-      anytime_touchdown_scorer_ratio: 0.1
-      game_over_under: 0.1
-   rushing_volume:
-      rushing_attempts_over_under_ratio: 0.3
-      rushing_yards_over_under_ratio: 0.7
-   receiving_volume:
+   game_context:
+      game_over_under: 0.40
+      anytime_touchdown_scorer_ratio: 0.60
+   fantasy_potential:
+      log_avg_fantasy_points: 0.4
+      fantasy_points_over_under_ratio: 0.6
+   expected_rushing_volume:
+      rushing_attempts_over_under_ratio: 0.2
+      rushing_yards_over_under_ratio: 0.8
+   expected_receiving_volume:
       receptions_over_under_ratio: 0.5
       receiving_yards_over_under_ratio: 0.5
-   passing_volume:
+   expected_passing_volume:
       passing_touchdowns_over_under_ratio: 0.5
-      passing_attempts_over_under_ratio: 0.2
-      passing_yards_over_under_ratio: 0.3
-   total_scoring_interaction_rb:
-      scoring_receiving_interaction: 0.6
-      scoring_rush_interaction: 0.4
-   total_scoring_interaction_qb:
-      scoring_rush_interaction: 0.6
-      scoring_passing_interaction: 0.4
+      passing_attempts_over_under_ratio: 0.1
+      passing_yards_over_under_ratio: 0.4
+   total_expected_volume_rb:
+      expected_receiving_volume: 0.4
+      expected_rushing_volume: 0.6
+   total_expected_volume_qb:
+      expected_passing_volume: 0.88
+      expected_rushing_volume: 0.12
+      dual_threat_passing_volume: 0.68
+      dual_thread_rushing_volume: 0.32
+   qb_composite_score:
+      total_expected_volume_qb: 0.5
+      fantasy_potential: 0.3
+      game_context: 0.2
+   rb_composite_score:
+      total_expected_volume_rb: 0.5
+      fantasy_potential: 0.3
+      game_context: 0.2
+   wr_te_composite_score:
+      expected_receiving_volume: 0.7
+      fantasy_potential: 0.2
+      game_context: 0.1
 
 # scoring
 scoring:
