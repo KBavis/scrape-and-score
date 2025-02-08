@@ -91,41 +91,22 @@ def pre_process_data():
         )
 
         # generate ratios to avoid multicollinearity
-        tranformed_data[i] = generate_and_combine_ratios(df, positions[i])
-    
-    
+        tranformed_data[i] = apply_feature_engineering(df, positions[i])
 
     validated_qb_data = validate_ols_assumptions(tranformed_data[0], "QB")
     validated_rb_data = validate_ols_assumptions(tranformed_data[1], "RB")
     validated_wr_data = validate_ols_assumptions(tranformed_data[2], "WR")
     validated_te_data = validate_ols_assumptions(tranformed_data[3], "TE")
 
-    qb_cols = [
+    base_cols = [
         "log_fantasy_points",
         "log_ratio_rank",
-        "is_favorited",
-        "total_scoring_interaction_qb",
     ]
-    rb_cols = [
-        "log_fantasy_points",
-        "log_ratio_rank",
-        "is_favorited",
-        "total_scoring_interaction_rb",
-    ]
-    te_cols = [
-        "log_fantasy_points",
-        "log_ratio_rank",
-        "scoring_receiving_interaction",
-    ]  # is_favorited is insignifcant when predicting TE
-    wr_cols = [
-        "log_fantasy_points",
-        "scoring_receiving_interaction",
-    ]  # log_ratio_rank & is_favorited is insignficant when predicting WR fantasy points
 
-    preprocessed_qb_data = validated_qb_data[qb_cols]
-    preprocessed_rb_data = validated_rb_data[rb_cols]
-    preprocessed_wr_data = validated_wr_data[wr_cols]
-    preprocessed_te_data = validated_te_data[te_cols]
+    preprocessed_qb_data = validated_qb_data[base_cols + ["qb_composite_score", "is_favorited"]]
+    preprocessed_rb_data = validated_rb_data[base_cols + ["rb_composite_score", "is_favorited"]]
+    preprocessed_wr_data = validated_wr_data[base_cols + ["wr_te_composite_score"]] #is_favorited is statisically insignficant for WRs
+    preprocessed_te_data = validated_te_data[base_cols + ["wr_te_composite_score", "is_favorited"]]
 
     # # return tuple of pre-processed data
     return (
@@ -151,15 +132,16 @@ Returns:
 
 def validate_ols_assumptions(df: pd.DataFrame, position: str):
     extra_cols = []
-    if position == 'QB':
-        extra_cols.append('total_scoring_interaction_qb')
-    elif position == 'RB': 
-        extra_cols.append('total_scoring_interaction_rb')
-    elif position == 'WR' or position == 'TE':
-        extra_cols.append('scoring_receiving_interaction')
+    if position == "QB":
+        extra_cols.append("qb_composite_score")
+    elif position == "RB":
+        extra_cols.append("rb_composite_score")
+    elif position == "WR" or position == "TE":
+        extra_cols.append("wr_te_composite_score")
 
     variables = df[
-        ["log_ratio_rank", "is_favorited"] + extra_cols
+        ["log_ratio_rank", "is_favorited"]
+        + extra_cols
     ]
 
     vif = pd.DataFrame()
@@ -184,158 +166,194 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
 
 
 """ 
-Generate necessary ratios and add them to our data frame as features.
-This is done to take into account multiple features in a single feature, removing multicollinearity 
-
-TODO: Refactor this and update documentation regarding what individuals features are since this thing is getting messy
+Apply manual feature engineering in order to avoid multicollinearity regarding features 
 
 Args:
-    df (pd.DataFrame): data frame to generate ratios for 
-    position (str): position to generate ratios for 
-
+    df (pd.DataFrame): data frame to apply feature engineering to
+    
 Returns:
-    ratios_df (pd.DataFrame); data frame with ratios included 
+    feature_engineered_df (pd.DataFrame): updated data frame 
 """
 
 
-def generate_and_combine_ratios(df: pd.DataFrame, position: str):
-    print(position)
-    print(df.columns)
-
-    # generic ratio to add
-    log_avg_fantasy_points_weight = props.get_config(
-        "weights.scoring_environment.log_avg_fantasy_points"
-    )
-    game_over_under_weight = props.get_config(
-        "weights.scoring_environment.game_over_under"
-    )
-    anytime_touchdown_scorer_weight = props.get_config(
-        "weights.scoring_environment.anytime_touchdown_scorer_ratio"
-    )
-    fantasy_points_over_under_weight = props.get_config(
-        "weights.scoring_environment.fantasy_points_over_under_ratio"
-    )
-    df["scoring_environment"] = (
-        (log_avg_fantasy_points_weight * df["log_avg_fantasy_points"])
-        + (game_over_under_weight * df["game_over_under"])
-        + (anytime_touchdown_scorer_weight * df["anytime_touchdown_scorer_ratio"])
-        + (fantasy_points_over_under_weight * df["fantasy_points_over_under_ratio"])
+def apply_feature_engineering(df: pd.DataFrame, position: str):
+    logging.info(
+        f"Applying feautre engineering for the following position {position} and DataFrame: \n\n {df.head}"
     )
 
-    # account for rushing volume
+    combined_weight_names = []
+
+    # calculate fantasy potential for player
+    weight_names = [
+        "log_avg_fantasy_points",
+        "fantasy_points_over_under_ratio",
+    ]
+    combined_weight_names += weight_names
+    compute_weighted_sum(df, weight_names, "fantasy_potential")
+
+    # calculate game context for player
+    weight_names = [
+        "game_over_under",
+        "anytime_touchdown_scorer_ratio",
+    ]
+    combined_weight_names += weight_names
+    compute_weighted_sum(df, weight_names, "game_context")
+
+    # calculate expected rushing volume if position applicable
     if position == "RB" or position == "QB":
-        # generate rushing volume column
-        rushing_yards_over_under_ratio_weight = props.get_config(
-            "weights.rushing_volume.rushing_yards_over_under_ratio"
-        )
-        rushing_attempts_over_under_ratio_weight = props.get_config(
-            "weights.rushing_volume.rushing_attempts_over_under_ratio"
-        )
-        df["rushing_volume"] = (
-            rushing_yards_over_under_ratio_weight * df["rushing_yards_over_under_ratio"]
-        ) + (
-            rushing_attempts_over_under_ratio_weight
-            * df["rushing_attempts_over_under_ratio"]
-        )
-
-        # combine scoring environment and rushing volume into single variable
-        df["scoring_rush_interaction"] = (
-            df["scoring_environment"] * df["rushing_volume"]
-        )
-
-        # drop un-needed columns
-        df.drop(columns=["rushing_volume"], inplace=True)
-
-    # account for receiving volume
-    if position == "RB" or position == "WR" or position == "TE":
-        # generate receiving volume column
-        receptions_over_under_ratio_weight = props.get_config(
-            "weights.receiving_volume.receptions_over_under_ratio"
-        )
-        receiving_yards_over_under_ratio_weight = props.get_config(
-            "weights.receiving_volume.receiving_yards_over_under_ratio"
-        )
-        df["receiving_volume"] = (
-            receptions_over_under_ratio_weight * df["receptions_over_under_ratio"]
-        ) + (
-            receiving_yards_over_under_ratio_weight
-            * df["receiving_yards_over_under_ratio"]
-        )
-
-        # combine scoring environment
-        df["scoring_receiving_interaction"] = (
-            df["scoring_environment"] * df["receiving_volume"]
-        )
-
-        # combine scoring_receiving_interaction and scoring_rush_interaction into single variable for RBs
-        if position == "RB":
-            scoring_receiving_interaction_weight = props.get_config(
-                "weights.total_scoring_interaction_rb.scoring_receiving_interaction"
-            )
-            scoring_rush_interaction_weight = props.get_config(
-                "weights.total_scoring_interaction_rb.scoring_rush_interaction"
-            )
-            df["total_scoring_interaction_rb"] = (
-                scoring_receiving_interaction_weight
-                * df["scoring_receiving_interaction"]
-            ) + (scoring_rush_interaction_weight * df["scoring_rush_interaction"])
-
-            df.drop(
-                columns=["scoring_receiving_interaction", "scoring_rush_interaction"],
-                inplace=True,
-            )
-
-        df.drop(columns=["receiving_volume"], inplace=True)  # drop un-needed columns
-
-    # account for passing volume
-    if position == "QB":
-        # generate passing volume column
-        passing_touchdowns_weight = props.get_config(
-            "weights.passing_volume.passing_touchdowns_over_under_ratio"
-        )
-        passing_attempts_weight = props.get_config(
-            "weights.passing_volume.passing_attempts_over_under_ratio"
-        )
-        passing_yards_weight = props.get_config(
-            "weights.passing_volume.passing_yards_over_under_ratio"
-        )
-        df["passing_volume"] = (
-            (passing_touchdowns_weight * df["passing_touchdowns_over_under_ratio"])
-            + (passing_attempts_weight * df["passing_attempts_over_under_ratio"])
-            + (passing_yards_weight * df["passing_yards_over_under_ratio"])
-        )
-
-        # combine scoring environment
-        df["scoring_passing_interaction"] = (
-            df["scoring_environment"] * df["passing_volume"]
-        )
-
-        # create total scoring interaction (combines passing & rushing)
-        scoring_rush_interaction_weight = props.get_config(
-            "weights.total_scoring_interaction_qb.scoring_rush_interaction"
-        )
-        scoring_passing_interaction_weight = props.get_config(
-            "weights.total_scoring_interaction_qb.scoring_passing_interaction"
-        )
-
-        df["total_scoring_interaction_qb"] = (
-            scoring_rush_interaction_weight * df["scoring_rush_interaction"]
-        ) + (scoring_passing_interaction_weight * df["scoring_passing_interaction"])
-
-        df.drop(
-            columns=["scoring_passing_interaction", "scoring_rush_interaction"],
-            inplace=True,
-        )
-
-    return df.drop(
-        columns=[
-            "log_avg_fantasy_points",
-            "game_over_under",
-            "scoring_environment",
-            "anytime_touchdown_scorer_ratio",
-            "fantasy_points_over_under_ratio",
+        weight_names = [
+            "rushing_yards_over_under_ratio",
+            "rushing_attempts_over_under_ratio",
         ]
+        combined_weight_names += weight_names
+        compute_weighted_sum(df, weight_names, "expected_rushing_volume")
+
+    # calculate receiving volume if position applicable
+    if position == "WR" or position == "RB" or position == "TE":
+        weight_names = [
+            "receiving_yards_over_under_ratio",
+            "receptions_over_under_ratio",
+        ]
+        combined_weight_names += weight_names
+        compute_weighted_sum(df, weight_names, "expected_receiving_volume")
+
+    # calculate passing volume if posiiton applicable
+    if position == "QB":
+        weight_names = [
+            "passing_touchdowns_over_under_ratio",
+            "passing_attempts_over_under_ratio",
+            "passing_yards_over_under_ratio",
+        ]
+        combined_weight_names += weight_names
+        compute_weighted_sum(df, weight_names, "expected_passing_volume")
+
+    # combine calculated volumes based on position
+    calculate_total_expected_volume(df, position)
+    calculate_composite_scores(df, position)
+
+    feature_engineered_df = df.drop(columns=combined_weight_names)
+    return feature_engineered_df
+
+""" 
+Calculate composite scores for players based on expected volume, game context, and fantasy potential according to Vegas 
+
+Args:
+    df (pd.DataFrame); data frame to calculate composite scores for 
+
+Returns:
+    None
+"""
+def calculate_composite_scores(df: pd.DataFrame, position: str):
+    cols_to_drop = []
+    if position == 'QB':
+        weights = ['total_expected_volume_qb', 'fantasy_potential', 'game_context']
+        cols_to_drop += weights 
+        compute_weighted_sum(df, weights, "qb_composite_score")
+    elif position == 'RB':
+        weights = ['total_expected_volume_rb', 'fantasy_potential', 'game_context']
+        cols_to_drop += weights 
+        compute_weighted_sum(df, weights, "rb_composite_score")
+    else:
+        weights = ['expected_receiving_volume', 'fantasy_potential', 'game_context']
+        cols_to_drop += weights
+        compute_weighted_sum(df, weights, "wr_te_composite_score")
+    
+    df.drop(columns=cols_to_drop, inplace=True)
+        
+
+
+""" 
+Functionality to calculate the total exepcted volume in given data 
+
+Args:
+    df (pd.DataFrame): data frame to account for 
+    position (str): player position 
+
+Returns:
+    None
+"""
+
+
+def calculate_total_expected_volume(df: pd.DataFrame, position: str):
+    if position == "TE" or position == "WR":
+        return
+
+    weight_names = ["expected_rushing_volume"]
+
+    if position == "QB":
+        outcome_column = "total_expected_volume_qb"
+
+        weight_names += ["expected_passing_volume", "pass_weight", "rush_weight", "is_dual_threat"]
+        
+        prop_name = f"weights.total_expected_volume_qb."
+        
+        # base weights for pocket passers
+        base_pass_weight = props.get_config(prop_name + "expected_passing_volume")
+        
+        # weights for dual thread 
+        dual_threat_pass_weight = props.get_config(prop_name + "dual_threat_passing_volume")
+        
+        # determine if QB is dual threat (i.e above 75 percentile)
+        df["is_dual_threat"] = df["expected_rushing_volume"] > df[
+            "expected_rushing_volume"
+        ].quantile(0.25)
+        
+        # apply weights conditionally on if QB is dual thread
+        df["pass_weight"] = np.where(
+            df['is_dual_threat'],
+            dual_threat_pass_weight,
+            base_pass_weight
+        )
+        df["rush_weight"] = 1 - df["pass_weight"]
+        
+        # calculate final expectation
+        df[outcome_column] = (
+            df['expected_rushing_volume'] * df['rush_weight'] + 
+            df['expected_passing_volume'] * df['pass_weight']
+        )
+    else:
+        weight_names.append("expected_receiving_volume")
+        compute_weighted_sum(df, weight_names, "total_expected_volume_rb")
+
+
+    df.drop(columns=weight_names, inplace=True)
+
+
+""" 
+Utility function to apply weighted sum computation to a data frame 
+
+Args:
+    df (pd.DataFrame): data frame to apply weighted sum to
+    weights (list): list of weights to apply 
+    outcome_col (str): outcome col in data 
+"""
+def compute_weighted_sum(df: pd.DataFrame, weights: list, outcome_col: str): 
+    weight_mapping = retrieve_weights(outcome_col, weights)
+    df[outcome_col] = sum(
+        weight_mapping[weight_name] * df[weight_name]
+        for weight_name in weights 
     )
+     
+
+""" 
+Retrieve weights corresponding to a particular outcome 
+
+Args:
+    outcome (str): the outcome value that these weights will be used to calculate 
+    weight_names (list): list of weight names to retrive from props 
+
+Returns: 
+    weight_mappings (dict): mapping of a weight name to its correspondng value 
+    
+"""
+
+
+def retrieve_weights(outcome: str, weight_names: list):
+    return {
+        weight: props.get_config(f"weights.{outcome}.{weight}")
+        for weight in weight_names
+    }
+
 
 
 """
