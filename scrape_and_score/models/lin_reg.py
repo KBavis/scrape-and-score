@@ -1,8 +1,8 @@
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
 from sklearn.feature_selection import f_regression
+from sklearn.linear_model import LassoCV
 import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
@@ -194,7 +194,7 @@ class LinReg:
    """
 
     def create_position_regression(self, x_train, y_train, position):
-        regression = LinearRegression()
+        regression = LassoCV(cv=5, max_iter=10_000)
 
         regression.fit(x_train, y_train)  # train model
         y_hat = regression.predict(x_train)  # test model against trained data
