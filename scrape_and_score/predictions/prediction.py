@@ -11,6 +11,8 @@ from config import props
 """
 Functionality to make a prediction for a single players # of fantasy points based on their matchup
 
+TODO: Update this logic to account for player props 
+
 Args:
    linear_regression (LinReg): linear regression model
 

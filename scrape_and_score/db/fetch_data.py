@@ -592,6 +592,8 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
 """
 Retrieve relevant inputs for a player in order to make prediction
 
+TODO: Update this to account for player props 
+
 Args:
    week (int): the week corresponding to the matchup we are predicitng for
    season (int): the season to fetch data from
