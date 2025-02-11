@@ -51,7 +51,7 @@ Args:
 
 Returns:
    qb_data, rb_data, wr_data, te_data (tuple(pd.DataFrame, ...)): tuple containing pre-processed data
-"""
+J"""
 
 
 def pre_process_data():
@@ -63,59 +63,60 @@ def pre_process_data():
 
     qb_data, rb_data, te_data, wr_data = split_data_by_position(filtered_df)
 
-    (
-        transformed_qb_data,
-        transformed_rb_data,
-        transformed_wr_data,
-        transformed_te_data,
-    ) = transform_data(qb_data, rb_data, wr_data, te_data)
-    tranformed_data = [
-        transformed_qb_data,
-        transformed_rb_data,
-        transformed_wr_data,
-        transformed_te_data,
-    ]
+    # Transform data
+    transformed_qb_data, transformed_rb_data, transformed_wr_data, transformed_te_data = transform_data(qb_data, rb_data, wr_data, te_data)
 
-    positions = ["QB", "RB", "WR", "TE"]
-    for i, df in enumerate(tranformed_data):
-        df.drop(
-            columns=[
-                "player_id",
-                "fantasy_points",
-                "off_rush_rank",
-                "off_pass_rank",
-                "def_rush_rank",
-                "def_pass_rank",
-            ],
-            inplace=True,
-        )
-
-        # generate ratios to avoid multicollinearity
-        tranformed_data[i] = apply_feature_engineering(df, positions[i])
-
-    validated_qb_data = validate_ols_assumptions(tranformed_data[0], "QB")
-    validated_rb_data = validate_ols_assumptions(tranformed_data[1], "RB")
-    validated_wr_data = validate_ols_assumptions(tranformed_data[2], "WR")
-    validated_te_data = validate_ols_assumptions(tranformed_data[3], "TE")
-
-    base_cols = [
-        "log_fantasy_points",
+    preprocessed_qb_data = transformed_qb_data[[
+        "is_favorited",
         "log_ratio_rank",
-    ]
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "rushing_attempts_over_under_line",
+        "rushing_yards_over_under_line",
+        "passing_yards_over_under_line",
+        "passing_attempts_over_under_line",
+        "passing_touchdowns_over_under_line",
+        "fantasy_points_over_under_line"
+    ]]
 
-    preprocessed_qb_data = validated_qb_data[
-        base_cols + ["qb_composite_score", "is_favorited"]
-    ]
-    preprocessed_rb_data = validated_rb_data[
-        base_cols + ["rb_composite_score", "is_favorited"]
-    ]
-    preprocessed_wr_data = validated_wr_data[
-        base_cols + ["wr_te_composite_score"]
-    ]  # is_favorited is statisically insignficant for WRs
-    preprocessed_te_data = validated_te_data[
-        base_cols + ["wr_te_composite_score", "is_favorited"]
-    ]
+    preprocessed_rb_data = transformed_rb_data[[
+        "is_favorited",
+        "log_ratio_rank",
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "rushing_attempts_over_under_line",
+        "rushing_yards_over_under_line",
+        "anytime_touchdown_scorer_line",
+        "receiving_yards_over_under_line",
+    "receptions_over_under_line",
+    "fantasy_points_over_under_line"
+    ]]
 
+    preprocessed_wr_data = transformed_wr_data[[
+        "is_favorited",
+        "log_ratio_rank",
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "anytime_touchdown_scorer_line",
+        "receiving_yards_over_under_line",
+        "receptions_over_under_line", 
+        "fantasy_points_over_under_line"
+    ]]
+
+    preprocessed_te_data = transformed_te_data[[
+        "is_favorited",
+        "log_ratio_rank",
+        "log_fantasy_points",
+        "log_avg_fantasy_points",
+        "anytime_touchdown_scorer_line",
+        "receiving_yards_over_under_line",
+        "receptions_over_under_line",
+        "fantasy_points_over_under_line"
+    ]]
+
+    
+  
+    
     # # return tuple of pre-processed data
     return (
         preprocessed_qb_data,
@@ -127,6 +128,8 @@ def pre_process_data():
 
 """
 Functionality to validate multicollinearity & other OLS assumptions 
+
+NOTE: Given current process of using Lasso/Ridge to reguralize data nd handle multicollinearity, this function is not currently being used
 
 
 Args:
@@ -141,11 +144,30 @@ Returns:
 def validate_ols_assumptions(df: pd.DataFrame, position: str):
     extra_cols = []
     if position == "QB":
-        extra_cols.append("qb_composite_score")
+        extra_cols.append("log_avg_fantasy_points")
+        extra_cols.append("rushing_attempts_over_under_line")
+        extra_cols.append("rushing_yards_over_under_line")
+        extra_cols.append("passing_yards_over_under_line")
+        extra_cols.append("passing_attempts_over_under_line")
+        extra_cols.append("passing_touchdowns_over_under_line")
+        extra_cols.append("fantasy_points_over_under_line")
+        # extra_cols.append("qb_composite_score")
     elif position == "RB":
-        extra_cols.append("rb_composite_score")
+        extra_cols.append("log_avg_fantasy_points")
+        extra_cols.append("rushing_attempts_over_under_line")
+        extra_cols.append("rushing_yards_over_under_line")
+        extra_cols.append("anytime_touchdown_scorer_line")
+        extra_cols.append("receiving_yards_over_under_line")
+        extra_cols.append("receptions_over_under_line")
+        extra_cols.append("fantasy_points_over_under_line")
+        # extra_cols.append("rb_composite_score")
     elif position == "WR" or position == "TE":
-        extra_cols.append("wr_te_composite_score")
+        extra_cols.append("log_avg_fantasy_points")
+        extra_cols.append("anytime_touchdown_scorer_line")
+        extra_cols.append("receiving_yards_over_under_line")
+        extra_cols.append("receptions_over_under_line")
+        extra_cols.append("fantasy_points_over_under_line")
+        # extra_cols.append("wr_te_composite_score")
 
     variables = df[["log_ratio_rank", "is_favorited"] + extra_cols]
 
@@ -156,6 +178,7 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
         for i in range(variables.shape[1])
     ]
     vif["Features"] = variables.columns
+    print(vif)
 
     features_to_remove = vif[vif["VIF"] > 5]["Features"].tolist()
     if features_to_remove:
@@ -168,10 +191,13 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
         )
 
     return df.drop(columns=features_to_remove)
+    return df
 
 
 """ 
 Apply manual feature engineering in order to avoid multicollinearity regarding features 
+
+TODO: Consider removing altogether or modifying in a way where weights account for predictive power of lines (currently does not)
 
 Args:
     df (pd.DataFrame): data frame to apply feature engineering to
@@ -429,7 +455,8 @@ def get_relevant_player_lines(df: pd.DataFrame, position: str):
         outcome_col = f"{prop}_line"
 
         if prop == "anytime_touchdown_scorer":
-            line_col = f"{prop}_line"
+            # line_col = f"{prop}_line"
+            line_col = "anytime_touchdown_scorer_cost" #account for cost rather than line for anytime TD
 
         if line_col in df.columns:
             # TODO: remove ratio column altogether as this is hurting predictive value rather than helping
