@@ -191,7 +191,7 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     # calculate fantasy potential for player
     weight_names = [
         "log_avg_fantasy_points",
-        "fantasy_points_over_under_ratio",
+        "fantasy_points_over_under_line",
     ]
     combined_weight_names += weight_names
     compute_weighted_sum(df, weight_names, "fantasy_potential")
@@ -199,7 +199,7 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     # calculate game context for player
     weight_names = [
         "game_over_under",
-        "anytime_touchdown_scorer_ratio",
+        "anytime_touchdown_scorer_line",
     ]
     combined_weight_names += weight_names
     compute_weighted_sum(df, weight_names, "game_context")
@@ -207,8 +207,8 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     # calculate expected rushing volume if position applicable
     if position == "RB" or position == "QB":
         weight_names = [
-            "rushing_yards_over_under_ratio",
-            "rushing_attempts_over_under_ratio",
+            "rushing_yards_over_under_line",
+            "rushing_attempts_over_under_line",
         ]
         combined_weight_names += weight_names
         compute_weighted_sum(df, weight_names, "expected_rushing_volume")
@@ -216,8 +216,8 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     # calculate receiving volume if position applicable
     if position == "WR" or position == "RB" or position == "TE":
         weight_names = [
-            "receiving_yards_over_under_ratio",
-            "receptions_over_under_ratio",
+            "receiving_yards_over_under_line",
+            "receptions_over_under_line",
         ]
         combined_weight_names += weight_names
         compute_weighted_sum(df, weight_names, "expected_receiving_volume")
@@ -225,9 +225,9 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     # calculate passing volume if posiiton applicable
     if position == "QB":
         weight_names = [
-            "passing_touchdowns_over_under_ratio",
-            "passing_attempts_over_under_ratio",
-            "passing_yards_over_under_ratio",
+            "passing_touchdowns_over_under_line",
+            "passing_attempts_over_under_line",
+            "passing_yards_over_under_line",
         ]
         combined_weight_names += weight_names
         compute_weighted_sum(df, weight_names, "expected_passing_volume")
@@ -392,10 +392,10 @@ def split_data_by_position(df: pd.DataFrame):
     new_wr_data = wr_data.drop("position", axis=1)
     new_te_data = te_data.drop("position", axis=1)
 
-    qb_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_qb_data, "QB")
-    rb_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_rb_data, "RB")
-    wr_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_wr_data, "WR")
-    te_data_with_relevant_prop_ratios = get_relevant_props_ratios(new_te_data, "TE")
+    qb_data_with_relevant_prop_ratios = get_relevant_player_lines(new_qb_data, "QB")
+    rb_data_with_relevant_prop_ratios = get_relevant_player_lines(new_rb_data, "RB")
+    wr_data_with_relevant_prop_ratios = get_relevant_player_lines(new_wr_data, "WR")
+    te_data_with_relevant_prop_ratios = get_relevant_player_lines(new_te_data, "TE")
 
     return get_rankings_ratios(
         qb_data_with_relevant_prop_ratios,
@@ -410,7 +410,7 @@ Generate relevant player props ratios that reward low COSTS and higher LINES
 
 NOTE: Do not use this functionality for props such as interceptions 
 
-TODO: Refactor this functionality to use helper function so it can be used by prediction.py
+TODO: Remove this functionality and just update prop parsing to only account for over lines 
 
 Args:
     df (pd.DataFrame): position specific data 
@@ -420,33 +420,25 @@ Returns:
 """
 
 
-def get_relevant_props_ratios(df: pd.DataFrame, position: str):
+def get_relevant_player_lines(df: pd.DataFrame, position: str):
     selected_props = relevant_props[position]
 
-    # TODO: make this a config
-    k = 100
-
-    # calculate relevant ratios
+    # reconfigure df with relevant lines
     for prop in selected_props:
-        cost_col = f"{prop}_(over)_cost"
-        line_col = f"{prop}_(over)_line"
-        ratio_col = f"{prop}_ratio"
+        line_col = f"{prop}_(over)_line" # only account for over
+        outcome_col = f"{prop}_line"
 
         if prop == "anytime_touchdown_scorer":
-            cost_col = f"{prop}_cost"
             line_col = f"{prop}_line"
 
-        if cost_col in df.columns and line_col in df.columns:
-            df["adjusted_cost"] = df[cost_col].apply(
-                lambda x: abs(x) if x < 0 else x + k
-            )
-            df[ratio_col] = df[line_col] / df["adjusted_cost"]
+        if line_col in df.columns:
+            # TODO: remove ratio column altogether as this is hurting predictive value rather than helping
+            df[outcome_col] = df[line_col]
 
-            # drop adjusted cost column each time
-            df.drop(columns=["adjusted_cost"], inplace=True)
+            df.drop(columns=[line_col])
 
     # remove un-needed columns
-    selected_props_cols = [f"{prop}_ratio" for prop in selected_props]
+    selected_props_cols = [f"{prop}_line" for prop in selected_props]
     keep_columns = [
         "player_id",
         "fantasy_points",

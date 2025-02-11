@@ -27,20 +27,20 @@ scraping:
 weights:
    game_context:
       game_over_under: 0.40
-      anytime_touchdown_scorer_ratio: 0.60
+      anytime_touchdown_scorer_line: 0.60
    fantasy_potential:
       log_avg_fantasy_points: 0.4
-      fantasy_points_over_under_ratio: 0.6
+      fantasy_points_over_under_line: 0.6
    expected_rushing_volume:
-      rushing_attempts_over_under_ratio: 0.2
-      rushing_yards_over_under_ratio: 0.8
+      rushing_attempts_over_under_line: 0.2
+      rushing_yards_over_under_line: 0.8
    expected_receiving_volume:
-      receptions_over_under_ratio: 0.5
-      receiving_yards_over_under_ratio: 0.5
+      receptions_over_under_line: 0.5
+      receiving_yards_over_under_line: 0.5
    expected_passing_volume:
-      passing_touchdowns_over_under_ratio: 0.5
-      passing_attempts_over_under_ratio: 0.1
-      passing_yards_over_under_ratio: 0.4
+      passing_touchdowns_over_under_line: 0.5
+      passing_attempts_over_under_line: 0.1
+      passing_yards_over_under_line: 0.4
    total_expected_volume_rb:
       expected_receiving_volume: 0.4
       expected_rushing_volume: 0.6
