@@ -103,10 +103,18 @@ def pre_process_data():
         "log_ratio_rank",
     ]
 
-    preprocessed_qb_data = validated_qb_data[base_cols + ["qb_composite_score", "is_favorited"]]
-    preprocessed_rb_data = validated_rb_data[base_cols + ["rb_composite_score", "is_favorited"]]
-    preprocessed_wr_data = validated_wr_data[base_cols + ["wr_te_composite_score"]] #is_favorited is statisically insignficant for WRs
-    preprocessed_te_data = validated_te_data[base_cols + ["wr_te_composite_score", "is_favorited"]]
+    preprocessed_qb_data = validated_qb_data[
+        base_cols + ["qb_composite_score", "is_favorited"]
+    ]
+    preprocessed_rb_data = validated_rb_data[
+        base_cols + ["rb_composite_score", "is_favorited"]
+    ]
+    preprocessed_wr_data = validated_wr_data[
+        base_cols + ["wr_te_composite_score"]
+    ]  # is_favorited is statisically insignficant for WRs
+    preprocessed_te_data = validated_te_data[
+        base_cols + ["wr_te_composite_score", "is_favorited"]
+    ]
 
     # # return tuple of pre-processed data
     return (
@@ -139,10 +147,7 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
     elif position == "WR" or position == "TE":
         extra_cols.append("wr_te_composite_score")
 
-    variables = df[
-        ["log_ratio_rank", "is_favorited"]
-        + extra_cols
-    ]
+    variables = df[["log_ratio_rank", "is_favorited"] + extra_cols]
 
     vif = pd.DataFrame()
 
@@ -234,6 +239,7 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     feature_engineered_df = df.drop(columns=combined_weight_names)
     return feature_engineered_df
 
+
 """ 
 Calculate composite scores for players based on expected volume, game context, and fantasy potential according to Vegas 
 
@@ -243,23 +249,24 @@ Args:
 Returns:
     None
 """
+
+
 def calculate_composite_scores(df: pd.DataFrame, position: str):
     cols_to_drop = []
-    if position == 'QB':
-        weights = ['total_expected_volume_qb', 'fantasy_potential', 'game_context']
-        cols_to_drop += weights 
+    if position == "QB":
+        weights = ["total_expected_volume_qb", "fantasy_potential", "game_context"]
+        cols_to_drop += weights
         compute_weighted_sum(df, weights, "qb_composite_score")
-    elif position == 'RB':
-        weights = ['total_expected_volume_rb', 'fantasy_potential', 'game_context']
-        cols_to_drop += weights 
+    elif position == "RB":
+        weights = ["total_expected_volume_rb", "fantasy_potential", "game_context"]
+        cols_to_drop += weights
         compute_weighted_sum(df, weights, "rb_composite_score")
     else:
-        weights = ['expected_receiving_volume', 'fantasy_potential', 'game_context']
+        weights = ["expected_receiving_volume", "fantasy_potential", "game_context"]
         cols_to_drop += weights
         compute_weighted_sum(df, weights, "wr_te_composite_score")
-    
+
     df.drop(columns=cols_to_drop, inplace=True)
-        
 
 
 """ 
@@ -283,38 +290,42 @@ def calculate_total_expected_volume(df: pd.DataFrame, position: str):
     if position == "QB":
         outcome_column = "total_expected_volume_qb"
 
-        weight_names += ["expected_passing_volume", "pass_weight", "rush_weight", "is_dual_threat"]
-        
+        weight_names += [
+            "expected_passing_volume",
+            "pass_weight",
+            "rush_weight",
+            "is_dual_threat",
+        ]
+
         prop_name = f"weights.total_expected_volume_qb."
-        
+
         # base weights for pocket passers
         base_pass_weight = props.get_config(prop_name + "expected_passing_volume")
-        
-        # weights for dual thread 
-        dual_threat_pass_weight = props.get_config(prop_name + "dual_threat_passing_volume")
-        
+
+        # weights for dual thread
+        dual_threat_pass_weight = props.get_config(
+            prop_name + "dual_threat_passing_volume"
+        )
+
         # determine if QB is dual threat (i.e above 75 percentile)
         df["is_dual_threat"] = df["expected_rushing_volume"] > df[
             "expected_rushing_volume"
         ].quantile(0.25)
-        
+
         # apply weights conditionally on if QB is dual thread
         df["pass_weight"] = np.where(
-            df['is_dual_threat'],
-            dual_threat_pass_weight,
-            base_pass_weight
+            df["is_dual_threat"], dual_threat_pass_weight, base_pass_weight
         )
         df["rush_weight"] = 1 - df["pass_weight"]
-        
+
         # calculate final expectation
         df[outcome_column] = (
-            df['expected_rushing_volume'] * df['rush_weight'] + 
-            df['expected_passing_volume'] * df['pass_weight']
+            df["expected_rushing_volume"] * df["rush_weight"]
+            + df["expected_passing_volume"] * df["pass_weight"]
         )
     else:
         weight_names.append("expected_receiving_volume")
         compute_weighted_sum(df, weight_names, "total_expected_volume_rb")
-
 
     df.drop(columns=weight_names, inplace=True)
 
@@ -327,13 +338,14 @@ Args:
     weights (list): list of weights to apply 
     outcome_col (str): outcome col in data 
 """
-def compute_weighted_sum(df: pd.DataFrame, weights: list, outcome_col: str): 
+
+
+def compute_weighted_sum(df: pd.DataFrame, weights: list, outcome_col: str):
     weight_mapping = retrieve_weights(outcome_col, weights)
     df[outcome_col] = sum(
-        weight_mapping[weight_name] * df[weight_name]
-        for weight_name in weights 
+        weight_mapping[weight_name] * df[weight_name] for weight_name in weights
     )
-     
+
 
 """ 
 Retrieve weights corresponding to a particular outcome 
@@ -353,7 +365,6 @@ def retrieve_weights(outcome: str, weight_names: list):
         weight: props.get_config(f"weights.{outcome}.{weight}")
         for weight in weight_names
     }
-
 
 
 """
