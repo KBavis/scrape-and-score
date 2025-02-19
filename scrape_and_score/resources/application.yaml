@@ -1,4 +1,4 @@
-# website URLs
+# website configurations
 website:
    pro-football-reference:
       urls:
@@ -12,10 +12,55 @@ website:
       urls:
          historical-odds: "https://www.rotowire.com/betting/nfl/tables/games-archive.php"
          upcoming-odds: "https://www.rotowire.com/betting/nfl/tables/nfl-games-by-market.php"
+   betting-pros:
+      market-ids: "73:74:102:103:100:333:101:106:107:76:105:75:104:66:71:78:253"
+      api-key: "CHi8Hy5CEE4khd46XNYL23dCFX96oUdw6qOt1Dnh"
+      urls:
+         historical-odds: "https://api.bettingpros.com/v3/offers?sport=NFL&market_id={MARKET_IDS}&player_slug={PLAYER_SLUG}&event_id={EVENT_IDS}&location=NY&limit=5&page={PAGE}"
+         events: "https://api.bettingpros.com/v3/events?sport=NFL&week={WEEK}&season={YEAR}"
 
 # scraping
 scraping:
    delay: 3
+
+# weights for feature manipulation
+weights:
+   game_context:
+      game_over_under: 0.40
+      anytime_touchdown_scorer_line: 0.60
+   fantasy_potential:
+      log_avg_fantasy_points: 0.4
+      fantasy_points_over_under_line: 0.6
+   expected_rushing_volume:
+      rushing_attempts_over_under_line: 0.2
+      rushing_yards_over_under_line: 0.8
+   expected_receiving_volume:
+      receptions_over_under_line: 0.5
+      receiving_yards_over_under_line: 0.5
+   expected_passing_volume:
+      passing_touchdowns_over_under_line: 0.5
+      passing_attempts_over_under_line: 0.1
+      passing_yards_over_under_line: 0.4
+   total_expected_volume_rb:
+      expected_receiving_volume: 0.4
+      expected_rushing_volume: 0.6
+   total_expected_volume_qb:
+      expected_passing_volume: 0.88
+      expected_rushing_volume: 0.12
+      dual_threat_passing_volume: 0.68
+      dual_thread_rushing_volume: 0.32
+   qb_composite_score:
+      total_expected_volume_qb: 0.5
+      fantasy_potential: 0.3
+      game_context: 0.2
+   rb_composite_score:
+      total_expected_volume_rb: 0.5
+      fantasy_potential: 0.3
+      game_context: 0.2
+   wr_te_composite_score:
+      expected_receiving_volume: 0.7
+      fantasy_potential: 0.2
+      game_context: 0.1
 
 # scoring
 scoring:

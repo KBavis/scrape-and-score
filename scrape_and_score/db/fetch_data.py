@@ -520,7 +520,24 @@ Returns:
 
 def fetch_independent_and_dependent_variables_for_mult_lin_regression():
     sql = """
-      SELECT
+    WITH PlayerProps AS (
+        SELECT 
+            pbo.player_name,
+            pbo.week,
+            pbo.season,
+            jsonb_agg(
+                json_build_object(
+                    'label', pbo.label,
+                    'line', pbo.line,
+                    'cost', pbo.cost
+                )
+            ) AS props
+        FROM 
+            player_betting_odds pbo
+        GROUP BY
+            pbo.player_name, pbo.week, pbo.season
+    )
+	  SELECT
          p.player_id,
          p.position,
          pgl.fantasy_points,
@@ -533,7 +550,8 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          CASE
             WHEN tbo.favorite_team_id = t.team_id THEN 1
 			ELSE 0
-         END AS is_favorited
+         END AS is_favorited,
+		 pp.props
       FROM
          player_game_log pgl
       JOIN 
@@ -542,7 +560,9 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          team t ON p.team_id = t.team_id
       JOIN 
          team td ON pgl.opp = td.team_id
-      JOIN 
+      JOIN
+	  	 PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season
+	  JOIN 
          team_betting_odds tbo 
       ON 
 				(tbo.home_team_id = t.team_id OR tbo.home_team_id = td.team_id)
@@ -572,6 +592,8 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
 """
 Retrieve relevant inputs for a player in order to make prediction
 
+TODO: Update this to account for player props 
+
 Args:
    week (int): the week corresponding to the matchup we are predicitng for
    season (int): the season to fetch data from
@@ -584,6 +606,29 @@ Returns:
 
 def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     sql = """
+    WITH PlayerProps AS (
+        SELECT 
+            pbo.player_name,
+            pbo.week,
+            pbo.season,
+            jsonb_agg(
+                json_build_object(
+                    'label', pbo.label,
+                    'line', pbo.line,
+                    'cost', pbo.cost
+                )
+            ) AS props
+        FROM 
+            player_betting_odds pbo
+        WHERE
+            pbo.player_name = %s
+        AND
+            pbo.week = %s
+        AND 
+            pbo.season = %s
+        GROUP BY
+            pbo.player_name, pbo.week, pbo.season
+    )
     SELECT
         p.position,
         ROUND(CAST(player_avg.avg_fantasy_points AS NUMERIC), 2) AS avg_fantasy_points,
@@ -596,7 +641,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         CASE 
             WHEN tbo.favorite_team_id = t.team_id THEN 1
             ELSE 0
-        END AS is_favorited
+        END AS is_favorited,
+        pp.props
     FROM
         player_game_log pgl
     JOIN 
@@ -614,16 +660,20 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
             pgl.player_id, 
             AVG(pgl.fantasy_points) AS avg_fantasy_points
             FROM player_game_log pgl
-            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = %s) 
+            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = %s)
+            AND pgl.year = %s 
             GROUP BY pgl.player_id
     ) player_avg 
-    ON player_avg.player_id = pgl.player_id
+    ON 
+        player_avg.player_id = pgl.player_id
+    JOIN PlayerProps pp 
+        ON pp.player_name = p.name AND pp.week = tbo.week AND pp.season = tbo.season
     WHERE 
         p.name = %s AND
         tbo.week = %s AND tbo.season = %s
     GROUP BY 
         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank, 
-        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited;
+        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props;
     """
 
     df = None
@@ -635,7 +685,7 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
             df = pd.read_sql_query(
-                sql, connection, params=(player_name, player_name, week, season)
+                sql, connection, params=(player_name, week, season, player_name, season, player_name, week, season)
             )
 
             if df.empty:
@@ -650,6 +700,52 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         raise e
 
     return df
+
+""" 
+Retrieve all relevant player names & ids that are active in a specified year 
+
+Args:
+    year (int): season to retrieve data for 
+
+Return
+    players_names (list): all relevant player names 
+"""
+def fetch_players_active_in_specified_year(year):
+    sql = '''
+      SELECT 
+	    DISTINCT p.name,
+        p.player_id
+      FROM 
+	    player p
+      JOIN player_game_log pgl 
+	    ON pgl.player_id = p.player_id
+      WHERE 
+	    pgl.year = %s
+    '''
+    
+    names = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                names.append({"name": row[0], "id": row[1]})
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching the relevant player names & ids corresponding to year {year}: {e}"
+        )
+        raise e
+
+    return names 
+    
+    
 
 
 """

@@ -1,8 +1,8 @@
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
 from sklearn.feature_selection import f_regression
+from sklearn.linear_model import LassoCV
 import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
@@ -16,9 +16,6 @@ class LinReg:
         self.rb_data = rb_data
         self.wr_data = wr_data
         self.te_data = te_data
-
-        # drop features which were determine to be insignficant to prediction
-        self.drop_statistically_insignificant_features()
 
         self.qb_inputs_scaled = self.scale_inputs(self.qb_data)
         self.rb_inputs_scaled = self.scale_inputs(self.rb_data)
@@ -145,6 +142,7 @@ class LinReg:
         self.wr_regression = regression_model_mapping["WR"]
 
         self.log_regression_metrics()
+        self.determine_feature_selection_significance()
 
     """
    Log out relevant regression bias/weights associated with model
@@ -196,7 +194,7 @@ class LinReg:
    """
 
     def create_position_regression(self, x_train, y_train, position):
-        regression = LinearRegression()
+        regression = LassoCV(cv=5, max_iter=10_000)
 
         regression.fit(x_train, y_train)  # train model
         y_hat = regression.predict(x_train)  # test model against trained data
@@ -383,46 +381,3 @@ class LinReg:
             df = pd.DataFrame(data=[p_values], columns=data.columns.values)
             print(f"\n\n{position} Regression Feature Signficance")
             print(f"\n{df}")
-
-    """
-   Drop features that are deemed insignificant by 'determine_feature_selection_signficance'
-   
-   TODO: Make this more configurable or just remove features in pre-processing instead 
-   
-   Args:
-      None 
-   
-   Returns:
-      None
-   """
-
-    def drop_statistically_insignificant_features(self):
-        self.qb_data = self.qb_data[
-            [
-                "log_fantasy_points",
-                "log_avg_fantasy_points",
-                "log_ratio_rank",
-                "game_over_under",
-                "is_favorited",
-            ]
-        ]
-        self.rb_data = self.rb_data[
-            [
-                "log_fantasy_points",
-                "log_avg_fantasy_points",
-                "log_ratio_rank",
-                "game_over_under",
-                "is_favorited",
-            ]
-        ]
-        self.wr_data = self.wr_data[
-            [
-                "log_fantasy_points",
-                "log_avg_fantasy_points",
-                "log_ratio_rank",
-                "game_over_under",
-            ]
-        ]
-        self.te_data = self.te_data[
-            ["log_fantasy_points", "log_avg_fantasy_points", "game_over_under"]
-        ]
