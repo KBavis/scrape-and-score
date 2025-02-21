@@ -12,15 +12,25 @@ class FantasyDataset(Dataset):
       super().__init__()
       self.df = df
       self.transform = transform
+      
+      self.X = torch.tensor(df.drop(columns=['fantasy_points']).values, dtype=torch.float32)
+      self.y = torch.tensor(df["fantasy_points"].values, dtype=torch.float32)
    
    
    def __getitem__(self, idx):
+      """Retrieve item (tuple) containing feauters & expected value 
+
+      Args:
+          idx (_type_): _description_
+
+      Returns:
+          _type_: _description_
+      """
       # account for batching by DataLoader 
       if torch.is_tensor(idx):
          idx = idx.tolist() 
       
-      #TODO: Implement me 
-      return None
+      return self.X[idx], self.y[idx]
       
    
    
