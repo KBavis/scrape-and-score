@@ -11,12 +11,17 @@ from db import (
 from config import load_configs, get_config
 from datetime import datetime
 from service import player_game_logs_service, team_game_logs_service
-from data import preprocess
+from data import linreg_preprocess, nn_preprocess
 from models.lin_reg import LinReg
 from util import args
 import logging
 from predictions import prediction
 from scraping import rotowire_scraper
+from data.dataset import FantasyDataset
+from torch.utils.data import DataLoader
+from models.neural_net import NeuralNetwork
+from models import optimization
+import torch
 
 
 """
@@ -116,24 +121,27 @@ def main():
         else:
             logging.info("--recent nor --new flag passed in; skipping scraping...")
 
-        # pre-process persisted data
-        (
-            qb_pre_processed_data,
-            rb_pre_processed_data,
-            wr_pre_processed_data,
-            te_pre_processed_data,
-        ) = preprocess.pre_process_data()
         
-        logging.info('Successfully pre-processed all data')
+        #TODO: Put this functionality within a Command Line argument in order to not run every time 
+        
+        # pre-process persisted data
+        # (
+        #     qb_pre_processed_data,
+        #     rb_pre_processed_data,
+        #     wr_pre_processed_data,
+        #     te_pre_processed_data,
+        # ) = preprocess.pre_process_data()
+        
+        # logging.info('Successfully pre-processed all data')
 
-        # generate our position specific regressions
-        linear_regressions = LinReg(
-            qb_pre_processed_data,
-            rb_pre_processed_data,
-            wr_pre_processed_data,
-            te_pre_processed_data,
-        )
-        linear_regressions.create_regressions()
+        # # generate our position specific regressions
+        # linear_regressions = LinReg(
+        #     qb_pre_processed_data,
+        #     rb_pre_processed_data,
+        #     wr_pre_processed_data,
+        #     te_pre_processed_data,
+        # )
+        # linear_regressions.create_regressions()
 
         if cl_args.upcoming:
             rotowire_scraper.scrape_upcoming()
@@ -144,13 +152,45 @@ def main():
 
         # determine if we want to test our regression
         if cl_args.test:
-            linear_regressions.test_regressions()
+            # linear_regressions.test_regressions() TODO: Uncomment me 
+            
+            #TODO: Consider creating two data sets (one for testing, one for training)
+            df = nn_preprocess.preprocess()
+            
+            # split into training & testing dataframes 
+            num_rows = len(df)
+            training_length = int(num_rows * 0.8)
+            
+            training_df = df.iloc[: training_length]
+            
+            testing_df = df.iloc[training_length : num_rows]
+            
+            training_data_set = FantasyDataset(training_df)
+            testing_data_set = FantasyDataset(testing_df)
+            
+            test_data_loader = DataLoader(testing_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
+            train_data_loader = DataLoader(training_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
+            
+            print(f"Accelator Available: {torch.accelerator.is_available()}")
+            
+            nn = NeuralNetwork()
+            optimization.optimization_loop(train_data_loader, test_data_loader, nn)
+            
+            
+            
+            
+
+            
+            
+            #TODO: Move this functionality within a seperate Command Line Argument 
+            
+            #Create testing & data
 
         # determine inputs
         if cl_args.single_player:
             # prompt user to input player name & matchup
             logging.info("Prompting user to input player name & matchup ...")
-            prediction.make_single_player_prediction(linear_regressions)
+            # prediction.make_single_player_prediction(linear_regressions) TODO: Uncomment me 
 
         elif cl_args.all_players:
             # fetch upcoming matchups and make predictions
