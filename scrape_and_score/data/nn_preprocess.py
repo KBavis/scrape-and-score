@@ -5,10 +5,13 @@ from db import fetch_data as fetch
 
 def preprocess(): 
    df = fetch_data()
+   print(f"Original Data: {len(df)} rows")  
+
    parsed_df = parse_player_props(df)
-   
-   processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) # encode categorical variable
-   processed_df.drop(columns=['player_id'], inplace=True) # drop invaluable id
+
+   processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categoricla variable
+   processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
+
    return processed_df
    
 
@@ -46,12 +49,11 @@ def parse_player_props(df: pd.DataFrame):
 
       parsed_data.append(row_data)
 
-   parsed_df = pd.DataFrame(parsed_data)
+   parsed_df = pd.DataFrame(parsed_data, index=df.index)
    parsed_df.fillna(-1, inplace=True)
    
    df = df.drop(columns=["props"])
    return pd.concat([df, parsed_df], axis=1)
-   
    
 
 
