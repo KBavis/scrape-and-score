@@ -121,6 +121,32 @@ def main():
             team_game_logs_service.calculate_all_teams_rankings(year)
         else:
             logging.info("--recent nor --new flag passed in; skipping scraping...")
+        
+
+        # collect multiple years worth of data 
+        #TODO: Refactor above approach and this approach to be unified
+        if cl_args.collect_data: 
+            logging.info("Attemtping to collect relevant player and team data for the past 10 seasons")
+            
+            # loop through each year (i.e last year --> 10 years ago )
+
+            # collect relevant depth charts for given year 
+
+            # check which players are unique to the given year (i.e not already persisted)
+
+            # all players not previously persisted should be persisted
+
+            # TODO: Update DB Schema to account for effective dating (i.e some players retire, some players change teams, and we need to account for these changes in a seperate table) 
+
+            # scrape all relevant player data (i.e players previously persisted if applicable, and players not previously persisted)
+
+            # scrape and persist all team data (i.e team game logs for season)
+
+            # insert team & player records into our database for season 
+
+            # Rotowire: fetch team betting odds for each team throughout relevant season 
+
+            # Betting Pros: fetch relevant player betting odds through relevatn season (use effective dating to determine if we should get odds for a particular player) 
 
 
 
