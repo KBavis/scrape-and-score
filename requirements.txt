@@ -13,3 +13,4 @@ pytest
 python-dotenv
 statsmodels
 argparse
+torch

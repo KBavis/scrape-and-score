@@ -1,7 +1,7 @@
 from . import input
 import pandas as pd
 from db import fetch_data
-from data import preprocess
+from data import linreg_preprocess as preprocess
 import logging
 from sklearn.preprocessing import StandardScaler
 from models.lin_reg import LinReg

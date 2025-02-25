@@ -18,14 +18,16 @@ def parse():
     scraping_group = parser.add_mutually_exclusive_group()
     input_group = parser.add_mutually_exclusive_group()
     betting_group = parser.add_mutually_exclusive_group()
+    model_group = parser.add_mutually_exclusive_group()
 
-    # add arguments with default=False
     parser.add_argument(
-        "--test",
+        "--train",
         action="store_true",
         default=False,
-        help="Skip scraping and perform testing of regression models.",
+        help="Re-train our neural network model."
     )
+
+    # establish args to determine what information is required to be scraped
     scraping_group.add_argument(
         "--recent",
         action="store_true",
@@ -38,6 +40,8 @@ def parse():
         default=False,
         help="Scrape all available NFL players, teams, and game logs.",
     )
+
+    # establish args for determining method of generating predictions
     input_group.add_argument(
         "--single_player",
         action="store_true",
@@ -50,6 +54,8 @@ def parse():
         default=False,
         help="Fetch all upcoming matchups for relevant players and generate predictions.",
     )
+
+    # establish args for methods of accounting for betting 
     betting_group.add_argument(
         "--upcoming",
         action="store_true",
@@ -69,10 +75,24 @@ def parse():
         help="Scrape and persist all previous betting odds for a particular season.",
     )
 
+    # establihs argumenets for determine which model to utilize 
+    model_group.add_argument(
+        "--nn",
+        action="store_true",
+        default=False,
+        help="Utilize neural network capabilities for our predictions"
+    )
+    model_group.add_argument(
+       "--lin_reg",
+       action="store_true",
+       default=False,
+       help="Utilize linear regression model capabilities for our predictions" 
+    )
+
     # parse args
     args = parser.parse_args()
 
-    # Provide feedback on which flags are set
+    # provide feedback on which flags are set
     if args.recent:
         print(
             "--recent flag passed: Scraping and persisting game logs for the most recent week."
@@ -89,8 +109,6 @@ def parse():
         print(
             "--all_players flag passed: Predicting for all relevant players and matchups."
         )
-    if args.test:
-        print("--test flag passed: Performing regression model testing.")
     if args.upcoming:
         print(
             "--upcoming flag passed: Scraping and persisting upcoming NFL games betting odds."
@@ -102,6 +120,18 @@ def parse():
     if args.historical:
         print(
             "--historical flag passed: Scraping and persisting all previous betting odds for a given season."
+        )
+    if args.nn:
+        print(
+            '--nn flag passed: Utilizing our neural network model in order to make predictions'
+        )
+    if args.lin_reg:
+        print(
+            "--lin_reg flag passed: Using our linear regression model to make predictions"
+        )
+    if args.train:
+        print(
+            "--train flag passed: Re-training our neural network model."
         )
 
     return args
