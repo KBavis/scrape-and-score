@@ -22,6 +22,7 @@ from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
 from models import optimization
 import torch
+import os
 
 
 """
@@ -121,28 +122,10 @@ def main():
         else:
             logging.info("--recent nor --new flag passed in; skipping scraping...")
 
-        
-        #TODO: Put this functionality within a Command Line argument in order to not run every time 
-        
-        # pre-process persisted data
-        # (
-        #     qb_pre_processed_data,
-        #     rb_pre_processed_data,
-        #     wr_pre_processed_data,
-        #     te_pre_processed_data,
-        # ) = preprocess.pre_process_data()
-        
-        # logging.info('Successfully pre-processed all data')
 
-        # # generate our position specific regressions
-        # linear_regressions = LinReg(
-        #     qb_pre_processed_data,
-        #     rb_pre_processed_data,
-        #     wr_pre_processed_data,
-        #     te_pre_processed_data,
-        # )
-        # linear_regressions.create_regressions()
 
+
+        # scrape relevant betting odds based on specified arg
         if cl_args.upcoming:
             rotowire_scraper.scrape_upcoming()
         elif cl_args.update_odds:
@@ -150,43 +133,66 @@ def main():
         elif cl_args.historical:
             rotowire_scraper.scrape_all()
 
-        # determine if we want to test our regression
-        if cl_args.test:
-            # linear_regressions.test_regressions() TODO: Uncomment me 
+        
+        if cl_args.lin_reg:
+            # pre-process persisted data
+            (
+                qb_pre_processed_data,
+                rb_pre_processed_data,
+                wr_pre_processed_data,
+                te_pre_processed_data,
+            ) = linreg_preprocess.pre_process_data()
             
-            #TODO: Consider creating two data sets (one for testing, one for training)
-            df = nn_preprocess.preprocess()
-            
-            # split into training & testing dataframes 
-            num_rows = len(df)
-            training_length = int(num_rows * 0.8)
-            
-            training_df = df.iloc[: training_length]
-            
-            testing_df = df.iloc[training_length : num_rows]
-            
-            training_data_set = FantasyDataset(training_df)
-            testing_data_set = FantasyDataset(testing_df)
-            
-            test_data_loader = DataLoader(testing_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
-            train_data_loader = DataLoader(training_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
-            
-            print(f"Accelator Available: {torch.accelerator.is_available()}")
-            
-            nn = NeuralNetwork()
-            optimization.optimization_loop(train_data_loader, test_data_loader, nn)
-            
-            
-            
-            
+            logging.info('Successfully pre-processed all data')
 
-            
-            
-            #TODO: Move this functionality within a seperate Command Line Argument 
-            
-            #Create testing & data
+            # generate our position specific regressions
+            linear_regressions = LinReg(
+                qb_pre_processed_data,
+                rb_pre_processed_data,
+                wr_pre_processed_data,
+                te_pre_processed_data,
+            )
+            linear_regressions.create_regressions()
 
-        # determine inputs
+            # test regressions 
+            linear_regressions.test_regressions()
+        elif cl_args.nn:
+            
+            # Check if Neural Network model already exists and that we don't want to re-tain model
+            if os.path.exists('model.pth') and cl_args.train == False:
+                nn = torch.load('model.pth', weights_only=False)
+            else:
+                df = nn_preprocess.preprocess()
+                
+                # split into training & testing dataframes 
+                num_rows = len(df)
+                training_length = int(num_rows * 0.8)
+                
+                training_df = df.iloc[: training_length]
+                
+                testing_df = df.iloc[training_length : num_rows]
+                
+                training_data_set = FantasyDataset(training_df)
+                testing_data_set = FantasyDataset(testing_df)
+                
+                test_data_loader = DataLoader(testing_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
+                train_data_loader = DataLoader(training_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
+                
+                print(f"Accelator Available: {torch.accelerator.is_available()}")
+                
+                nn = NeuralNetwork()
+                optimization.optimization_loop(train_data_loader, test_data_loader, nn)
+
+                torch.save(nn, 'model.pth')
+            
+            print("Printing out our Model")
+            print(nn)
+
+
+
+        # determine type of predicitions to make
+        #TODO: Fix single player predicition for Linear Regressions & add logic for predicitng all upcoming players points 
+        #TODO: Add single player prediciton logic for Neural Network & add logic for predicitng all upcoming players points
         if cl_args.single_player:
             # prompt user to input player name & matchup
             logging.info("Prompting user to input player name & matchup ...")
