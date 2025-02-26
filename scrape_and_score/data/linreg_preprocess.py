@@ -747,7 +747,7 @@ Returns:
 
 
 def get_data():
-    df = fetch_data.fetch_independent_and_dependent_variables_for_mult_lin_regression()
+    df = fetch_data.fetch_independent_and_dependent_variables()
     dfs_with_player_props = parse_player_props(df)
     updated_df = include_averages(dfs_with_player_props)
     return updated_df

@@ -505,7 +505,7 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year: int):
 
 """
 Functionality to retrieve the needed dependent and independent variables needed 
-to create our multiple linear regression based model 
+to create our predicition models 
 
 TODO (FFM-145): Include external factors such as weather, vegas projections, players depth chart position 
 
@@ -518,7 +518,7 @@ Returns:
 """
 
 
-def fetch_independent_and_dependent_variables_for_mult_lin_regression():
+def fetch_independent_and_dependent_variables():
     sql = """
     WITH PlayerProps AS (
         SELECT 

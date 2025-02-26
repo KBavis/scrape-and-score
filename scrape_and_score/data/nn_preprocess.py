@@ -61,4 +61,4 @@ def fetch_data():
    """
       Retrieve indepdenent variables 
    """
-   return fetch.fetch_independent_and_dependent_variables_for_mult_lin_regression()
+   return fetch.fetch_independent_and_dependent_variables()
