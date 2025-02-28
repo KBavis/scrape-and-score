@@ -23,9 +23,7 @@ def fetch_all_teams():
                 teams.append(
                     {
                         "team_id": row[0],
-                        "name": row[1],
-                        "offense_rank": row[2],
-                        "defense_rank": row[3],
+                        "name": row[1]
                     }
                 )
 
@@ -61,9 +59,7 @@ def fetch_team_by_name(team_name: int):
             if row:
                 team = {
                     "team_id": row[0],
-                    "name": row[1],
-                    "offense_rank": row[2],
-                    "defense_rank": row[3],
+                    "name": row[1]
                 }
 
     except Exception as e:
