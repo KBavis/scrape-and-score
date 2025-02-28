@@ -622,11 +622,11 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         FROM 
             player_betting_odds pbo
         WHERE
-            pbo.player_name = 'Kyren Williams'
+            pbo.player_name = '%s'
         AND
-            pbo.week = 1
+            pbo.week = %s
         AND 
-            pbo.season = 2024
+            pbo.season = %s
         GROUP BY
             pbo.player_name, pbo.week, pbo.season
     )
@@ -665,8 +665,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
             pgl.player_id, 
             AVG(pgl.fantasy_points) AS avg_fantasy_points
             FROM player_game_log pgl
-            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = 'Kyren Williams')
-            AND pgl.year = 2024 
+            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = '%s')
+            AND pgl.year = %s
             GROUP BY pgl.player_id
     ) player_avg 
     ON 
@@ -674,8 +674,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     JOIN PlayerProps pp 
         ON pp.player_name = p.name AND pp.week = tbo.week AND pp.season = tbo.season
     WHERE 
-        p.name = 'Kyren Williams' AND
-        tbo.week = 1 AND tbo.season = 2024
+        p.name = '%s' AND
+        tbo.week = %s AND tbo.season = %s
     GROUP BY 
         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank, 
         tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props,
