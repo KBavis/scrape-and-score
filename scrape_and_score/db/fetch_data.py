@@ -622,21 +622,21 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         FROM 
             player_betting_odds pbo
         WHERE
-            pbo.player_name = %s
+            pbo.player_name = 'Kyren Williams'
         AND
-            pbo.week = %s
+            pbo.week = 1
         AND 
-            pbo.season = %s
+            pbo.season = 2024
         GROUP BY
             pbo.player_name, pbo.week, pbo.season
     )
     SELECT
         p.position,
         ROUND(CAST(player_avg.avg_fantasy_points AS NUMERIC), 2) AS avg_fantasy_points,
-        t.off_rush_rank,
-        t.off_pass_rank,
-        df.def_rush_rank,
-        df.def_pass_rank,
+        t_tr.off_rush_rank,
+        t_tr.off_pass_rank,
+        t_td.def_rush_rank,
+        t_td.def_pass_rank,
         tbo.game_over_under,
         tbo.spread,
         CASE 
@@ -650,8 +650,12 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         player p ON p.player_id = pgl.player_id 
     JOIN 
         team t ON p.team_id = t.team_id
+	JOIN 
+	  	team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season
     JOIN 
-        team df ON df.team_id = pgl.opp 
+        team df ON pgl.opp = df.team_id
+	JOIN
+	  	team_ranks t_td ON df.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season
     JOIN
         team_betting_odds tbo 
     ON ((tbo.home_team_id = t.team_id OR tbo.away_team_id = t.team_id) 
@@ -661,8 +665,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
             pgl.player_id, 
             AVG(pgl.fantasy_points) AS avg_fantasy_points
             FROM player_game_log pgl
-            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = %s)
-            AND pgl.year = %s 
+            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = 'Kyren Williams')
+            AND pgl.year = 2024 
             GROUP BY pgl.player_id
     ) player_avg 
     ON 
@@ -670,11 +674,12 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     JOIN PlayerProps pp 
         ON pp.player_name = p.name AND pp.week = tbo.week AND pp.season = tbo.season
     WHERE 
-        p.name = %s AND
-        tbo.week = %s AND tbo.season = %s
+        p.name = 'Kyren Williams' AND
+        tbo.week = 1 AND tbo.season = 2024
     GROUP BY 
         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank, 
-        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props;
+        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props,
+		t_tr.off_rush_rank, t_tr.off_pass_rank, t_td.def_rush_rank, t_td.def_pass_rank;
     """
 
     df = None
