@@ -309,29 +309,31 @@ def add_fantasy_points(fantasy_points: list):
 
 
 """
-Update 'team' record with newly determined rankings 
+Insert record into 'team_ranks' with newly determined rankings 
 
 Args:
    rankings (list): list of rankings to persist 
-   col (str): column in 'team' to update based on rankings
 """
 
 
-def update_team_rankings(rankings: list, col: str):
-    sql = f"UPDATE team SET {col} = %s WHERE team_id = %s"
+def insert_team_rankings(rankings: list):
+    sql = f"""
+            INSERT INTO team_ranks (off_rush_rank, off_pass_rank, def_pass_rank, def_rush_rank, week, season, team_id) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s) 
+        """
 
     try:
         connection = get_connection()
 
         params = [
-            (rank["rank"], rank["team_id"]) for rank in rankings
+            (rank["off_rush_rank"], rank["off_pass_rank"], rank["def_pass_rank"], rank["def_rush_rank"], rank['week'], rank['season'], rank["team_id"]) for rank in rankings
         ]  # create tuple needed to update records
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
             logging.info(
-                f"Successfully updated {len(rankings)} {col} rankings in the database"
+                f"Successfully inserted {len(rankings)} rankings in the database"
             )
 
     except Exception as e:
@@ -529,6 +531,43 @@ def update_team_betting_odds_records_with_outcomes(update_records: list):
     except Exception as e:
         logging.error(
             f"An exception occurred while updating the following team_betting_odds: {update_records}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+def insert_bye_week_rankings(team_bye_weeks: list, season: int, ): 
+    sql = f"""
+            INSERT INTO team_ranks (team_id, week, season, off_rush_rank, off_pass_rank, def_rush_rank, def_pass_rank)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["team_id"],
+                record["week"],
+                season,
+                -1, 
+                -1,
+                -1,
+                -1
+            )
+            for record in team_bye_weeks 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(team_bye_weeks)} team bye week rankings into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following team bye week rankings into team_ranks: {team_bye_weeks}",
             exc_info=True,
         )
         raise e
