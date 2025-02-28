@@ -6,7 +6,7 @@ class NeuralNetwork(nn.Module):
       super().__init__()
       
       self.linear_relu_stack = nn.Sequential(
-         nn.Linear(45, 32), #TODO: Update this if the number of columns changes 
+         nn.Linear(46, 32), #TODO: Update this if the number of columns changes 
          nn.ReLU(), 
          nn.Linear(32, 1)
       )
