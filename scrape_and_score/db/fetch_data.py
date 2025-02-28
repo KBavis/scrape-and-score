@@ -537,17 +537,17 @@ def fetch_independent_and_dependent_variables():
          p.player_id,
          p.position,
          pgl.fantasy_points,
+		 pgl.week,
          t_tr.off_rush_rank,
          t_tr.off_pass_rank,
          t_td.def_rush_rank,
          t_td.def_pass_rank,
-		 t.team_id,
          tbo.game_over_under,
          tbo.spread,
          CASE
-            WHEN tbo.favorite_team_id = t.team_id THEN 1
-			ELSE 0
-         END AS is_favorited,
+           WHEN tbo.favorite_team_id = t.team_id THEN 1
+		 ELSE 0
+           END AS is_favorited,
 		 pp.props
       FROM
          player_game_log pgl
@@ -565,10 +565,11 @@ def fetch_independent_and_dependent_variables():
 	  	 PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season
 	  JOIN 
          team_betting_odds tbo 
-      ON 
-				(tbo.home_team_id = t.team_id OR tbo.home_team_id = td.team_id)
-               AND 
-				(tbo.away_team_id = t.team_id OR tbo.away_team_id = td.team_id);
+      ON (
+        (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week) 
+        	OR 
+        (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
+     )
    """
 
     df = None
@@ -592,8 +593,7 @@ def fetch_independent_and_dependent_variables():
 
 """
 Retrieve relevant inputs for a player in order to make prediction
-
-TODO: Update this to account for player props 
+TODO: FIX ME SO THAT OFFENSIVE/DEFENSIVE RANKS AREN'T THE SAME 
 
 Args:
    week (int): the week corresponding to the matchup we are predicitng for
