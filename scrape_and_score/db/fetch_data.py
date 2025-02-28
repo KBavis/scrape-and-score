@@ -832,3 +832,70 @@ def validate_week_and_corresponding_player_entry_exists(
             f"An error occurred while fetching the latest week persisted in team_betting_odds for year {year}: {e}"
         )
         raise e
+
+
+
+def check_bye_week_rankings_exists(team_id: int, season: int): 
+    """
+    Functionality to check if the bye week rankings exists for a given team in a given season 
+
+    Args:
+        team_id (int): team to check for 
+        season (int): season to check for 
+    
+    Returns: 
+        bye_week (int): the bye week for given team
+    """
+
+    sql = "SELECT week FROM team_ranks WHERE team_id = %s AND season = %s AND off_rush_rank = -1 AND off_pass_rank = -1 AND def_pass_rank = -1 AND def_rush_rank = -1" 
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (team_id, season))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while checking if the bye week ranking exists for the team {team_id} in the corresponding season: {season}: {e}"
+        )
+        raise e
+
+
+
+def fetch_max_week_rankings_calculated_for_season(season: int):
+    """
+    Retrieve the max week persisted in the team_ranks table for the specified season 
+
+    Args:
+        season (int): season to retrieve max week for 
+    
+    Returns: 
+        max (int): maximum week with rank associated with it for given season
+    """
+
+    sql = "SELECT MAX(week) FROM team_ranks WHERE season = %s AND off_rush_rank != -1"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season,))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving hte max week with rankings persisted for the corresponding season: {season}: {e}"
+        )
+        raise e
