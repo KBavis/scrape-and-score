@@ -537,10 +537,11 @@ def fetch_independent_and_dependent_variables():
          p.player_id,
          p.position,
          pgl.fantasy_points,
-         t.off_rush_rank,
-         t.off_pass_rank,
-         td.def_rush_rank,
-         td.def_pass_rank,
+         t_tr.off_rush_rank,
+         t_tr.off_pass_rank,
+         t_td.def_rush_rank,
+         t_td.def_pass_rank,
+		 t.team_id,
          tbo.game_over_under,
          tbo.spread,
          CASE
@@ -554,8 +555,12 @@ def fetch_independent_and_dependent_variables():
          player p ON p.player_id = pgl.player_id 
       JOIN 
          team t ON p.team_id = t.team_id
+	  JOIN 
+	  	 team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season
       JOIN 
          team td ON pgl.opp = td.team_id
+	  JOIN
+	  	 team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season
       JOIN
 	  	 PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season
 	  JOIN 
@@ -563,7 +568,7 @@ def fetch_independent_and_dependent_variables():
       ON 
 				(tbo.home_team_id = t.team_id OR tbo.home_team_id = td.team_id)
                AND 
-				(tbo.away_team_id = t.team_id OR tbo.away_team_id = td.team_id);	
+				(tbo.away_team_id = t.team_id OR tbo.away_team_id = td.team_id);
    """
 
     df = None
