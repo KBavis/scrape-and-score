@@ -94,9 +94,8 @@ def fetch_all_players():
                 players.append(
                     {
                         "player_id": row[0],
-                        "team_id": row[1],
-                        "player_name": row[2],
-                        "position": row[3],
+                        "player_name": row[1],
+                        "position": row[2],
                     }
                 )
 
@@ -132,9 +131,8 @@ def fetch_player_by_name(player_name: str):
             if row:
                 player = {
                     "player_id": row[0],
-                    "team_id": row[1],
-                    "name": row[2],
-                    "position": row[3],
+                    "name": row[1],
+                    "position": row[2],
                 }
 
     except Exception as e:
@@ -893,6 +891,38 @@ def fetch_max_week_rankings_calculated_for_season(season: int):
 
         with connection.cursor() as cur:
             cur.execute(sql, (season,))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving hte max week with rankings persisted for the corresponding season: {season}: {e}"
+        )
+        raise e
+    
+
+def fetch_player_teams_record_by_pk(record: dict): 
+    """
+    Retrieve player_teams record by PK 
+
+    Args:
+        record (dict): mapping of PK's 
+    
+    Returns:
+        record (dict): record in DB 
+    """
+
+    sql = "SELECT * FROM player_teams WHERE player_id = %s AND team_id = %s AND season = %s AND strt_wk = %s AND end_wk = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (record["player_id"], record["team_id"], record['season'], record["strt_wk"], record["end_wk"]))
             row = cur.fetchone()
 
             if row:
