@@ -16,7 +16,7 @@ from models.lin_reg import LinReg
 from util import args
 import logging
 from predictions import prediction
-from scraping import rotowire_scraper
+from scraping import rotowire_scraper, our_lads
 from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
@@ -62,6 +62,7 @@ def main():
             )
 
             # insert players into db
+            #TODO: if this logic is not removed in future, it needs to be updated to have player be key in the dict rather than player_name
             logging.info("Inserting fantasy relevant players into db")
             insert_players(players)
 
@@ -127,14 +128,17 @@ def main():
         #TODO: Refactor above approach and this approach to be unified
         if cl_args.collect_data: 
             logging.info("Attemtping to collect relevant player and team data for the past 10 seasons")
+
+            # fetch & persist players and their corresponding teams
+            our_lads.scrape_and_persist(year) 
+
+            # team_game_logs_service.calculate_all_teams_rankings(2024)
             
             # loop through each year (i.e last year --> 10 years ago )
 
             # collect relevant depth charts for given year 
 
             # check which players are unique to the given year (i.e not already persisted)
-
-            # all players not previously persisted should be persisted
 
             # TODO: Update DB Schema to account for effective dating (i.e some players retire, some players change teams, and we need to account for these changes in a seperate table) 
 
@@ -143,6 +147,8 @@ def main():
             # scrape and persist all team data (i.e team game logs for season)
 
             # insert team & player records into our database for season 
+
+            # calculate team rankings and calcualte fantasy points 
 
             # Rotowire: fetch team betting odds for each team throughout relevant season 
 
