@@ -28,30 +28,26 @@ Functionality to persist a single player
 
 Args: 
    player (dict): player to insert into our db 
-   team_id (int): ID of the team corresponding to the player
 """
 
 
 def insert_player(player: dict):
     query = """
-      INSERT INTO player (team_id, name, position) 
-      VALUES (%s, %s, %s)
+      INSERT INTO player (name, position) 
+      VALUES (%s, %s)
    """
 
     try:
-        # ensure that team_id and player fields are correctly passed into the query
-        player_name = player["player_name"]
+        player_name = player["name"]
         player_position = player["position"]
-        team_id = player["team_id"]
 
-        # fetch connection to the DB
         connection = get_connection()
 
         with connection.cursor() as cur:
             cur.execute(
-                query, (team_id, player_name, player_position)
-            )  # Pass parameters as a tuple
-
+                query, (player_name, player_position)
+            )  
+            
             # Commit the transaction to persist data
             connection.commit()
             logging.info(
@@ -63,6 +59,7 @@ def insert_player(player: dict):
             f"An exception occurred while inserting the player {player}", exc_info=True
         )
         raise e
+    
 
 
 """
@@ -568,6 +565,41 @@ def insert_bye_week_rankings(team_bye_weeks: list, season: int, ):
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting the following team bye week rankings into team_ranks: {team_bye_weeks}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+def insert_player_teams_records(player_teams_records: list): 
+    sql = f"""
+            INSERT INTO player_teams (player_id, team_id, season, strt_wk, end_wk)
+            VALUES (%s, %s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["player_id"],
+                record["team_id"],
+                record["season"],
+                record["strt_wk"],
+                record["end_wk"]
+            )
+            for record in player_teams_records 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(player_teams_records)} player_teams records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_teams records into our Databse: {player_teams_records}",
             exc_info=True,
         )
         raise e
