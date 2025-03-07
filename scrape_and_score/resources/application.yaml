@@ -146,13 +146,16 @@ nfl:
         acronym: rai
         pfr_acronym: LVR
         rotowire: LV
+        alternate: OAK
         our_lads_acronym: LV
       - name: Los Angeles Chargers
         acronym: sdg
         pfr_acronym: LAC
+        alternate: SD
       - name: Los Angeles Rams
         acronym: ram
         pfr_acronym: LAR
+        alternate: STL
       - name: Miami Dolphins
         acronym: mia
         pfr_acronym: MIA
