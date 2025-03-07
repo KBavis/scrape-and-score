@@ -69,6 +69,12 @@ def get_team_name_by_pfr_acronym(opp: str):
     for team in teams:
         if team.get("pfr_acronym") == opp:
             return team.get("name")
+    
+    # account for team name changes over year 
+    if "OAK" == opp:
+     return "Las Vegas Raiders"
+    elif "SDG" == opp:
+      return "Los Angeles Chargers"
 
     logging.warning(f"No team found for acronym: '{opp}'")
     return None
