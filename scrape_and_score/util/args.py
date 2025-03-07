@@ -29,9 +29,10 @@ def parse():
     )
     parser.add_argument(
         "--collect_data",
-        action="store_true",
-        default=False,
-        help="Retrieve historical data for players & teams"
+        nargs=2, 
+        metavar=("START_YEAR", "END_YEAR"),
+        type=int,
+        help="Retrieve historical data for players & teams from START_YEAR to END_YEAR."
     )
 
     # establish args to determine what information is required to be scraped
@@ -141,8 +142,9 @@ def parse():
             "--train flag passed: Re-training our neural network model."
         )
     if args.collect_data:
+        start_year, end_year = args.collect_data
         print(
-            "--collect_data flag passed: Collecting data for the previous 5 years"
+            f"--collect_data flag passed: Collecting data from {start_year} to {end_year}"
         )
 
     return args
