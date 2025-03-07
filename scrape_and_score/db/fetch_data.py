@@ -749,7 +749,102 @@ def fetch_players_active_in_specified_year(year):
 
     return names 
     
+
+def fetch_players_active_in_one_of_specified_seasons(start_year: int, end_year: int):
+    """
+    Retrieve players who were on an active roster in at least one of the specified seasons.
+
+    Args:
+        start_year (int): The starting season year.
+        end_year (int): The ending season year.
+
+    Returns:
+        list: List of distinct players.
+    """
     
+    sql = """
+        SELECT DISTINCT
+            p.player_id,
+            p.name,
+            p.position
+        FROM 
+            player p 
+        JOIN 
+            player_teams pt 
+        ON
+            p.player_id = pt.player_id 
+        WHERE 
+            pt.season BETWEEN %s AND %s
+    """
+    
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (start_year, end_year))
+            rows = cur.fetchall()
+            
+            for row in rows:
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2]})
+    
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players active between seasons {start_year} and {end_year}: {e}"
+        )
+        raise e
+
+    return players
+
+
+def fetch_players_on_a_roster_in_specific_year(year: int):
+    """
+    Retrieve players on an active roster in specific year 
+
+    Args:
+        year (int): season to account for 
+    
+    Returns:
+        list: list of disitinct players 
+    """
+    
+    sql = """ 
+        SELECT DISTINCT
+            p.player_id,
+            p.name,
+            p.position
+        FROM 
+            player p 
+        JOIN 
+            player_teams pt 
+        ON
+            p.player_id = pt.player_id 
+        WHERE 
+            pt.season = %s
+    """
+    
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2]})
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players on active roster in season {year}: {e}"
+        )
+        raise e
+
+    return players
 
 
 """
