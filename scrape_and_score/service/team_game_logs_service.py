@@ -16,11 +16,11 @@ Returns:
 """
 
 
-def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list):
+def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list, year: int = None):
 
     curr_year = props.get_config("nfl.current-year")  # fetch current year
 
-    remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
+    remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids, year)
 
     if len(team_metrics) == 0:
         logging.info("No new team game logs to persist; skipping insertion")
@@ -41,7 +41,7 @@ def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list):
         team_id = get_team_id_by_name(team_name, teams_and_ids)
 
         # fetch team game logs
-        tuples = get_team_log_tuples(df, team_id, curr_year)
+        tuples = get_team_log_tuples(df, team_id, year)
 
         # insert team game logs into db
         insert_data.insert_team_game_logs(tuples)
@@ -67,7 +67,7 @@ def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
             team_id,
             row["week"],
             row["day"],
-            service_util.get_game_log_year(row["week"], year),
+            year,
             row["rest_days"],
             row["home_team"],
             row["distance_traveled"],
@@ -148,15 +148,15 @@ Utility function to determine if a teams game log has previously been inserted
 
 Args: 
    team_metrics (list): list of dictionaries containing team's name & game logs 
-   curr_year (int): current year
    teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
+   year (int): season pertaining to game log
    
 Returns:
    None
 """
 
 
-def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids):
+def remove_previously_inserted_game_logs(team_metrics,teams_and_ids,year):
     team_metric_pks = []
 
     # generate pks for each team game log
@@ -168,7 +168,7 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
                 {
                     "team_id": get_team_id_by_name(team["team_name"], teams_and_ids),
                     "week": week,
-                    "year": service_util.get_game_log_year(week, curr_year),
+                    "year": year
                 }
             )
 
@@ -196,16 +196,16 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
 Functionality to calculate rankings (offense & defense) for a team
 
 Args:
-   curr_year (int): year to take into account when fetching rankings 
+   year (int): year to take into account when fetching rankings 
 
 Returns 
    None 
 """
 
 
-def calculate_all_teams_rankings(curr_year: int):
+def calculate_all_teams_rankings(year: int):
     logging.info(
-        f"Attemtping to calculate teams off/def rankings based on metrics for {curr_year} season"
+        f"Attemtping to calculate teams off/def rankings based on metrics for {year} season"
     )
 
     # fetch all teams
@@ -213,17 +213,17 @@ def calculate_all_teams_rankings(curr_year: int):
 
     # accumulate relevant metrics (off/def) for given season for each team
     logging.info(
-        f"Aggergating relevant offensive and defensive metrics for the following season: {curr_year}"
+        f"Aggergating relevant offensive and defensive metrics for the following season: {year}"
     )
     
     # fetch all game logs for current season
-    teams_game_logs = [ get_teams_game_logs_for_season(team.get("team_id"), curr_year) for team in teams ] #LIST OF LISTS, WHERE LISTS ARE DICTIONARIES CONTAINING TEAM SPECIFIC GAME LOGS TODO Delete me
+    teams_game_logs = [ get_teams_game_logs_for_season(team.get("team_id"), year) for team in teams ] 
 
     # calculate weekly aggregate metrics 
-    teams_weekly_aggregate_metrics = [ get_weekly_aggergate_metrics(season_game_logs) for season_game_logs in teams_game_logs] # LIST OF LISTS, WHERE LISTS ARE DICTIONARIES CONTAINING WEEKLY METRICS
+    teams_weekly_aggregate_metrics = [ get_weekly_aggergate_metrics(season_game_logs) for season_game_logs in teams_game_logs] 
 
     # calculate rankings up to max week 
-    calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics, curr_year)
+    calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics, year)
 
 
 
