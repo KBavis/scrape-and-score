@@ -257,7 +257,7 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
     # load game data
     games = soup.find_all("tbody")[1].find_all("tr")
 
-    remove_uneeded_games(games)
+    remove_uneeded_games(games, year)
 
     # determine how many games to process
     if recent_games:
@@ -387,10 +387,11 @@ and games yet to be played so that they aren't accounted for
 
 Args: 
     games (BeautifulSoup): parsed HTML containing game data 
+    year (int): current eyar to account for 
 """
 
 
-def remove_uneeded_games(games: BeautifulSoup):
+def remove_uneeded_games(games: BeautifulSoup, year: int):
     # remove playoff games
     j = 0
     while (
@@ -425,6 +426,11 @@ def remove_uneeded_games(games: BeautifulSoup):
     # remove games that have yet to be played
     to_delete = []
     current_date = date.today()
+
+    # skip logic if we are in the past 
+    if year <= current_date.year:
+        return 
+
     for j in range(len(games)):
         game_date = get_game_date(games[j], current_date)
         if game_date >= current_date:
