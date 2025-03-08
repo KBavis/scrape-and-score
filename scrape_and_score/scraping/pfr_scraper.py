@@ -41,6 +41,41 @@ def scrape_all(team_and_player_data: list, teams: list):
     return team_metrics, player_metrics
 
 
+
+def scrape_historical(start_year: int, end_year: int):
+    """
+    Functionality to scrape player and team game logs across multiple seasons 
+
+    Args:
+        start_year (int): the starting year to scrape historical data from 
+        end_year (int): the ending year to scrape historical data from 
+    """
+    team_template_url = props.get_config(
+        "website.pro-football-reference.urls.team-metrics"
+    )
+
+    teams = team_service.get_all_teams()
+    team_names = [team["name"] for team in teams]
+
+    for year in range (start_year, end_year + 1): 
+        logging.info(f"\n\nScraping team and player game logs for the {year} season")
+
+        # # fetch team metrics for given season 
+        season_team_metrics = fetch_team_metrics(team_names, team_template_url, year)
+        team_game_logs_service.insert_multiple_teams_game_logs(season_team_metrics, teams, year)
+
+        # fetch players relevant to current season 
+        players = fetch_data.fetch_players_on_a_roster_in_specific_year(year)
+        
+        # fetch player metrics for given season
+        season_player_metrics = fetch_player_metrics(players, year) 
+        player_game_logs_service.insert_multiple_players_game_logs(season_player_metrics, players, year)
+
+    
+    logging.info(f"Successfully inserted all player and team game logs from {start_year} to {end_year}")
+
+
+
 """
 Functionality to scrape the most recent team & player data based on previously persisted teams/players
 
