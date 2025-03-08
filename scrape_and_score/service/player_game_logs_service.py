@@ -20,9 +20,9 @@ Returns:
 """
 
 
-def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
+def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, year: int = None):
 
-    remove_previously_inserted_games(player_metrics, depth_charts)
+    remove_previously_inserted_games(player_metrics, depth_charts, year)
 
     if len(player_metrics) == 0:
         logging.info("No new player game logs to persist; skipping insertion")
@@ -48,13 +48,13 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
 
         # iterate through game logs, generate tuples, and insert into db
         if position == "QB":
-            tuples = get_qb_game_log_tuples(df, player_id)
+            tuples = get_qb_game_log_tuples(df, player_id, year)
             insert_data.insert_qb_player_game_logs(tuples)
         elif position == "RB":
-            tuples = get_rb_game_log_tuples(df, player_id)
+            tuples = get_rb_game_log_tuples(df, player_id, year)
             insert_data.insert_rb_player_game_logs(tuples)
         elif position == "TE" or position == "WR":
-            tuples = get_wr_or_te_game_log_tuples(df, player_id)
+            tuples = get_wr_or_te_game_log_tuples(df, player_id, year)
             insert_data.insert_wr_or_te_player_game_logs(tuples)
         else:
             raise Exception(
@@ -110,20 +110,23 @@ Utility function to fetch game log tuples to insert into our database for a QB
 
 Args: 
    df (pd.DataFrame): data frame to extract into tuples
+   player_id (int): player ID to acount for 
+   year (int): season the game log pertains to 
 
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
 
 
-def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int):
+def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int, year):
     tuples = []
     for _, row in df.iterrows():
+
         game_log = (
             player_id,
             row["week"],
             service_util.extract_day_from_date(row["date"]),
-            service_util.extract_year_from_date(row["date"]),
+            year,
             service_util.extract_home_team_from_game_location(row["game_location"]),
             team_service.get_team_id_by_name(
                 service_util.get_team_name_by_pfr_acronym(row["opp"])
@@ -152,20 +155,25 @@ Utility function to fetch game log tuples to insert into our database for a RB
 
 Args: 
    df (pd.DataFrame): data frame to extract into tuples
+   player_id (int): player ID to acount for 
+   year (int): season the game log pertains to 
+   team_name_mapping (dict): look up table for team names that have changed over years
+
 
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
 
 
-def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int):
+def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
     tuples = []
     for _, row in df.iterrows():
+
         game_log = (
             player_id,
             row["week"],
             service_util.extract_day_from_date(row["date"]),
-            service_util.extract_year_from_date(row["date"]),
+            year,
             service_util.extract_home_team_from_game_location(row["game_location"]),
             team_service.get_team_id_by_name(
                 service_util.get_team_name_by_pfr_acronym(row["opp"])
@@ -191,6 +199,8 @@ Utility function to fetch game log tuples to insert into our database for a WR o
 
 Args: 
    df (pd.DataFrame): data frame to extract into tuples
+   player_id (int): player ID to acount for 
+   year (int): season the game log pertains to 
 
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
@@ -200,11 +210,12 @@ Returns:
 def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int):
     tuples = []
     for _, row in df.iterrows():
+
         game_log = (
             player_id,
             row["week"],
             service_util.extract_day_from_date(row["date"]),
-            service_util.extract_year_from_date(row["date"]),
+            year,
             service_util.extract_home_team_from_game_location(row["game_location"]),
             team_service.get_team_id_by_name(
                 service_util.get_team_name_by_pfr_acronym(row["opp"])
@@ -249,13 +260,14 @@ Utility function to remove games that have already been persisted
 Args:
    player_metrics (list): list of dictionaries containing player's name, position, and game_logs
    depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
+   year (int): season corresponding to game logs
 
 Returns:
    None
 """
 
 
-def remove_previously_inserted_games(player_metrics, depth_charts):
+def remove_previously_inserted_games(player_metrics, depth_charts, year):
     player_metric_pks = []
 
     # generate pks for each team game log
@@ -266,7 +278,7 @@ def remove_previously_inserted_games(player_metrics, depth_charts):
                 {
                     "player_id": get_player_id_by_name(player["player"], depth_charts),
                     "week": str(df.iloc[0]["week"]),
-                    "year": service_util.extract_year_from_date(df.iloc[0]["date"]),
+                    "year": year,
                 }
             )
 
