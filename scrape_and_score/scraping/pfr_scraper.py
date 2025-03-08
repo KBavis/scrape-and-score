@@ -1,13 +1,14 @@
 import logging
 import pandas as pd
 from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES, VALID_POSITIONS
-from service import team_service, player_service
+from service import team_service, player_service, player_game_logs_service, team_game_logs_service
 from config import props
 from .util import fetch_page
 from datetime import date, datetime
 from bs4 import BeautifulSoup
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
+from db import fetch_data
 
 
 """
