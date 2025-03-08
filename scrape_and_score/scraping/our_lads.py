@@ -13,16 +13,13 @@ import re
 """
 Main entry point for scraping & persisting depth chart information across several years from OurLads 
 
-TODO: Refactor into multiple functions
-
 Args:
-    curr_uear (int): the current year 
-    num_years (int): number of years to retrieve data 
-
+    start_year (int): year to start scraping data from
+    end_year (int): year to stop scraping data from 
 Returns:
     None
 """
-def scrape_and_persist(curr_year, num_years: int = 10): 
+def scrape_and_persist(start_year: int, end_year: int): 
     # extract relevant teams 
     teams = [ 
         {
@@ -31,7 +28,7 @@ def scrape_and_persist(curr_year, num_years: int = 10):
         } 
         for team in props.get_config("nfl.teams")
     ]
-    logging.info(f"\nScraping & persisting depth charts for the past {num_years} seasons and for the following teams: {teams}")
+    logging.info(f"\nScraping & persisting depth charts for the seasons {start_year} - {end_year} and for the following teams: {teams}")
 
     # retrieve first page to extract relevant archive date IDs
     html = util.fetch_page("https://www.ourlads.com/nfldepthcharts/archive/150/IND")
@@ -41,20 +38,20 @@ def scrape_and_persist(curr_year, num_years: int = 10):
 
     # extract archive datas 
     archive_dates_soup = soup.find_all("option")
-    archive_dates = extract_archive_dates(archive_dates_soup, curr_year - num_years, curr_year)
+    archive_dates = extract_archive_dates(archive_dates_soup, start_year, end_year)
 
-    generate_player_and_player_teams_records(teams, curr_year, num_years, archive_dates)
+    generate_player_and_player_teams_records(teams, start_year, end_year, archive_dates)
 
                  
 
-def generate_player_and_player_teams_records(teams: list, curr_year: int, num_years: int, archive_dates: list): 
+def generate_player_and_player_teams_records(teams: list, start_year: int, end_year: int, archive_dates: list): 
     """
     Loop through all available seasons, for each potential team, and generate/persist relevant player & player_teams records 
 
     Args:
         teams (list): list of relevant team names and acronyms 
-        curr_year (int): the current season 
-        num_years (int): the number of seasons back we want to scrape data for 
+        start_year (int): the year to starting fetching data for
+        end_year (int): the year to stop fetching data for
         archive_dates (list): mappings of a year to its corresponding archive IDs 
     
     """
@@ -67,7 +64,7 @@ def generate_player_and_player_teams_records(teams: list, curr_year: int, num_ye
         player_name_id_mapping = {}
 
         # loop through relevant seasons
-        for season in range(curr_year - num_years, curr_year + 1): 
+        for season in range(start_year, end_year + 1): 
             logging.info(f"Attempting to determine depth charts for season {season} and for team {team['team']}")
 
             # extract archives dictionary corresponding to current season
