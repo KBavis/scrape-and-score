@@ -146,11 +146,17 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
 
         # TODO (FFM-42): Gather Additional Data other than Game Logs
         logging.info(f"Fetching metrics for {position} '{player_name}'")
+
+        game_log = get_game_log(soup, position, recent_games)
+        if game_log.empty:
+            logging.warn(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
+            continue # skip players with no metrics 
+
         player_metrics.append(
             {
                 "player": player_name,
                 "position": position,
-                "player_metrics": get_game_log(soup, position, recent_games),
+                "player_metrics": game_log,
             }
         )
     return player_metrics
@@ -705,7 +711,12 @@ def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
     }
     data.update(get_additional_metrics(position))  # update data with additonal metrics
 
-    table_rows = soup.find("tbody").find_all("tr")
+    # skip players with no table
+    table_body = soup.find("tbody")
+    if table_body == None:
+        return pd.DataFrame()
+
+    table_rows = table_body.find_all("tr")
 
     # ignore inactive/DNP games
     ignore_statuses = ["Inactive", "Did Not Play", "Injured Reserve"]
