@@ -859,13 +859,13 @@ Return:
 
 
 def fetch_max_week_persisted_in_team_betting_odds_table(year: int):
-    sql = "SELECT week FROM team_betting_odds WHERE season = %s AND week = (SELECT MAX(week) FROM team_betting_odds)"
+    sql = "SELECT week FROM team_betting_odds WHERE season = %s AND week = (SELECT MAX(week) FROM team_betting_odds WHERE season = %s)"
 
     try:
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (year,))
+            cur.execute(sql, (year,year))
             row = cur.fetchone()
 
             if row:
