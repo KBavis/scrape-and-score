@@ -828,15 +828,24 @@ Returns:
 
 
 def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
-    data["date"].append(tr.find("td", {"data-stat": "game_date"}).text)
+    # account for game_date element OR date element
+    game_date = tr.find("td", {"data-stat": "game_date"}) 
+    data["date"].append(game_date.text if game_date else tr.find("td", {"data-stat": "date"}).text)
+
     data["week"].append(int(tr.find("td", {"data-stat": "week_num"}).text))
-    data["team"].append(tr.find("td", {"data-stat": "team"}).text)
+
+    # account for team OR team_name_abbr
+    team = tr.find("td", {"data-stat": "team"})
+    data["team"].append(team.text if team else tr.find("td", {"data-stat": "team_name_abbr"}).text)
+
     data["game_location"].append(tr.find("td", {"data-stat": "game_location"}).text)
-    data["opp"].append(tr.find("td", {"data-stat": "opp"}).text)
+
+    opp = tr.find("td", {"data-stat": "opp"})
+    data["opp"].append(opp.text if opp else tr.find("td", {"data-stat": "opp_name_abbr"}).text)
 
     # For result, team_pts, and opp_pts, split the text properly
     game_result_text = tr.find("td", {"data-stat": "game_result"}).text.split(" ")
-    data["result"].append(game_result_text[0])
+    data["result"].append(game_result_text[0].replace(",", ""))
     data["team_pts"].append(int(game_result_text[1].split("-")[0]))
     data["opp_pts"].append(int(game_result_text[1].split("-")[1]))
 
