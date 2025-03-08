@@ -647,7 +647,7 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
         if (
             start_year <= year <= end_year
             and position in player_text
-            and check_name_similarity(player_text, player_name) >= 95
+            and check_name_similarity(player_text, player_name) >= 93
         ):
             a_tag = player.find("a")
             if a_tag and a_tag.get("href"):
@@ -679,6 +679,8 @@ Returns:
 def check_name_similarity(player_text: str, player_name: str):
     words = player_text.split()
     name = " ".join(words[:2])
+    name = name.title()
+    player_name = player_name.title()
     return fuzz.partial_ratio(name, player_name)
 
 
