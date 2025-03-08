@@ -552,7 +552,9 @@ def fetch_independent_and_dependent_variables():
       JOIN 
          player p ON p.player_id = pgl.player_id 
       JOIN 
-         team t ON p.team_id = t.team_id
+         player_teams pt ON p.player_id = pt.player_id AND pgl.week >= pt.strt_wk AND pgl.week <= pt.end_wk AND pt.season = pgl.year 
+	  JOIN 
+	  	 team t ON pt.team_id = t.team_id
 	  JOIN 
 	  	 team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season
       JOIN 
