@@ -207,7 +207,7 @@ Returns:
 """
 
 
-def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int):
+def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
     tuples = []
     for _, row in df.iterrows():
 
@@ -309,18 +309,30 @@ TODO (FFM-128): Account for 2-Pt Conversions
 
 Args:
    recent_game (bool): flag to indicate if we should only be accounting for most recent game or all games 
-   year (int): year that game log occured 
+   start_year (int): either the start year of a range, or the sole year to account for 
+   end_year (int): the end year of the range to calculate fantasy points for 
 
 Returns:
    None
 """
 
 
-def calculate_fantasy_points(recent_game: bool, year: int):
+def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int = None):
+    # determine if this is for recent week, single year, or a range of years
     if recent_game:
-        player_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(year)
+        logging.info(f"Recent game flag passed; calculating fantasy points for most recent week in the year {start_year}")
+        player_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(start_year)
     else:
-        player_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(year)
+        if end_year == None:
+            logging.info(f"Calculating fantasy points for the year {start_year}")
+            player_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(start_year)
+        else:
+            logging.info(f"Calculating fantasy points from the year {start_year} to the year {end_year}")
+            player_game_logs = []
+            for curr_year in range(start_year, end_year + 1):
+                curr_year_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(curr_year)
+                player_game_logs.extend(curr_year_game_logs)
+    
     logging.info(f"Successfully fetched {len(player_game_logs)} player game logs")
 
     (
