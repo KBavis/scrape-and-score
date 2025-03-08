@@ -43,54 +43,66 @@ def scrape_all(start_year=None, end_year=None):
 Generate team betting odds records to persist into our database
 
 Args:
-   curr_year_data (pd.DataFrame): betting odds corresponding to current year
+   data (pd.DataFrame): betting odds corresponding to current year OR to a specified range of years
 """
 
 
-def get_team_betting_odds_records(curr_year_data: pd.DataFrame):
+def get_team_betting_odds_records(data: pd.DataFrame):
     # create team id mapping
-    mapping = create_team_id_mapping(curr_year_data[curr_year_data["week"] == "1"])
+    mapping = create_team_id_mapping()
+
     betting_odds_records = [
-        {
-            "home_team_id": mapping[row["home_team_stats_id"]],
-            "away_team_id": mapping[row["visit_team_stats_id"]],
-            "home_team_score": row["home_team_score"],
-            "away_team_score": row["visit_team_score"],
-            "week": row["week"],
-            "year": row["season"],
-            "game_over_under": row["game_over_under"],
-            "favorite_team_id": mapping[row["favorite"]],
-            "spread": row["spread"],
-            "total_points": row["total"],
-            "over_hit": row["over_hit"],
-            "under_hit": row["under_hit"],
-            "favorite_covered": row["favorite_covered"],
-            "underdog_covered": row["underdog_covered"],
-        }
-        for _, row in curr_year_data.iterrows()
+    {
+        "home_team_id": mapping[row["home_team_stats_id"]],
+        "away_team_id": mapping[row["visit_team_stats_id"]],
+        "home_team_score": row["home_team_score"],
+        "away_team_score": row["visit_team_score"],
+        "week": row["week"],
+        "year": row["season"],
+        "game_over_under": row["game_over_under"],
+        "favorite_team_id": mapping[row["favorite"]] if row["favorite"] != "" else mapping[row["home_team_stats_id"]], #TODO: Update this logic so that the favorite team isn't just the home team if one isn't present in response
+        "spread": row["spread"],
+        "total_points": row["total"],
+        "over_hit": row["over_hit"],
+        "under_hit": row["under_hit"],
+        "favorite_covered": row["favorite_covered"],
+        "underdog_covered": row["underdog_covered"],
+    }
+    for _, row in data.iterrows()
     ]
-    return betting_odds_records
+
+    return betting_odds_records 
 
 
 """
 Create a mapping of a teams acronym to corresponding team ID in our database
 
 Args:
-   week_one_data (pd.DataFrame): data corresponding to week one of current NFL season 
+    None
 
 Returns:
    mapping (dict): mapping of a teams acronmy to team_id in our db
 """
 
 
-def create_team_id_mapping(week_one_data: pd.DataFrame):
+def create_team_id_mapping():
     # load configs
     teams = props.get_config("nfl.teams")
     mappings = {}
 
     for team in teams:
         acronym = team.get("rotowire", team["pfr_acronym"])
+        alternate = None
+        
+        # account for alternate acronyms that have changed over year 
+        if "alternate" in team: 
+            alternate = team.get("alternate")
+
         mappings[acronym] = team_service.get_team_id_by_name(team["name"])
+
+        # account for alternate acronym
+        if alternate:
+            mappings[alternate] = team_service.get_team_id_by_name(team["name"])
 
     return mappings
 
