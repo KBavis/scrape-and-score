@@ -732,9 +732,17 @@ def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
     filtered_table_rows = []
     for tr in table_rows:
         elements = tr.find_all("td")
+
+        if not elements:
+            continue
+
         status = elements[-1].text
 
-        if status not in ignore_statuses:
+        # account for trade specific information
+        team_cell = tr.find("td", {"data-stat": "team_name_abbr"})
+        is_trade = team_cell and team_cell.has_attr("colspan") and "went from" in team_cell.text
+
+        if status not in ignore_statuses and not is_trade:
             filtered_table_rows.append(tr)
 
     # check if we only want to fetch recent game log
