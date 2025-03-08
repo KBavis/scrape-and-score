@@ -17,18 +17,22 @@ Returns:
 """
 
 
-def scrape_all():
+def scrape_all(start_year=None, end_year=None):
     # fetch configs
     url = props.get_config("website.rotowire.urls.historical-odds")
-    curr_year = props.get_config("nfl.current-year")
+
+    if start_year == None and end_year == None:
+        curr_year = props.get_config("nfl.current-year") 
 
     # retrieve historical odds
     jsonData = requests.get(url).json()
     df = pd.DataFrame(jsonData)
 
     # generate team betting odd records to persist for current year
-    curr_year_data = df[df["season"] == str(curr_year)]
-    team_betting_odds_records = get_team_betting_odds_records(curr_year_data)
+    data = df[df["season"] == str(curr_year)] if start_year == None and end_year == None else df[(df["season"] >= str(start_year)) & (df["season"] <= str(end_year))]
+
+
+    team_betting_odds_records = get_team_betting_odds_records(data)
 
     # insert into our db
     logging.info("Inserting all teams historical odds into our database")
