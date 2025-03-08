@@ -363,6 +363,7 @@ def parse_name(name: str, is_injured_reserve: bool = False):
     last_name = parts[0]
     
     formatted_name = f"{first_name} {last_name}".title()
+    formatted_name = re.sub(r"\*", "", formatted_name) # remove *'s from player name 
 
     if is_injured_reserve:
         position = parts[1].split()[1] if len(parts[1].split()) > 1 else None
