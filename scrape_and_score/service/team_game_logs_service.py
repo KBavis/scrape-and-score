@@ -58,11 +58,20 @@ Args:
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
-
-
 def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
     tuples = []
+
+    # account for differing team names over the years
+    opponent_map = {
+        "Oakland Raiders": "Las Vegas Raiders",
+        "Washington Redskins": "Washington Commanders",
+        "Washington Football Team": "Washington Commanders",
+        "San Diego Chargers": "Los Angeles Chargers"
+    }
+
     for _, row in df.iterrows():
+        opponent = opponent_map.get(row["opp"], row["opp"])
+
         game_log = (
             team_id,
             row["week"],
@@ -71,7 +80,7 @@ def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
             row["rest_days"],
             row["home_team"],
             row["distance_traveled"],
-            team_service.get_team_id_by_name(row["opp"]),
+            team_service.get_team_id_by_name(opponent),
             row["result"],
             row["points_for"],
             row["points_allowed"],
@@ -85,6 +94,7 @@ def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
         tuples.append(game_log)
 
     return tuples
+
 
 
 """
