@@ -16,12 +16,28 @@ Returns:
     None
 """
 
-
 def fetch_historical_odds(season: int):
-    max_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(season)
+    max_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(season) 
     markets = props.get_config("website.betting-pros.market-ids")
 
-    players = fetch_data.fetch_players_active_in_specified_year(season)
+    #TODO: Only remove 253 market ID in the case that the game has already been played  or else it will throw exception when making request (we can add when game is upcoming)
+    if markets.endswith(":253"):
+        markets = markets[:-4] # remove last 4 occurence 
+
+    players = fetch_data.fetch_players_active_in_specified_year(season) 
+    
+    #TODO Remove me
+    #TODO: Noah Fant is correct, we want Evan Engram to start off continuation of 2022 season
+    index = next((i for i, player in enumerate(players) if player["name"] == "Nick Foles"), None)
+    if index != None:
+        print("Slicing......")
+        players = players[index + 1 :]
+
+
+    
+    
+        
+    
 
     # iterate through each potential player
     #TODO: account for najee harris slug being 'najee-harris-rb'
@@ -222,7 +238,6 @@ def get_odds(data: dict, market_ids: dict):
                         odds.append({"label": full_prop_name, "cost": line['cost'], "line": line['line']})
                         best_found = True
                         break
-                    
     return odds
 
 
