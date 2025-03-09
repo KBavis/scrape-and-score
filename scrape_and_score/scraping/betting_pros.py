@@ -47,10 +47,13 @@ def fetch_historical_odds(season: int):
                 season_odds.append({"week": week, "week_odds": betting_odds})
         
         player_props.update({"season_odds": season_odds})    
-        
-        # insert season long props into db
-        logging.info(f'Attempting to insert player props for player {player_name} for the {season} season...')  
-        insert_data.insert_player_props(player_props, season)
+
+        # insert season long player props into db 
+        if season_odds:
+            logging.info(f'Attempting to insert player props for player {player_name} for the {season} season...')  
+            insert_data.insert_player_props(player_props, season)
+        else:
+            logging.warn(f"No player props found for player {player_name} and season {season}; skipping insertion")
 
 
 """
