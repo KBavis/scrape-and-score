@@ -98,7 +98,21 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
         # account for additional odds available 
         odds.extend(page_odds)
     
-    return odds
+
+    # remove duplicates by keeping the one with the highest cost
+    seen_labels = {}
+    for odd in odds:
+        label = odd['label']
+        if label in seen_labels:
+            # if the label exists, compare costs and keep the higher cost
+            if seen_labels[label]['cost'] < odd['cost']:
+                seen_labels[label] = odd
+        else:
+            seen_labels[label] = odd
+
+    # return the filtered list of odds with duplicates removed
+    filtered_odds = list(seen_labels.values())
+    return filtered_odds
 
 
 """
