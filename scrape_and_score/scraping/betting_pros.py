@@ -195,8 +195,12 @@ def get_odds(data: dict, market_ids: dict):
         selections = offer['selections']
         for selection in selections:
             
-            # update w/ over/under label if needed
-            if selection['label'] == 'Over' or selection['label'] == 'Under': 
+            # skip under lines, only account for overs TODO: Remove me if needed 
+            if selection['label'] == 'Under':
+                continue
+            
+            # TODO: Remove me (no logner account for (over) / (under) as all lines used will simply be the over)
+            if selection['label'] == 'Over': 
                 full_prop_name = f"{prop_name} ({selection['label']})"
             else:
                 full_prop_name = prop_name
