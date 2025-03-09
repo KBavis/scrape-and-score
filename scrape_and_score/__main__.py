@@ -7,6 +7,7 @@ from db import (
     fetch_all_teams,
     insert_players,
     fetch_all_players,
+    fetch_data
 )
 from config import load_configs, get_config
 from datetime import datetime
@@ -16,7 +17,7 @@ from models.lin_reg import LinReg
 from util import args
 import logging
 from predictions import prediction
-from scraping import rotowire_scraper, our_lads
+from scraping import rotowire_scraper, our_lads, betting_pros
 from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
@@ -45,6 +46,7 @@ def main():
         team_names_and_ids = []
 
         # first time application invoked
+        #TODO: Remove new args and any deprecated functionality after removing (i.e scrape_all, scrape fantasy pros, etc)
         if cl_args.new:
             logging.info(
                 "First application run; persisting all configured NFL teams to our database"
@@ -127,32 +129,38 @@ def main():
         # collect multiple years worth of data 
         #TODO: Refactor above approach and this approach to be unified
         if cl_args.collect_data: 
-            logging.info("Attemtping to collect relevant player and team data for the past 10 seasons")
-
-            # fetch & persist players and their corresponding teams
-            our_lads.scrape_and_persist(year) 
-
-            # team_game_logs_service.calculate_all_teams_rankings(2024)
             
-            # loop through each year (i.e last year --> 10 years ago )
+            start_year, end_year = cl_args.collect_data
+            logging.info(f"Attempting to collect relevant player and team data from the year {start_year} to {end_year}")
 
-            # collect relevant depth charts for given year 
+            # account for teams potentially not being persisted yet
+            teams = fetch_all_teams() 
+            if not teams:
+                teams = [
+                    team["name"] for team in get_config("nfl.teams")
+                ]             
+                insert_teams(teams)
 
-            # check which players are unique to the given year (i.e not already persisted)
+            # fetch & persist player records and their corresponding player_teams recrods
+            #our_lads.scrape_and_persist(start_year, end_year) TODO Uncomment me 
 
-            # TODO: Update DB Schema to account for effective dating (i.e some players retire, some players change teams, and we need to account for these changes in a seperate table) 
+            # fetch & persist player and team game logs 
+            # pfr.scrape_historical(start_year, end_year) TODO: Uncomment me
 
-            # scrape all relevant player data (i.e players previously persisted if applicable, and players not previously persisted)
+            # calculate & persist fantasy points, TODO: Account for fumbles and 2 PT conversions for better accuracy
+            # player_game_logs_service.calculate_fantasy_points(False, start_year, end_year) TODO: Uncommet me 
 
-            # scrape and persist all team data (i.e team game logs for season)
+            # calculate & persist team rankings for relevant years
+            # for curr_year in range(start_year, end_year):TODO: Uncomemt me
+            #     team_game_logs_service.calculate_all_teams_rankings(curr_year)
 
-            # insert team & player records into our database for season 
 
-            # calculate team rankings and calcualte fantasy points 
+            # fetch & persist team betting odds for relevant seasons
+            # rotowire_scraper.scrape_all(start_year, end_year) TODO: Uncommet me
 
-            # Rotowire: fetch team betting odds for each team throughout relevant season 
-
-            # Betting Pros: fetch relevant player betting odds through relevatn season (use effective dating to determine if we should get odds for a particular player) 
+            # fetch & persist player betting odds for relevant season
+            for curr_year in range(start_year, end_year + 1):
+                betting_pros.fetch_historical_odds(curr_year)
 
 
 
