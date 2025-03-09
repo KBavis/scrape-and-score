@@ -236,7 +236,16 @@ Returns:
 def get_data(url: str):
     time.sleep(.25) #TODO: Make this a config
     headers = {"x-api-key": props.get_config("website.betting-pros.api-key")}
-    jsonData = requests.get(url, headers=headers).json()
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+        jsonData = response.json()
+    except requests.RequestException as e:
+        print(f"Error while fetching JSON content from the following URL {url} : {e}")
+        return None
+    
     return jsonData
 
 
