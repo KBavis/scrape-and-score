@@ -603,3 +603,36 @@ def insert_player_teams_records(player_teams_records: list):
             exc_info=True,
         )
         raise e
+
+
+def insert_player_aggregate_metrics(player_agg_metrics: list): 
+    sql = f"""
+            INSERT INTO player_aggregate_metrics (player_id, week, season, fantasy_points)
+            VALUES (%s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["player_id"],
+                record["week"],
+                record["season"],
+                record["fantasy_points"]
+            )
+            for record in player_agg_metrics 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(player_agg_metrics)} player_aggregate_metrics records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_aggregate_metrics records into our db: {player_agg_metrics}",
+            exc_info=True,
+        )
+        raise e
