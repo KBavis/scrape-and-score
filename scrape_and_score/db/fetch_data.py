@@ -535,6 +535,7 @@ def fetch_independent_and_dependent_variables():
          p.player_id,
          p.position,
          pgl.fantasy_points,
+		 pam.fantasy_points AS avg_wkly_fantasy_points,
 		 pgl.week,
          t_tr.off_rush_rank,
          t_tr.off_pass_rank,
@@ -549,6 +550,8 @@ def fetch_independent_and_dependent_variables():
 		 pp.props
       FROM
          player_game_log pgl
+	  JOIN 
+	  	 player_aggregate_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id
       JOIN 
          player p ON p.player_id = pgl.player_id 
       JOIN 
