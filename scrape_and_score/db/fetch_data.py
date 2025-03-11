@@ -1032,3 +1032,42 @@ def fetch_player_teams_record_by_pk(record: dict):
             f"An error occurred while retrieving hte max week with rankings persisted for the corresponding season: {season}: {e}"
         )
         raise e
+
+
+def fetch_player_fantasy_points(player_id: int, season: int, end_week: int): 
+    """
+    Functionality to retrieve players fantasy points from beginning of season to specific week
+
+    Args:
+        player_id (int): player ID to fetch fantasy points for 
+        season (int): season corresponding to fantasy points 
+        end_week (int): week to retrieve points up to 
+    
+    Return: 
+        fantasy_ponts (list): list of fantasy points 
+    """
+
+    sql = " \
+        SELECT week, fantasy_points \
+        FROM player_game_log WHERE year = %s AND week >= 1 AND week <= %s AND player_id = %s \
+        ORDER BY week \
+    "
+
+    try:
+        connection = get_connection()
+        
+        fantasy_points = [] 
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, end_week, player_id))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                fantasy_points.append({"week": row[0], "fantasy_points": row[1]})
+            
+            return fantasy_points
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching fantasy points corresponding season {season} and end week {end_week}: {e}"
+        )
+        raise e
