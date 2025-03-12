@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import Dataset
-from sklearn.preprocessing import StandardScaler
+from .nn_preprocess import scale_and_transform 
+
 
 
 class FantasyDataset(Dataset):
@@ -14,13 +15,7 @@ class FantasyDataset(Dataset):
         super().__init__()
         self.df = df
         self.transform = transform
-
-        scaler = StandardScaler()
-
-        #TODO: Don't scale categorical variables (i.e position)
-        self.X = torch.from_numpy(
-            scaler.fit_transform(df.drop(columns=["fantasy_points"]).values)
-        ).float()
+        self.X = torch.from_numpy(scale_and_transform(df)).float()
         self.y = torch.from_numpy(df["fantasy_points"].values).float()
 
     def __getitem__(self, idx):
