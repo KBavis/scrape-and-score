@@ -1075,3 +1075,35 @@ def fetch_player_fantasy_points(player_id: int, season: int, end_week: int):
             f"An error occurred while fetching fantasy points corresponding season {season} and end week {end_week}: {e}"
         )
         raise e
+
+
+def fetch_player_depth_chart_record_by_pk(record: dict): 
+    """
+    Retrieve player_depth_chart record by PK 
+
+    Args:
+        record (dict): mapping of PK's 
+    
+    Returns:
+        record (dict): record in DB 
+    """
+
+    sql = "SELECT * FROM player_depth_chart WHERE player_id = %s AND season = %s AND week = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (record["player_id"], record['season'], record["week"]))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving player depth chart: {e}"
+        )
+        raise e
