@@ -13,7 +13,7 @@ def preprocess():
    parsed_df = parse_player_props(df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categoricla variable
-   processed_df.drop(columns=['player_id', 'season'], inplace=True) # drop un-needed values 
+   processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
 
    return processed_df
    
@@ -31,11 +31,8 @@ def scale_and_transform(df: pd.DataFrame):
    logging.info("Attemptign to scale and transform DF in order to utilize in Neural Network training & testing")
    scaler = StandardScaler()
 
-   print(df.columns)
-
    # store independent variables in seperate data frame 
    xs = df.drop(columns=['fantasy_points']).copy()
-
 
    # independent variables to avoid scaling due to categorical nature
    categorical_df = xs[['position_QB', 'position_RB', 'position_WR', 'position_TE']].copy()
