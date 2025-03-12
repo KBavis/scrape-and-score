@@ -13,7 +13,7 @@ def preprocess():
    parsed_df = parse_player_props(df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categoricla variable
-   processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
+   processed_df.drop(columns=['player_id', 'season'], inplace=True) # drop un-needed values 
 
    return processed_df
    
