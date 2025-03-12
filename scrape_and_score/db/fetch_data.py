@@ -537,6 +537,7 @@ def fetch_independent_and_dependent_variables():
          pgl.fantasy_points,
 		 pam.fantasy_points AS avg_wkly_fantasy_points,
 		 pgl.week,
+         pgl.year as season,
          t_tr.off_rush_rank,
          t_tr.off_pass_rank,
          t_td.def_rush_rank,
