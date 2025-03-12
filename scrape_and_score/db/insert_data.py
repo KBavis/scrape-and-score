@@ -636,3 +636,42 @@ def insert_player_aggregate_metrics(player_agg_metrics: list):
             exc_info=True,
         )
         raise e
+
+
+def insert_player_depth_charts(player_depth_chart: list): 
+    """
+    Functionality to insert player depth chart records into our DB 
+
+    ArgsL
+        player_depth_chart (list): players depth charts to insert 
+    """
+    sql = f"""
+            INSERT INTO player_depth_chart (player_id, week, season, depth_chart_pos)
+            VALUES (%s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["player_id"],
+                record["week"],
+                record["season"],
+                record["depth_chart_pos"]
+            )
+            for record in player_depth_chart
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(player_depth_chart)} player_depth_chart records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_depth_chart records into our db: {player_depth_chart}",
+            exc_info=True,
+        )
+        raise e
