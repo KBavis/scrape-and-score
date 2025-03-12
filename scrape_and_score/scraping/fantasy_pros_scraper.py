@@ -4,6 +4,8 @@ from .util import fetch_page
 
 
 """
+TODO: This can probably just get removed given our impl of our lads 
+
 Functionality to fetch all the relevant fantasy football players and their respective teams 
 
 Args:
