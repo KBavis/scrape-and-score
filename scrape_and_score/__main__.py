@@ -133,22 +133,27 @@ def main():
             start_year, end_year = cl_args.collect_data
             logging.info(f"Attempting to collect relevant player and team data from the year {start_year} to {end_year}")
 
-            # account for teams potentially not being persisted yet
-            teams = fetch_all_teams() 
-            if not teams:
-                teams = [
-                    team["name"] for team in get_config("nfl.teams")
-                ]             
-                insert_teams(teams)
+            # account for teams potentially not being persisted yet TODO: Uncomment me 
+            # teams = fetch_all_teams() 
+            # if not teams:
+            #     teams = [
+            #         team["name"] for team in get_config("nfl.teams")
+            #     ]             
+            #     insert_teams(teams)
 
             # fetch & persist player records and their corresponding player_teams recrods
-            #our_lads.scrape_and_persist(start_year, end_year) TODO Uncomment me 
+            our_lads.scrape_and_persist(start_year, end_year) #TODO Uncomment me 
 
             # fetch & persist player and team game logs 
             # pfr.scrape_historical(start_year, end_year) TODO: Uncomment me
 
             # calculate & persist fantasy points, TODO: Account for fumbles and 2 PT conversions for better accuracy
             # player_game_logs_service.calculate_fantasy_points(False, start_year, end_year) TODO: Uncommet me 
+
+            # calculate aggregate player metrics 
+            # for curr_year in range(start_year, end_year + 1): TODO: Uncomment me
+            #     player_game_logs_service.calculate_weekly_fantasy_point_averages(1, 18, curr_year) TODO: Uncomment me
+
 
             # calculate & persist team rankings for relevant years
             # for curr_year in range(start_year, end_year):TODO: Uncomemt me
@@ -159,8 +164,8 @@ def main():
             # rotowire_scraper.scrape_all(start_year, end_year) TODO: Uncommet me
 
             # fetch & persist player betting odds for relevant season
-            for curr_year in range(start_year, end_year + 1):
-                betting_pros.fetch_historical_odds(curr_year)
+            # for curr_year in range(start_year, end_year + 1):
+            #     betting_pros.fetch_historical_odds(curr_year)
 
 
 
@@ -215,12 +220,12 @@ def main():
                 training_data_set = FantasyDataset(training_df)
                 testing_data_set = FantasyDataset(testing_df)
                 
-                test_data_loader = DataLoader(testing_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
+                test_data_loader = DataLoader(testing_data_set, batch_size=64, shuffle=False) # TODO: determine appropiate batchsize 
                 train_data_loader = DataLoader(training_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
                 
                 print(f"Accelator Available: {torch.accelerator.is_available()}")
                 
-                nn = NeuralNetwork()
+                nn = NeuralNetwork(input_dim = df.shape[1] - 1) # -1 for dependent variable 
                 optimization.optimization_loop(train_data_loader, test_data_loader, nn)
 
                 torch.save(nn, 'model.pth')
