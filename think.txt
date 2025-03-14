@@ -4,11 +4,15 @@ In order to increae the capabilities of these predictions, I believe we will nee
     1. Increase the number of model parameters (i.e features)
     2. Incresase the amount of training data (scrape data for multiple years)
 
-
+!!!!NOTE!!!! USE DATASETS THAT WE HAVE ALREADY DOWNLOADED 
+Use the following data set for player, refree, etc data: https://github.com/nflverse/nflverse-data/releases 
 Increasing Number of Model Parameters: 
+    - Important Question to Consider: Would using team aggregate metrics for current year (i.e total rush yard, total pass, etc) instead of ranks 
     - There is a number of different model parameters we can utilize as efficient way to increase the predictiability of our model 
         1. Weather (account for the weather in the stadium location they are playing at) 
         2. Open Roof / Closed Roof (whether the weather will be a problem or not)
+        2. Player Age, Player Height, Player Weight
+        2. Player Combine Metrics (40, High Jump, etc)
         3. Injuries (whether the current player is injured or dealing with an injury, whether the defensive team they are placing have injuries to good players, key teamates missing like WR QB missing)
         4. Avg Fantasy Points (so far this season ... i.e week 2 should only take account week 1 fpts, week 3 only accounts for week 1 & 2, etc)
         5. Accounting for the cost of each betting line (i.e if player is favored for their over line OR not)
