@@ -479,7 +479,7 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
     
     # insert aggregate fantasy point avgs per week for specified season 
     logging.info(f"Attempting to insert aggregate fantasy points for the {season} NFL season.")
-    insert_data.insert_player_aggregate_metrics(player_agg_metrics)
+    insert_data.insert_player_weekly_aggregate_metrics(player_agg_metrics)
 
 
 

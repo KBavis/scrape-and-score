@@ -605,9 +605,9 @@ def insert_player_teams_records(player_teams_records: list):
         raise e
 
 
-def insert_player_aggregate_metrics(player_agg_metrics: list): 
+def insert_player_weekly_aggregate_metrics(player_agg_metrics: list): 
     sql = f"""
-            INSERT INTO player_aggregate_metrics (player_id, week, season, fantasy_points)
+            INSERT INTO player_weekly_agg_metrics (player_id, week, season, avg_fantasy_points)
             VALUES (%s, %s, %s, %s)
          """
 
@@ -628,11 +628,11 @@ def insert_player_aggregate_metrics(player_agg_metrics: list):
             cur.executemany(sql, params)
             connection.commit()
             logging.info(
-                f"Successfully inserted {len(player_agg_metrics)} player_aggregate_metrics records into the database"
+                f"Successfully inserted {len(player_agg_metrics)} player_weekly_agg_metrics records into the database"
             )
     except Exception as e:
         logging.error(
-            f"An exception occurred while inserting the following player_aggregate_metrics records into our db: {player_agg_metrics}",
+            f"An exception occurred while inserting the following player_weekly_agg_metrics records into our db: {player_agg_metrics}",
             exc_info=True,
         )
         raise e

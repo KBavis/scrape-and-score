@@ -551,7 +551,7 @@ def fetch_independent_and_dependent_variables():
       FROM
          player_game_log pgl
 	  JOIN 
-	  	 player_aggregate_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id
+	  	 player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id
       JOIN 
          player p ON p.player_id = pgl.player_id 
       JOIN 
