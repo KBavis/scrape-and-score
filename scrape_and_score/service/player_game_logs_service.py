@@ -462,7 +462,7 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
 
         # fetch aggregate fantasy points for each week
         for curr_week in range(start_week, end_week + 1): 
-            logging.info(f"Calculating weekly fantasy point averages from week 1 to week {curr_week} in the {season} season for player {player["name"]}.")
+            logging.info(f"Calculating weekly fantasy point averages from week 1 to week {curr_week} in the {season} season for player {player['name']}.")
 
             weekly_fantasy_points = fetch_data.fetch_player_fantasy_points(player_id, season, curr_week)
             if not any(record["week"] == curr_week for record in weekly_fantasy_points):
