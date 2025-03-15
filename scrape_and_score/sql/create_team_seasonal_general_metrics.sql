@@ -1,5 +1,5 @@
 --- Store generic totals for a team in a given season
-CREATE TABLE team_seasonal_general_metircs(
+CREATE TABLE team_seasonal_general_metrics(
 	team_id INT NOT NULL, 
 	season INT NOT NULL,
 	total_snaps INT,
