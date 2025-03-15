@@ -5,6 +5,7 @@ CREATE TABLE player_demographics (
 	season INT NOT NULL, 
 	age INT, 
 	height FLOAT,
+	weight FLOAT,
 	PRIMARY KEY (player_id, season),
 	FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE
 )
