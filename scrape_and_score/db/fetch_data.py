@@ -535,7 +535,7 @@ def fetch_independent_and_dependent_variables():
          p.player_id,
          p.position,
          pgl.fantasy_points,
-		 pam.fantasy_points AS avg_wkly_fantasy_points,
+		 pam.avg_fantasy_points AS avg_wkly_fantasy_points,
 		 pdc.depth_chart_pos AS depth_chart_position,
 		 pgl.week,
          pgl.year as season,
@@ -553,7 +553,7 @@ def fetch_independent_and_dependent_variables():
       FROM
          player_game_log pgl
 	  JOIN 
-	  	 player_aggregate_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id
+	  	 player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id
 	  JOIN
 	  	 player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id 
       JOIN 
