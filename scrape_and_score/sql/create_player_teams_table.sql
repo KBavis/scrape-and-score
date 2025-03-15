@@ -1,3 +1,4 @@
+-- Linkage table for a player and their corresponding team during a season
 CREATE TABLE player_teams (
     player_id INT NOT NULL,
     team_id INT NOT NULL,

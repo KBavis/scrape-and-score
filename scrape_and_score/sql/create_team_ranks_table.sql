@@ -1,3 +1,4 @@
+-- Store relevant rankings that are updated weekly for a specific season
 CREATE TABLE team_ranks (
 	team_id INT NOT NULL, 
 	week INT NOT NULL, 

@@ -1,3 +1,4 @@
+-- Store relevant player dpeth chart positions for a given week and season
 CREATE TABLE player_depth_chart (
 	player_id INT NOT NULL,
 	week INT NOT NULL,
