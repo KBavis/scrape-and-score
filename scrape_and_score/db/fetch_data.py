@@ -615,6 +615,34 @@ def fetch_independent_and_dependent_variables():
 		 pd.age,
 		 pd.height,
 		 pd.weight,
+		 tsgm.yards_gained as prev_year_team_total_yards_gained,
+		 tsgm.touchdowns as prev_year_team_total_touchdowns,
+		 tsgm.field_goal_attempts as prev_year_team_total_fg_attempts,
+		 tsgm.extra_point_attempts as prev_year_team_total_extra_point_attempts,
+		 tsgm.points as prev_year_team_total_points,
+		 tsgm.td_points as prev_year_team_total_td_points,
+		 tsgm.xp_points as prev_year_team_total_xp_points,
+		 tsgm.fg_points as prev_year_team_total_fg_points,
+		 tsgm.fumble_lost as prev_year_team_total_fumbles,
+		 tsgm.home_wins as prev_year_team_total_home_wins,
+		 tsgm.away_wins as prev_year_team_total_away_wins,
+		 tsgm.home_losses as prev_year_team_total_home_losses,
+		 tsgm.away_losses as prev_year_team_total_away_losses,
+		 tsgm.wins as prev_year_team_total_wins,
+		 tsgm.losses as prev_year_team_total_losses,
+		 tsgm.win_pct as prev_year_team_win_pct,
+		 tsrm.rushing_yards as prev_year_team_total_rushing_yards,
+         tsrm.rush_td as prev_year_team_total_run_td,
+         tsrm.rush_fumble as prev_year_team_total_run_fumbles,
+         tspm.pass_attempts as prev_year_team_total_pass_attempts,
+         tspm.complete_pass as prev_year_team_total_complete_passes,
+         tspm.incomplete_pass as prev_year_team_total_incomplete_passes,
+         tspm.passing_yards as prev_year_team_total_passing_yards,
+         tspm.pass_td as prev_year_team_total_pass_td,
+         tspm.interception as prev_year_team_total_interceptions,
+         tspm.targets as prev_year_team_total_targets,
+         tspm.receptions as prev_year_team_total_receptions,
+         tspm.receiving_td as prev_year_team_total_receiving_td,
          CASE
            WHEN tbo.favorite_team_id = t.team_id THEN 1
 		 ELSE 0
@@ -634,6 +662,12 @@ def fetch_independent_and_dependent_variables():
 	  	 player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season
 	  JOIN 
 	  	 team t ON pt.team_id = t.team_id
+	  JOIN
+	  	 team_seasonal_general_metrics tsgm ON t.team_id = tsgm.team_id AND (pgl.year - 1) = tsgm.season --account for previous year
+	  JOIN
+	  	 team_seasonal_rushing_metrics tsrm ON t.team_id = tsrm.team_id AND (pgl.year - 1) = tsrm.season -- account for previous year
+	  JOIN 
+	  	 team_seasonal_passing_metrics tspm ON t.team_id = tspm.team_id AND (pgl.year - 1) = tspm.season -- account for previous year
 	  JOIN 
 	  	 team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season
       JOIN 
