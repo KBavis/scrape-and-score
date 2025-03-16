@@ -25,19 +25,7 @@ def fetch_historical_odds(season: int):
         markets = markets[:-4] # remove last 4 occurence 
 
     players = fetch_data.fetch_players_active_in_specified_year(season) 
-    
-    #TODO Remove me
-    #TODO: Noah Fant is correct, we want Evan Engram to start off continuation of 2022 season
-    index = next((i for i, player in enumerate(players) if player["name"] == "Nick Foles"), None)
-    if index != None:
-        print("Slicing......")
-        players = players[index + 1 :]
 
-
-    
-    
-        
-    
 
     # iterate through each potential player
     #TODO: account for najee harris slug being 'najee-harris-rb'
