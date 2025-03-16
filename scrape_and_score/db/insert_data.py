@@ -1,6 +1,9 @@
 from .connection import get_connection, close_connection
 import logging
 import pandas as pd
+from service import team_service, player_service
+import time
+from . import fetch_data
 
 """
 Functionality to persist a particular player 
@@ -645,7 +648,7 @@ def insert_player_depth_charts(player_depth_chart: list):
     ArgsL
         player_depth_chart (list): players depth charts to insert 
     """
-    sql = f"""
+    sql = """
             INSERT INTO player_depth_chart (player_id, week, season, depth_chart_pos)
             VALUES (%s, %s, %s, %s)
          """
@@ -675,3 +678,231 @@ def insert_player_depth_charts(player_depth_chart: list):
             exc_info=True,
         )
         raise e
+
+
+def insert_team_seasonal_general_metrics(df: pd.DataFrame, teams: dict):
+    """Insert teams seasonal general metrics into our database
+
+    Args:
+        df (pd.DataFrame): dataframe containing relevant season team metrics
+        teams (dict): mapping of a player 
+    """
+
+    sql = """
+    INSERT INTO team_seasonal_general_metrics (
+        team_id, season, yards_gained, touchdowns, 
+        extra_point_attempts, field_goal_attempts, points, td_points, xp_points, 
+        fg_points, fumble_lost, 
+        home_wins, home_losses, away_wins, away_losses, 
+        wins, losses, win_pct
+    ) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+            %s, %s, %s)
+    """
+
+    try:
+        connection = get_connection()
+
+        params = []
+        for _, row in df.iterrows():
+            team_id = next(team["team"] for team in teams if team["acronym"] == row["team"])
+            team_id = team_service.get_team_id_by_name(team_id)  # Transform acronym into corresponding ID
+            params.append((
+                team_id,
+                row["season"],
+                row["yards_gained"],
+                row["touchdown"],
+                row["extra_point_attempt"],
+                row["field_goal_attempt"],
+                row["total_points"],
+                row["td_points"],
+                row["xp_points"],
+                row["fg_points"],
+                row["fumble_lost"],
+                row["home_wins"],
+                row["home_losses"],
+                row["away_wins"],
+                row["away_losses"],
+                row["wins"],
+                row["losses"],
+                row["win_pct"]
+            ))
+
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(df)} team_seasonal_general_metrics records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following team_seasonal_general_metrics records into our db: {params}",
+            exc_info=True,
+        )
+        raise e
+
+
+def insert_team_seasonal_passing_metrics(df: pd.DataFrame, teams: list):
+    """Insert teams seasonal passing metrics into our database
+
+    Args:
+        df (pd.DataFrame): dataframe containing relevant season team metrics
+        teams (list): list of mappings of a team name to a acronym
+    """
+
+    sql = """
+    INSERT INTO team_seasonal_passing_metrics (
+        team_id, season, pass_attempts, complete_pass,
+        incomplete_pass, passing_yards, 
+        pass_td, interception, targets, receptions, 
+        receiving_td
+    ) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+            team_service.get_team_id_by_name(next(team["team"] for team in teams if team["acronym"] == row["team"])), # transform acronym into corresponding ID
+            row["season"],
+            row["pass_attempts"],
+            row["complete_pass"],
+            row["incomplete_pass"],
+            row["passing_yards"],
+            row["pass_td"],
+            row["interception"],
+            row["targets"],
+            row["receptions"],
+            row["receiving_td"]
+            )
+            for _, row in df.iterrows()
+        ]
+
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(df)} team_seasonal_passing_metrics records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following team_seasonal_passing_metrics records into our db: {params}",
+            exc_info=True,
+        )
+        raise e
+
+
+def insert_team_seasonal_rushing_metrics(df: pd.DataFrame, teams: dict):
+    """Insert teams seasonal rushing metrics into our database
+
+    Args:
+        df (pd.DataFrame): dataframe containing relevant season team metrics
+        teams (dict): mapping of a player
+    """
+
+    sql = """
+    INSERT INTO team_seasonal_rushing_metrics (
+        team_id, season, rushing_yards, rush_td, rush_fumble
+    ) 
+    VALUES (%s, %s, %s, %s, %s)
+    """
+
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                team_service.get_team_id_by_name(
+                    next(team["team"] for team in teams if team["acronym"] == row["team"])
+                ),  # transform acronym into corresponding ID
+                row["season"],
+                row["rushing_yards"],
+                row["run_td"],
+                row["run_fumble"]
+            )
+            for _, row in df.iterrows()
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(df)} team_seasonal_rushing_metrics records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following team_seasonal_rushing_metrics records into our db: {params}",
+            exc_info=True,
+        )
+        raise e
+
+
+def insert_player_demographics(df: pd.DataFrame):
+    """Insert player demographics (i.e age, height, weight) for a given season
+
+    Args:
+        df (pd.DataFrame): dataframe containing relevant player season metrics
+    """
+
+    sql = """
+    INSERT INTO player_demographics (
+        player_id, season, age, height, weight
+    ) 
+    VALUES (%s, %s, %s, %s, %s)
+    """
+
+    params = []
+    ids = set()  # Track unique player IDs
+
+    try:
+        connection = get_connection()
+
+        for _, row in df.iterrows(): 
+            try:
+                # fetch player ID by cleaned name
+                player_id = player_service.get_player_id_by_normalized_name(row["player_name"])
+
+                # skip if player ID has already been processed
+                if player_id not in ids:
+                    ids.add(player_id)
+                else:
+                    logging.info(f"Player ID {player_id} already persisted")
+                    continue
+
+                # append data to parameters for insertion
+                params.append((
+                    player_id,
+                    row["season"],
+                    row["age"],
+                    row["height"],
+                    row["weight"]
+                ))
+            except Exception as e:
+                logging.error(f"The following error occurred while generating tuple for name: {row['player_name']}", exc_info=True)
+                continue
+                
+        # filter out existing entries 
+        filtered_params = [] 
+        for param in params: 
+            if fetch_data.retrieve_player_demographics_record_by_pk(param[1], param[0]) is None:
+                filtered_params.append(param)
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, filtered_params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(filtered_params)} player_demographic records into the database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_demographics records into our db: {filtered_params}",
+            exc_info=True,
+        )
+        raise 
