@@ -96,6 +96,7 @@ def fetch_all_players():
                         "player_id": row[0],
                         "player_name": row[1],
                         "position": row[2],
+                        "normalized_name": row[3]
                     }
                 )
 
@@ -133,6 +134,7 @@ def fetch_player_by_name(player_name: str):
                     "player_id": row[0],
                     "name": row[1],
                     "position": row[2],
+                    "normalized_name": row[3]
                 }
 
     except Exception as e:
@@ -144,11 +146,49 @@ def fetch_player_by_name(player_name: str):
     return player
 
 
-def fetch_player_id_by_name(player_name: str):
+
+def fetch_player_by_normalized_name(normalized_name: str):
+    """
+    Fetch player by normalized_name 
+    
+
+    Args:
+        normalized_name (str): the players name normalized 
+    """
+    sql = "SELECT * FROM player WHERE normalized_name = %s"
+    player = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (normalized_name,))  
+            row = cur.fetchone()
+
+            if row:
+                player = {
+                    "player_id": row[0],
+                    "name": row[1],
+                    "position": row[2],
+                    "normalized_name": row[3]
+                }
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching player with normalized name {normalized_name}: {e}."
+        )
+        raise e
+
+    return player
+
+
+
+def fetch_player_id_by_normalized_name(normalized_name: str):
+
     sql = """
         SELECT player_id 
         FROM player 
-        WHERE LOWER(REPLACE(name, '.', '')) = LOWER(REPLACE(%s, '.', ''))
+        WHERE normalized_name = %s
     """
     player_id = None
 
@@ -156,20 +196,19 @@ def fetch_player_id_by_name(player_name: str):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (player_name,))  
+            cur.execute(sql, (normalized_name,))  # use cleaned name
             row = cur.fetchone()
 
             if row:
                 player_id = row[0]
+            else:
+                raise Exception(f"Unable to find player ID for {normalized_name}")
 
     except Exception as e:
-        logging.error(
-            f"An error occurred while fetching player ID with name {player_name}: {e}."
-        )
+        logging.error(f"An error occurred while fetching player ID for {normalized_name}: {e}")
         raise e
 
     return player_id
-
 
 
 """
@@ -1138,3 +1177,33 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
             f"An error occurred while retrieving player depth chart: {e}"
         )
         raise e
+
+
+def retrieve_player_demographics_record_by_pk(season: int, player_id: int): 
+    """Functionality to retrieve a player demographic record by its PK
+
+    Args:
+        season (int): the season pertaining to the record 
+        player_id (int): the player_id pertaining to the record 
+    """
+
+    sql = "SELECT * FROM player_demographics WHERE player_id = %s AND season = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, season))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving player_demographic record pertaining to season {season} and player_id {player_id}", exc_info=True
+        )
+        raise e
+
