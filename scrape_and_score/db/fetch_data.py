@@ -612,6 +612,9 @@ def fetch_independent_and_dependent_variables():
          t_td.def_pass_rank,
          tbo.game_over_under,
          tbo.spread,
+		 pd.age,
+		 pd.height,
+		 pd.weight,
          CASE
            WHEN tbo.favorite_team_id = t.team_id THEN 1
 		 ELSE 0
@@ -627,6 +630,8 @@ def fetch_independent_and_dependent_variables():
          player p ON p.player_id = pgl.player_id 
       JOIN 
          player_teams pt ON p.player_id = pt.player_id AND pgl.week >= pt.strt_wk AND pgl.week <= pt.end_wk AND pt.season = pgl.year 
+      JOIN 
+	  	 player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season
 	  JOIN 
 	  	 team t ON pt.team_id = t.team_id
 	  JOIN 
