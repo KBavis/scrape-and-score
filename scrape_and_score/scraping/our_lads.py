@@ -5,7 +5,7 @@ from . import util
 from bs4 import BeautifulSoup
 from config import props
 import logging
-from service import team_service
+from service import team_service, player_service
 from datetime import datetime
 from db import fetch_data, insert_data
 import re
@@ -116,7 +116,8 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
             # update player name to id mapping 
             for player_name in relevant_players:
                 if player_name not in player_name_id_mapping:
-                    player = fetch_data.fetch_player_by_name(player_name)
+                    normalized_name = player_service.normalize_name(player_name)
+                    player = fetch_data.fetch_player_by_normalized_name(normalized_name)
                     player_name_id_mapping[player_name] = player['player_id']
 
 
@@ -321,9 +322,9 @@ def is_previously_inserted_player(player_name: str, player_name_id_mapping: dict
     
     Returns:
         bool: whether the record exists or not 
-    """                       
-
-    player = fetch_data.fetch_player_by_name(player_name)
+    """
+    normalized_name = player_service.normalize_name(player_name)
+    player = fetch_data.fetch_player_by_normalized_name(normalized_name)
     if player == None: 
         return False
     
@@ -499,6 +500,3 @@ def extract_archive_dates(archive_dates_soup: BeautifulSoup, start_year: int, en
         relevant_archive_dates.append(yearly_archives)
 
     return relevant_archive_dates
-
-
-
