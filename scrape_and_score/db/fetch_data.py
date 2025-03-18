@@ -633,7 +633,6 @@ def fetch_independent_and_dependent_variables():
 		 tsgm.win_pct as prev_year_team_win_pct,
 		 tsrm.rushing_yards as prev_year_team_total_rushing_yards,
          tsrm.rush_td as prev_year_team_total_run_td,
-         tsrm.rush_fumble as prev_year_team_total_run_fumbles,
          tspm.pass_attempts as prev_year_team_total_pass_attempts,
          tspm.complete_pass as prev_year_team_total_complete_passes,
          tspm.incomplete_pass as prev_year_team_total_incomplete_passes,
