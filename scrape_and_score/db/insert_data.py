@@ -807,7 +807,7 @@ def insert_team_seasonal_rushing_metrics(df: pd.DataFrame, teams: dict):
 
     sql = """
     INSERT INTO team_seasonal_rushing_metrics (
-        team_id, season, rushing_yards, rush_td, rush_fumble
+        team_id, season, rushing_yards, rush_td
     ) 
     VALUES (%s, %s, %s, %s, %s)
     """
@@ -823,7 +823,6 @@ def insert_team_seasonal_rushing_metrics(df: pd.DataFrame, teams: dict):
                 ),  # transform acronym into corresponding ID
                 row["season"],
                 row["rushing_yards"],
-                row["run_td"],
                 row["run_fumble"]
             )
             for _, row in df.iterrows()
