@@ -176,7 +176,7 @@ Returns:
     team_metrics (list) - list of df's containing team metrics
 """
 
-
+#TODO: Rename me to fetch game logs 
 def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=False):
     logging.info(f"Attempting to scrape team metrics for the following teams [{teams}]")
 
@@ -210,6 +210,58 @@ def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=F
     return team_metrics
 
 
+def fetch_teams_seasonal_metrics(start_year: int, end_year: int):
+    teams = props.get_config("nfl.teams")
+    team_template_url = props.get_config(
+        "website.pro-football-reference.urls.team-metrics"
+    )
+    acronym_mapping = { team["name"]: team["acronym"] for team in teams }
+
+    
+    for year in range(start_year, end_year + 1): 
+        for team in teams: 
+
+            # retrieve team page for specific year
+            url = team_template_url.replace("{TEAM_ACRONYM}", acronym_mapping[team["name"]]).replace("{CURRENT_YEAR}", str(year))
+            raw_html = fetch_page(url)
+
+            # parse data 
+            soup = BeautifulSoup(raw_html, "html.parser")
+            
+            # extract general team stats 
+            team_stats_and_rankings_table = soup.find_all("tbody")[0]
+            team_stats = parse_team_stats(team_stats_and_rankings_table.find_next("tr"))
+
+            #TODO: There is some additiona metrics not currently accounted for in db schema (i.e drives, rush first downs, etc) that we should update general metrics to account for and persist from team stats vlaues
+            print(team_stats)
+
+            # extract rushing & receiving metrics 
+
+            # extract passing metrics 
+
+            # persist record for team in db 
+            break
+        break
+
+
+def parse_team_stats(team_stats_row: BeautifulSoup):
+    """
+    Functionality to extract relevant team stat totals for a given year 
+
+    Args:
+        team_stats_row (BeautifulSoup): parsed html 
+    
+    Returns:
+        dict: mapping of team stats 
+    """
+    stats = {}
+    for td in team_stats_row: 
+        stat = td.get("data-stat")
+        value = td.get_text()
+        stats[stat] = value
+    
+    return stats
+   
 """
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 
