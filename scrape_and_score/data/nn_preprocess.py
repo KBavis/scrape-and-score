@@ -8,7 +8,6 @@ import logging
 
 def preprocess(): 
    df = fetch_data()
-   print(f"Original Data: {len(df)} rows")  
 
    parsed_df = parse_player_props(df)
 
@@ -28,7 +27,7 @@ def scale_and_transform(df: pd.DataFrame):
    Returns:
       np.array: numpy array containing scaled inputs 
    """
-   logging.info("Attemptign to scale and transform DF in order to utilize in Neural Network training & testing")
+   logging.info("Scaling and transforming DF in order to utilize in Neural Network training & testing")
    scaler = StandardScaler()
 
    # store independent variables in seperate data frame 
