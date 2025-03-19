@@ -228,37 +228,165 @@ def fetch_teams_seasonal_metrics(start_year: int, end_year: int):
             # parse data 
             soup = BeautifulSoup(raw_html, "html.parser")
             
-            # extract general team stats 
-            team_stats_and_rankings_table = soup.find_all("tbody")[0]
-            team_stats = parse_team_stats(team_stats_and_rankings_table.find_next("tr"))
+            # parse relevant tables 
+            team_tables = soup.find_all("table")
+            team_table_bodies = soup.find_all("tbody")
 
-            #TODO: There is some additiona metrics not currently accounted for in db schema (i.e drives, rush first downs, etc) that we should update general metrics to account for and persist from team stats vlaues
-            print(team_stats)
+            # parse 'Team Stats and Rankings' table
+            team_stats_and_rankings_table = team_table_bodies[0]
+            team_stats = parse_stats(team_stats_and_rankings_table) 
 
-            # extract rushing & receiving metrics 
+            # parse 'Team Conversions' table
+            team_conversions_table = team_table_bodies[2]
+            team_conversions = parse_conversions(team_conversions_table)
 
-            # extract passing metrics 
+            # parse 'Passing' table 
+            player_passing_table = team_table_bodies[3]
+            team_passing_totals = team_tables[3].find_next("tfoot")
+            player_passing_stats, team_passing_stats = parse_player_and_team_passing_stats(player_passing_table, team_passing_totals)
+
+            # TODO: Continue parsing other tables , update DB Schema to account for additional metrics, generate appropaite records to persist into our database, account for previously inserted records requiring updates in logic
 
             # persist record for team in db 
             break
         break
 
 
-def parse_team_stats(team_stats_row: BeautifulSoup):
+def parse_player_and_team_passing_stats(player_passing_table: BeautifulSoup, team_passing_totals: BeautifulSoup):
     """
-    Functionality to extract relevant team stat totals for a given year 
+    Parse the 'Passing' table on PFR Team pages
 
     Args:
-        team_stats_row (BeautifulSoup): parsed html 
+        player_passing_table (BeautifulSoup): parsed HTML contianing player stats 
+        team_passing_totals (BeautifulSoup): parsed HMTL contianing team totals
+    
+    Return:
+        tuple: player passing stats and team passing stats
+    """
+
+    # team totals 
+    team_passing_metrics = {}
+    prefix = "team_total_"
+    tds = team_passing_totals.find_next('tr').find_all("td")
+    for td in tds:
+        key = prefix + td.get('data-stat')
+        value = td.get_text() 
+
+        if value is not None and value != "":
+            team_passing_metrics[key] = value
+
+    # player totals
+    trs = player_passing_table.find_all("tr")
+    player_passing_metrics = {}
+    for tr in trs: 
+        metrics = {}
+
+        td = tr.find('td', {'data-stat': 'name_display'})
+        if td is not None:
+            player_name = td.find_next('a').get_text() 
+            normalized_name = player_service.normalize_name(player_name)
+        else:
+            # skip row if no name is present
+            continue
+
+
+        tds = tr.find_all("td")
+        for td in tds:
+            key = td.get('data-stat')
+
+            # skip over name as its not a metric
+            if key == 'name_display':
+                continue
+            value = td.get_text() 
+
+            if value is not None and value != "":
+                metrics[key] = value
+        
+
+        if metrics:
+            player_passing_metrics[normalized_name] = metrics 
+
+
+
+    return player_passing_metrics, team_passing_metrics
+
+
+
+
+
+
+def parse_conversions(team_conversion: BeautifulSoup):
+    """
+    Extract relevant team conversion ratios (i.e 3rd down, red zone, etc)
+
+    Args:
+        team_conversion (BeautifulSoup): table body containing table rows with conversion metrics 
+    
+    Returns:
+        dict: key-values of teams conversion ratios & rankings
+    """
+    conversions = {} 
+    trs = team_conversion.find_all("tr")
+    for tr in trs: 
+        header = tr.find_next("th").get_text() 
+
+        # prefix for data stats
+        if header == 'Team Stats':
+            prefix = 'team_'
+        elif header == 'Opp. Stats':
+            prefix = 'opp_'
+        elif header == 'Lg Rank Defense': 
+            prefix = 'off_rank_'
+        else:
+            prefix = 'def_rank_'
+
+        # loop through cells in row
+        for td in tr.find_all("td"):
+            key = prefix + str(td.get("data-stat")) 
+            value = td.get_text() 
+
+            if value is not None and value != '':
+                conversions[key] = value
+
+
+    
+    return conversions
+
+
+def parse_stats(team_stats_tbody: BeautifulSoup):
+    """
+    Functionality to extract relevant team & opponent stat totals for a given year 
+
+    Args:
+        team_stats_tbody (BeautifulSoup): parsed html 
     
     Returns:
         dict: mapping of team stats 
     """
     stats = {}
-    for td in team_stats_row: 
-        stat = td.get("data-stat")
-        value = td.get_text()
-        stats[stat] = value
+    trs = team_stats_tbody.find_all("tr")
+
+    for tr in trs:
+        header = tr.find_next("th").get_text() 
+
+        # prefix for data stats
+        if header == 'Team Stats':
+            prefix = 'team_'
+        elif header == 'Opp. Stats':
+            prefix = 'opp_'
+        elif header == 'Lg Rank Defense': 
+            prefix = 'off_rank_'
+        else:
+            prefix = 'def_rank_'
+
+        for td in tr: 
+            stat = td.get("data-stat")
+            key = prefix + stat
+            value = td.get_text()
+            
+            # ensure value exists 
+            if value is not None and value != '':
+                stats[key] = value
     
     return stats
    
