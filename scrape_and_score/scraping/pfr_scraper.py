@@ -5,7 +5,7 @@ from service import team_service, player_service, player_game_logs_service, team
 from config import props
 from .util import fetch_page
 from datetime import date, datetime
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from db import fetch_data
@@ -235,49 +235,147 @@ def fetch_teams_seasonal_metrics(start_year: int, end_year: int):
             # parse 'Team Stats and Rankings' table
             team_stats_and_rankings_table = team_table_bodies[0]
             team_stats = parse_stats(team_stats_and_rankings_table) 
+            print("\n\nTeam Stats Metrics")
+            print(team_stats)
 
             # parse 'Team Conversions' table
             team_conversions_table = team_table_bodies[2]
             team_conversions = parse_conversions(team_conversions_table)
+            print("\n\nTeam Conversion Metrics")
+            print(team_conversions)
 
             # parse 'Passing' table 
             player_passing_table = team_table_bodies[3]
             team_passing_totals = team_tables[3].find_next("tfoot")
-            player_passing_stats, team_passing_stats = parse_player_and_team_passing_stats(player_passing_table, team_passing_totals)
+            player_passing_stats, team_passing_stats = parse_player_and_team_totals(player_passing_table, team_passing_totals)
+            print("\n\nTeam Passing Totals Metrics")
+            print(team_passing_stats)
+            print("\n\nPlayer Passing Totals Metrics")
+            print(player_passing_stats)
 
-            # TODO: Continue parsing other tables , update DB Schema to account for additional metrics, generate appropaite records to persist into our database, account for previously inserted records requiring updates in logic
+            # parse 'Rushing and Receving' table 
+            player_rushing_and_receiving_table = team_table_bodies[4]
+            team_rushing_and_receiving_totals = team_tables[4].find_next("tfoot")
+            player_rushing_and_receiving_stats, team_rushing_and_receiving_stats = parse_player_and_team_totals(player_rushing_and_receiving_table, team_rushing_and_receiving_totals)
+            print("\n\nTeam Rushing and Receiving Totals Metrics")
+            print(team_rushing_and_receiving_stats)
+            print("\n\nPlayer Rushing and Receiving Totals Metrics")
+            print(player_rushing_and_receiving_stats)
+
+            # parse 'Kicking' table
+            kicking_div = soup.find('div', {'id': 'all_kicking'})
+            comment = kicking_div.find(string=lambda text: isinstance(text, Comment))
+            
+            if comment:  # PFR stores this table information in a comment, so we must work around 
+                table_soup = BeautifulSoup(comment, 'html.parser')
+                tfoot = table_soup.find('tfoot')
+                team_kicking_stats = parse_team_totals(tfoot)
+                print("\n\nTeam Kicking Stats Totals Metrics")
+                print(team_kicking_stats)
+            
+            # parse 'Punting' table 
+            punting_div = soup.find('div', {'id': 'all_punting'})
+            comment = punting_div.find(string=lambda text: isinstance(text, Comment))
+
+            if comment: 
+                table_soup = BeautifulSoup(comment, 'html.parser')
+                tfoot = table_soup.find('tfoot')
+                team_punting_stats = parse_team_totals(tfoot)
+                print("\n\nTeam Punting Stats Totals Metrics")
+                print(team_punting_stats)
+            
+
+            # parse 'Defenesne & Fumbles' table 
+            defensve_div = soup.find('div', {'id': 'all_defense'})
+            tfoot = defensve_div.find('tfoot')
+            team_defensive_stats = parse_team_totals(tfoot)
+            print("\n\nTeam Defensive Stats Totals Metrics")
+            print(team_defensive_stats)
+
+            # parse 'Scoring Summary' 
+            scoring_summary_div =  soup.find('div', {'id': 'all_scoring'})
+            comment = scoring_summary_div.find(string=lambda text: isinstance(text, Comment))
+
+            if comment: 
+                table_soup = BeautifulSoup(comment, 'html.parser')
+                player_tbody = table_soup.find('tbody')
+                team_tfoot = table_soup.find('tfoot')
+
+                player_scoring_summary, team_scoring_summary = parse_player_and_team_totals(player_tbody, team_tfoot)
+                print('\n\nTeam Scoring Summary')
+                print(team_scoring_summary)
+                print('\n\nPlayer Scoring Summary')
+                print(player_scoring_summary)
+
+
+            # TODO: update DB Schema to account for additional metrics, generate appropaite records to persist into our database, account for previously inserted records requiring updates in logic
+            #TODO: Consider if we want to acocunt for Touchdown Log & Opponetn Touchdown Log in future
 
             # persist record for team in db 
             break
         break
 
 
-def parse_player_and_team_passing_stats(player_passing_table: BeautifulSoup, team_passing_totals: BeautifulSoup):
-    """
-    Parse the 'Passing' table on PFR Team pages
+def parse_team_totals(team_totals: BeautifulSoup) -> dict:
+    """Parse the teams kicking and punting totals
 
     Args:
-        player_passing_table (BeautifulSoup): parsed HTML contianing player stats 
-        team_passing_totals (BeautifulSoup): parsed HMTL contianing team totals
-    
-    Return:
-        tuple: player passing stats and team passing stats
+        team_kicking_totals (BeautifulSoup): parsed HTML containing team totals for kicking
+
+    Returns:
+        dict: key-value paris of kicking stats
     """
 
-    # team totals 
-    team_passing_metrics = {}
+    team_totals_stats = {}
     prefix = "team_total_"
-    tds = team_passing_totals.find_next('tr').find_all("td")
+    tds = team_totals.find_next('tr').find_all("td")
     for td in tds:
         key = prefix + td.get('data-stat')
         value = td.get_text() 
 
-        if value is not None and value != "":
-            team_passing_metrics[key] = value
+        # skip name 
+        if key == 'team_total_name_display':
+            continue
 
+        if value is not None and value != "":
+            team_totals_stats[key] = value
+    
+    return team_totals_stats
+
+
+
+
+def parse_player_and_team_totals(players_table: BeautifulSoup, team_totals: BeautifulSoup):
+    """
+    Parse PFR Player and Team Totals 
+
+    Args:
+        players_table (BeautifulSoup): table containing player totals 
+        team_totals (BeautifulSoup): table containing team totals 
+    
+    Return:
+        tuple: player and team totals 
+    """
+
+    # team totals 
+    team_metrics = {}
+    prefix = "team_total_"
+    tds = team_totals.find_next('tr').find_all("td")
+    for td in tds:
+        key = prefix + td.get('data-stat')
+        value = td.get_text() 
+
+        # skip name
+        if key == 'team_total_name_display':
+            continue
+
+        if value is not None and value != "":
+            team_metrics[key] = value
+
+    
     # player totals
-    trs = player_passing_table.find_all("tr")
-    player_passing_metrics = {}
+    trs = players_table.find_all("tr")
+    player_metrics = {}
     for tr in trs: 
         metrics = {}
 
@@ -294,8 +392,8 @@ def parse_player_and_team_passing_stats(player_passing_table: BeautifulSoup, tea
         for td in tds:
             key = td.get('data-stat')
 
-            # skip over name as its not a metric
-            if key == 'name_display':
+            # skip over name and position as its not a metric
+            if key == 'name_display' or key == 'pos':
                 continue
             value = td.get_text() 
 
@@ -304,15 +402,11 @@ def parse_player_and_team_passing_stats(player_passing_table: BeautifulSoup, tea
         
 
         if metrics:
-            player_passing_metrics[normalized_name] = metrics 
+            player_metrics[normalized_name] = metrics 
 
 
 
-    return player_passing_metrics, team_passing_metrics
-
-
-
-
+    return player_metrics, team_metrics
 
 
 def parse_conversions(team_conversion: BeautifulSoup):
