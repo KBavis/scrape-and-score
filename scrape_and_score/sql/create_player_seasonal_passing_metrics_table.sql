@@ -1,8 +1,9 @@
 CREATE TABLE player_seasonal_passing_metrics (
     player_id INT,
+    team_id INT,
     season INT,
     games_started INT,
-    qb_rec INT,
+    qb_rec VARCHAR(255),
     pass_att INT,
     pass_cmp_pct FLOAT,
     pass_yds INT,
@@ -26,6 +27,7 @@ CREATE TABLE player_seasonal_passing_metrics (
     pass_adj_net_yds_per_att FLOAT,
     comebacks INT,
     game_winning_drives INT,
-    PRIMARY KEY (player_id, season),
-    FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE
+    PRIMARY KEY (player_id, season, team_id),
+    FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES team(team_id) ON DELETE CASCADE
 );
