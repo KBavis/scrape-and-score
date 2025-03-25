@@ -1,7 +1,6 @@
 CREATE TABLE team_seasonal_general_metrics (
     team_id INT,
     season INT,
-    yards_gained INT,
     fumble_lost INT,
     home_wins INT,
     home_losses INT,
@@ -23,8 +22,8 @@ CREATE TABLE team_seasonal_general_metrics (
     score_pct FLOAT,
     turnover_pct FLOAT,
     start_avg FLOAT,
-    time_avg FLOAT,
-    player_per_drive FLOAT,
+    time_avg FLOAT, -- number of seconds per drive 
+    plays_per_drive FLOAT,
     yds_per_drive FLOAT,
     points_avg FLOAT,
     third_down_att INT,
