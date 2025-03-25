@@ -1245,3 +1245,78 @@ def retrieve_player_demographics_record_by_pk(season: int, player_id: int):
         )
         raise e
 
+
+def fetch_teams_home_away_wins_and_losses(season: int, team_id: int):
+    """
+    Functionality to retrieve teams home and away wins and losses for a given season and team
+    
+    Args:
+        season (int): season to retrieve data for
+        team_id (int): team ID to retrieve data for
+    
+    Returns:
+        dict: Dictionary containing:
+            wins (int): number of wins
+            losses (int): number of losses  
+            home_wins (int): number of home wins
+            home_losses (int): number of home losses
+            away_wins (int): number of away wins 
+            away_losses (int): number of away losses
+            win_pct (float): win percentage
+    """
+
+    sql = """
+        WITH record_counts AS (
+            SELECT 
+                COUNT(CASE WHEN result = 'W' THEN 1 END) as wins,
+                COUNT(CASE WHEN result = 'L' THEN 1 END) as losses,
+                COUNT(CASE WHEN home_team = true AND result = 'W' THEN 1 END) as home_wins,
+                COUNT(CASE WHEN home_team = true AND result = 'L' THEN 1 END) as home_losses,
+                COUNT(CASE WHEN home_team = false AND result = 'W' THEN 1 END) as away_wins,
+                COUNT(CASE WHEN home_team = false AND result = 'L' THEN 1 END) as away_losses,
+                CAST(COUNT(CASE WHEN result = 'W' THEN 1 END) AS FLOAT) / 
+                    NULLIF(COUNT(CASE WHEN result IN ('W', 'L') THEN 1 END), 0) as win_pct
+            FROM team_game_log
+            WHERE year = %s AND team_id = %s
+        )  
+        SELECT 
+            COALESCE(wins, 0) as wins,
+            COALESCE(losses, 0) as losses,
+            COALESCE(home_wins, 0) as home_wins,
+            COALESCE(home_losses, 0) as home_losses,
+            COALESCE(away_wins, 0) as away_wins,
+            COALESCE(away_losses, 0) as away_losses,
+            COALESCE(win_pct, 0) as win_pct
+        FROM record_counts
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, team_id))
+            row = cur.fetchone()
+
+            if row:
+                return {
+                    'wins': row[0],
+                    'losses': row[1], 
+                    'home_wins': row[2],
+                    'home_losses': row[3],
+                    'away_wins': row[4],
+                    'away_losses': row[5],
+                    'win_pct': row[6]
+                }
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching teams home and away wins and losses for season {season} and team {team_id}: {e}"
+        )
+        raise e
+
+    
+    
+    
+
