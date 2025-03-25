@@ -202,7 +202,7 @@ def fetch_player_id_by_normalized_name(normalized_name: str):
             if row:
                 player_id = row[0]
             else:
-                raise Exception(f"Unable to find player ID for {normalized_name}")
+                logging.warning(f"Unable to find player ID for {normalized_name}")
 
     except Exception as e:
         logging.error(f"An error occurred while fetching player ID for {normalized_name}: {e}")
