@@ -13,6 +13,7 @@ def preprocess():
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categoricla variable
    processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
+   processed_df.fillna(-1, inplace=True) # fill NA values with -1
 
    return processed_df
    
