@@ -1,4 +1,4 @@
-CREATE TABLE team_seasonal_receiving_rushing_metrics (
+CREATE TABLE team_seasonal_rushing_receiving_metrics (
     team_id INT,
     season INT,
 	--rushing
