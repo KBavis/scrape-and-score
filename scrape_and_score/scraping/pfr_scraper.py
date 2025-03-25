@@ -8,7 +8,8 @@ from datetime import date, datetime
 from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
-from db import fetch_data
+from db import fetch_data, insert_data
+import time
 
 
 """
@@ -209,17 +210,19 @@ def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=F
 
     return team_metrics
 
-
-def fetch_teams_seasonal_metrics(start_year: int, end_year: int):
+#TODO: UPDATE THIS LOGIC TO ACCOUNT FOR CHANGING KEYS OVER YEARS OF DATA-STAT 
+def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
     teams = props.get_config("nfl.teams")
     team_template_url = props.get_config(
         "website.pro-football-reference.urls.team-metrics"
     )
     acronym_mapping = { team["name"]: team["acronym"] for team in teams }
 
-    
+
     for year in range(start_year, end_year + 1): 
         for team in teams: 
+            # fetch team ID 
+            team_id = team_service.get_team_id_by_name(team["name"])
 
             # retrieve team page for specific year
             url = team_template_url.replace("{TEAM_ACRONYM}", acronym_mapping[team["name"]]).replace("{CURRENT_YEAR}", str(year))
@@ -227,93 +230,79 @@ def fetch_teams_seasonal_metrics(start_year: int, end_year: int):
 
             # parse data 
             soup = BeautifulSoup(raw_html, "html.parser")
-            
-            # parse relevant tables 
-            team_tables = soup.find_all("table")
-            team_table_bodies = soup.find_all("tbody")
 
             # parse 'Team Stats and Rankings' table
-            team_stats_and_rankings_table = team_table_bodies[0]
-            team_stats = parse_stats(team_stats_and_rankings_table) 
-            print("\n\nTeam Stats Metrics")
-            print(team_stats)
+            team_stats_table = soup.find("table", {"id": "team_stats"})
+            team_stats_table_body = team_stats_table.find("tbody")
+            team_stats = parse_stats(team_stats_table_body) 
 
             # parse 'Team Conversions' table
-            team_conversions_table = team_table_bodies[2]
-            team_conversions = parse_conversions(team_conversions_table)
-            print("\n\nTeam Conversion Metrics")
-            print(team_conversions)
+            team_conversions_table = soup.find("table", {"id": "team_conversions"})
+            team_conversions_table_body = team_conversions_table.find("tbody")
+            team_conversions = parse_conversions(team_conversions_table_body)
 
             # parse 'Passing' table 
-            player_passing_table = team_table_bodies[3]
-            team_passing_totals = team_tables[3].find_next("tfoot")
+            player_and_team_passing_table = soup.find("table", {"id": "passing"})
+            team_passing_totals = player_and_team_passing_table.find_next("tfoot")
+            player_passing_table = player_and_team_passing_table.find("tbody")
             player_passing_stats, team_passing_stats = parse_player_and_team_totals(player_passing_table, team_passing_totals)
-            print("\n\nTeam Passing Totals Metrics")
-            print(team_passing_stats)
-            print("\n\nPlayer Passing Totals Metrics")
-            print(player_passing_stats)
 
-            # parse 'Rushing and Receving' table 
-            player_rushing_and_receiving_table = team_table_bodies[4]
-            team_rushing_and_receiving_totals = team_tables[4].find_next("tfoot")
-            player_rushing_and_receiving_stats, team_rushing_and_receiving_stats = parse_player_and_team_totals(player_rushing_and_receiving_table, team_rushing_and_receiving_totals)
-            print("\n\nTeam Rushing and Receiving Totals Metrics")
-            print(team_rushing_and_receiving_stats)
-            print("\n\nPlayer Rushing and Receiving Totals Metrics")
-            print(player_rushing_and_receiving_stats)
+            # parse 'Rushing and Receiving' table 
+            player_and_team_rushing_and_receiving_table = soup.find("table", {"id": "rushing_and_receiving"})
+            team_rushing_and_receiving_totals = player_and_team_rushing_and_receiving_table.find_next("tfoot")
+            player_rushing_and_receiving_table = player_and_team_rushing_and_receiving_table.find("tbody")
+            rushing_receiving_player_stats, rushing_receiving_team_stats = parse_player_and_team_totals(player_rushing_and_receiving_table, team_rushing_and_receiving_totals)
 
-            # parse 'Kicking' table
+            # parse 'Kicking' table (infomration stored in a comment)
             kicking_div = soup.find('div', {'id': 'all_kicking'})
             comment = kicking_div.find(string=lambda text: isinstance(text, Comment))
-            
-            if comment:  # PFR stores this table information in a comment, so we must work around 
+            if comment:   
                 table_soup = BeautifulSoup(comment, 'html.parser')
                 tfoot = table_soup.find('tfoot')
                 team_kicking_stats = parse_team_totals(tfoot)
-                print("\n\nTeam Kicking Stats Totals Metrics")
-                print(team_kicking_stats)
             
-            # parse 'Punting' table 
+            # parse 'Punting' table (infomration stored in a comment)
             punting_div = soup.find('div', {'id': 'all_punting'})
             comment = punting_div.find(string=lambda text: isinstance(text, Comment))
-
             if comment: 
                 table_soup = BeautifulSoup(comment, 'html.parser')
                 tfoot = table_soup.find('tfoot')
                 team_punting_stats = parse_team_totals(tfoot)
-                print("\n\nTeam Punting Stats Totals Metrics")
-                print(team_punting_stats)
             
 
             # parse 'Defenesne & Fumbles' table 
             defensve_div = soup.find('div', {'id': 'all_defense'})
             tfoot = defensve_div.find('tfoot')
             team_defensive_stats = parse_team_totals(tfoot)
-            print("\n\nTeam Defensive Stats Totals Metrics")
-            print(team_defensive_stats)
 
             # parse 'Scoring Summary' 
             scoring_summary_div =  soup.find('div', {'id': 'all_scoring'})
             comment = scoring_summary_div.find(string=lambda text: isinstance(text, Comment))
-
             if comment: 
                 table_soup = BeautifulSoup(comment, 'html.parser')
                 player_tbody = table_soup.find('tbody')
                 team_tfoot = table_soup.find('tfoot')
-
                 player_scoring_summary, team_scoring_summary = parse_player_and_team_totals(player_tbody, team_tfoot)
-                print('\n\nTeam Scoring Summary')
-                print(team_scoring_summary)
-                print('\n\nPlayer Scoring Summary')
-                print(player_scoring_summary)
+
+            #TODO: Consider if we want to acocunt for Touchdown Log & Opponent Touchdown Log in future
+
+            # insert team records 
+            insert_data.format_and_insert_team_seasonal_general_metrics(team_stats, team_conversions, team_id, year)
+            insert_data.insert_team_seasonal_passing_metrics(team_passing_stats, team_id, year)
+            insert_data.insert_team_seasonal_rushing_and_receiving_metrics(rushing_receiving_team_stats, team_id, year)
+            insert_data.insert_team_seasonal_kicking_and_punting_metrics(team_punting_stats, team_kicking_stats, team_id, year)
+            insert_data.insert_team_seasonal_defense_and_fumbles_metrics(team_stats, team_defensive_stats, team_conversions, team_id, year)
+            insert_data.insert_team_seasonal_scoring_metrics(team_scoring_summary, team_id, year)
+            insert_data.insert_team_seasonal_rankings_metrics(team_stats, team_conversions, team_id, year)
+
+            # generate player records 
+            insert_data.insert_player_seasonal_passing_metrics(player_passing_stats, year, team_id)
+            insert_data.insert_player_seasonal_rushing_and_receiving_metrics(rushing_receiving_player_stats, year, team_id)
+            insert_data.insert_player_seasonal_scoring_metrics(player_scoring_summary, year, team_id)
 
 
-            # TODO: update DB Schema to account for additional metrics, generate appropaite records to persist into our database, account for previously inserted records requiring updates in logic
-            #TODO: Consider if we want to acocunt for Touchdown Log & Opponetn Touchdown Log in future
 
-            # persist record for team in db 
-            break
-        break
+
 
 
 def parse_team_totals(team_totals: BeautifulSoup) -> dict:
@@ -475,6 +464,11 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
 
         for td in tr: 
             stat = td.get("data-stat")
+
+            # skip row names
+            if stat == 'player':
+                continue
+            
             key = prefix + stat
             value = td.get_text()
             
