@@ -144,6 +144,8 @@ def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int, year):
             row["rush_att"],
             row["rush_yds"],
             row["rush_td"],
+            row["snap_pct"],
+            row["off_snps"]
         )
         tuples.append(game_log)
 
@@ -188,6 +190,8 @@ def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
             row["rec"],
             row["rec_yds"],
             row["rec_td"],
+            row["snap_pct"],
+            row["off_snps"]
         )
         tuples.append(game_log)
 
@@ -228,6 +232,7 @@ def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
             row["rec_yds"],
             row["rec_td"],
             row["snap_pct"],
+            row["off_snps"]
         )
         tuples.append(game_log)
 
