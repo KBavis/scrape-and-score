@@ -92,6 +92,7 @@ nfl:
       - name: Arizona Cardinals
         acronym: crd
         pfr_acronym: ARI
+        our_lads_acronym: ARZ
       - name: Atlanta Falcons
         acronym: atl
         pfr_acronym: ATL
@@ -126,6 +127,7 @@ nfl:
         acronym: gnb
         pfr_acronym: GNB
         rotowire: GB
+        our_lads_acronym: GB
       - name: Houston Texans
         acronym: htx
         pfr_acronym: HOU
@@ -139,16 +141,21 @@ nfl:
         acronym: kan
         pfr_acronym: KAN
         rotowire: KC
+        our_lads_acronym: KC
       - name: Las Vegas Raiders
         acronym: rai
         pfr_acronym: LVR
         rotowire: LV
+        alternate: OAK
+        our_lads_acronym: LV
       - name: Los Angeles Chargers
         acronym: sdg
         pfr_acronym: LAC
+        alternate: SD
       - name: Los Angeles Rams
         acronym: ram
         pfr_acronym: LAR
+        alternate: STL
       - name: Miami Dolphins
         acronym: mia
         pfr_acronym: MIA
@@ -159,10 +166,12 @@ nfl:
         acronym: nwe
         pfr_acronym: NWE
         rotowire: NE
+        our_lads_acronym: NE
       - name: New Orleans Saints
         acronym: nor
         pfr_acronym: NOR
         rotowire: "NO"
+        our_lads_acronym: "NO"
       - name: New York Giants
         acronym: nyg
         pfr_acronym: NYG
@@ -179,6 +188,7 @@ nfl:
         acronym: sfo
         pfr_acronym: SFO
         rotowire: SF
+        our_lads_acronym: SF
       - name: Seattle Seahawks
         acronym: sea
         pfr_acronym: SEA
@@ -186,6 +196,7 @@ nfl:
         acronym: tam
         pfr_acronym: TAM
         rotowire: TB
+        our_lads_acronym: TB
       - name: Tennessee Titans
         acronym: oti
         pfr_acronym: TEN

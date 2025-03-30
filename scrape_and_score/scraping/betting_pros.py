@@ -16,12 +16,16 @@ Returns:
     None
 """
 
-
 def fetch_historical_odds(season: int):
-    max_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(season)
+    max_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(season) 
     markets = props.get_config("website.betting-pros.market-ids")
 
-    players = fetch_data.fetch_players_active_in_specified_year(season)
+    #TODO: Only remove 253 market ID in the case that the game has already been played  or else it will throw exception when making request (we can add when game is upcoming)
+    if markets.endswith(":253"):
+        markets = markets[:-4] # remove last 4 occurence 
+
+    players = fetch_data.fetch_players_active_in_specified_year(season) 
+    
 
     # iterate through each potential player
     #TODO: account for najee harris slug being 'najee-harris-rb'
@@ -47,10 +51,13 @@ def fetch_historical_odds(season: int):
                 season_odds.append({"week": week, "week_odds": betting_odds})
         
         player_props.update({"season_odds": season_odds})    
-        
-        # insert season long props into db
-        logging.info(f'Attempting to insert player props for player {player_name} for the {season} season...')  
-        insert_data.insert_player_props(player_props, season)
+
+        # insert season long player props into db 
+        if season_odds:
+            logging.info(f'Attempting to insert player props for player {player_name} for the {season} season...')  
+            insert_data.insert_player_props(player_props, season)
+        else:
+            logging.warn(f"No player props found for player {player_name} and season {season}; skipping insertion")
 
 
 """
@@ -98,7 +105,21 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
         # account for additional odds available 
         odds.extend(page_odds)
     
-    return odds
+
+    # remove duplicates by keeping the one with the highest cost
+    seen_labels = {}
+    for odd in odds:
+        label = odd['label']
+        if label in seen_labels:
+            # if the label exists, compare costs and keep the higher cost
+            if seen_labels[label]['cost'] < odd['cost']:
+                seen_labels[label] = odd
+        else:
+            seen_labels[label] = odd
+
+    # return the filtered list of odds with duplicates removed
+    filtered_odds = list(seen_labels.values())
+    return filtered_odds
 
 
 """
@@ -178,8 +199,12 @@ def get_odds(data: dict, market_ids: dict):
         selections = offer['selections']
         for selection in selections:
             
-            # update w/ over/under label if needed
-            if selection['label'] == 'Over' or selection['label'] == 'Under': 
+            # skip under lines, only account for overs TODO: Remove me if needed 
+            if selection['label'] == 'Under':
+                continue
+            
+            # TODO: Remove me (no logner account for (over) / (under) as all lines used will simply be the over)
+            if selection['label'] == 'Over': 
                 full_prop_name = f"{prop_name} ({selection['label']})"
             else:
                 full_prop_name = prop_name
@@ -201,7 +226,6 @@ def get_odds(data: dict, market_ids: dict):
                         odds.append({"label": full_prop_name, "cost": line['cost'], "line": line['line']})
                         best_found = True
                         break
-                    
     return odds
 
 
@@ -219,7 +243,16 @@ Returns:
 def get_data(url: str):
     time.sleep(.25) #TODO: Make this a config
     headers = {"x-api-key": props.get_config("website.betting-pros.api-key")}
-    jsonData = requests.get(url, headers=headers).json()
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+        jsonData = response.json()
+    except requests.RequestException as e:
+        print(f"Error while fetching JSON content from the following URL {url} : {e}")
+        return None
+    
     return jsonData
 
 

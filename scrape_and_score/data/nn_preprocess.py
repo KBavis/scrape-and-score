@@ -10,6 +10,7 @@ def preprocess():
    parsed_df = parse_player_props(df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categoricla variable
+   #TODO: Drop the week column as well since this is NOT a independent variable
    processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
 
    return processed_df
@@ -36,6 +37,7 @@ def parse_player_props(df: pd.DataFrame):
       for prop in week_props:
          label = prop["label"].lower().replace(" ", "_").replace("/", "_")
          
+         #TODO: Remove this logic as there no longer will be any (over) or (under) labels
          if "(under)" in label:
             break # skip under lines (only account for over for simplicity)
          else :
@@ -61,4 +63,4 @@ def fetch_data():
    """
       Retrieve indepdenent variables 
    """
-   return fetch.fetch_independent_and_dependent_variables_for_mult_lin_regression()
+   return fetch.fetch_independent_and_dependent_variables()

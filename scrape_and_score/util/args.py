@@ -20,11 +20,19 @@ def parse():
     betting_group = parser.add_mutually_exclusive_group()
     model_group = parser.add_mutually_exclusive_group()
 
+    # establish independent args 
     parser.add_argument(
         "--train",
         action="store_true",
         default=False,
         help="Re-train our neural network model."
+    )
+    parser.add_argument(
+        "--collect_data",
+        nargs=2, 
+        metavar=("START_YEAR", "END_YEAR"),
+        type=int,
+        help="Retrieve historical data for players & teams from START_YEAR to END_YEAR."
     )
 
     # establish args to determine what information is required to be scraped
@@ -132,6 +140,11 @@ def parse():
     if args.train:
         print(
             "--train flag passed: Re-training our neural network model."
+        )
+    if args.collect_data:
+        start_year, end_year = args.collect_data
+        print(
+            f"--collect_data flag passed: Collecting data from {start_year} to {end_year}"
         )
 
     return args

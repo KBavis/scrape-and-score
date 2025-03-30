@@ -23,9 +23,7 @@ def fetch_all_teams():
                 teams.append(
                     {
                         "team_id": row[0],
-                        "name": row[1],
-                        "offense_rank": row[2],
-                        "defense_rank": row[3],
+                        "name": row[1]
                     }
                 )
 
@@ -61,9 +59,7 @@ def fetch_team_by_name(team_name: int):
             if row:
                 team = {
                     "team_id": row[0],
-                    "name": row[1],
-                    "offense_rank": row[2],
-                    "defense_rank": row[3],
+                    "name": row[1]
                 }
 
     except Exception as e:
@@ -98,9 +94,8 @@ def fetch_all_players():
                 players.append(
                     {
                         "player_id": row[0],
-                        "team_id": row[1],
-                        "player_name": row[2],
-                        "position": row[3],
+                        "player_name": row[1],
+                        "position": row[2],
                     }
                 )
 
@@ -136,9 +131,8 @@ def fetch_player_by_name(player_name: str):
             if row:
                 player = {
                     "player_id": row[0],
-                    "team_id": row[1],
-                    "name": row[2],
-                    "position": row[3],
+                    "name": row[1],
+                    "position": row[2],
                 }
 
     except Exception as e:
@@ -505,7 +499,7 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year: int):
 
 """
 Functionality to retrieve the needed dependent and independent variables needed 
-to create our multiple linear regression based model 
+to create our predicition models 
 
 TODO (FFM-145): Include external factors such as weather, vegas projections, players depth chart position 
 
@@ -518,7 +512,7 @@ Returns:
 """
 
 
-def fetch_independent_and_dependent_variables_for_mult_lin_regression():
+def fetch_independent_and_dependent_variables():
     sql = """
     WITH PlayerProps AS (
         SELECT 
@@ -541,33 +535,44 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
          p.player_id,
          p.position,
          pgl.fantasy_points,
-         t.off_rush_rank,
-         t.off_pass_rank,
-         td.def_rush_rank,
-         td.def_pass_rank,
+		 pam.fantasy_points AS avg_wkly_fantasy_points,
+		 pgl.week,
+         t_tr.off_rush_rank,
+         t_tr.off_pass_rank,
+         t_td.def_rush_rank,
+         t_td.def_pass_rank,
          tbo.game_over_under,
          tbo.spread,
          CASE
-            WHEN tbo.favorite_team_id = t.team_id THEN 1
-			ELSE 0
-         END AS is_favorited,
+           WHEN tbo.favorite_team_id = t.team_id THEN 1
+		 ELSE 0
+           END AS is_favorited,
 		 pp.props
       FROM
          player_game_log pgl
+	  JOIN 
+	  	 player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id
       JOIN 
          player p ON p.player_id = pgl.player_id 
       JOIN 
-         team t ON p.team_id = t.team_id
+         player_teams pt ON p.player_id = pt.player_id AND pgl.week >= pt.strt_wk AND pgl.week <= pt.end_wk AND pt.season = pgl.year 
+	  JOIN 
+	  	 team t ON pt.team_id = t.team_id
+	  JOIN 
+	  	 team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season
       JOIN 
          team td ON pgl.opp = td.team_id
+	  JOIN
+	  	 team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season
       JOIN
 	  	 PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season
 	  JOIN 
          team_betting_odds tbo 
-      ON 
-				(tbo.home_team_id = t.team_id OR tbo.home_team_id = td.team_id)
-               AND 
-				(tbo.away_team_id = t.team_id OR tbo.away_team_id = td.team_id);	
+      ON (
+        (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week) 
+        	OR 
+        (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
+     )
    """
 
     df = None
@@ -591,8 +596,7 @@ def fetch_independent_and_dependent_variables_for_mult_lin_regression():
 
 """
 Retrieve relevant inputs for a player in order to make prediction
-
-TODO: Update this to account for player props 
+TODO: FIX ME SO THAT OFFENSIVE/DEFENSIVE RANKS AREN'T THE SAME 
 
 Args:
    week (int): the week corresponding to the matchup we are predicitng for
@@ -621,7 +625,7 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         FROM 
             player_betting_odds pbo
         WHERE
-            pbo.player_name = %s
+            pbo.player_name = '%s'
         AND
             pbo.week = %s
         AND 
@@ -632,10 +636,10 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     SELECT
         p.position,
         ROUND(CAST(player_avg.avg_fantasy_points AS NUMERIC), 2) AS avg_fantasy_points,
-        t.off_rush_rank,
-        t.off_pass_rank,
-        df.def_rush_rank,
-        df.def_pass_rank,
+        t_tr.off_rush_rank,
+        t_tr.off_pass_rank,
+        t_td.def_rush_rank,
+        t_td.def_pass_rank,
         tbo.game_over_under,
         tbo.spread,
         CASE 
@@ -649,8 +653,12 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
         player p ON p.player_id = pgl.player_id 
     JOIN 
         team t ON p.team_id = t.team_id
+	JOIN 
+	  	team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season
     JOIN 
-        team df ON df.team_id = pgl.opp 
+        team df ON pgl.opp = df.team_id
+	JOIN
+	  	team_ranks t_td ON df.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season
     JOIN
         team_betting_odds tbo 
     ON ((tbo.home_team_id = t.team_id OR tbo.away_team_id = t.team_id) 
@@ -660,8 +668,8 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
             pgl.player_id, 
             AVG(pgl.fantasy_points) AS avg_fantasy_points
             FROM player_game_log pgl
-            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = %s)
-            AND pgl.year = %s 
+            WHERE pgl.player_id = (SELECT player_id FROM player WHERE name = '%s')
+            AND pgl.year = %s
             GROUP BY pgl.player_id
     ) player_avg 
     ON 
@@ -669,11 +677,12 @@ def fetch_inputs_for_prediction(week: int, season: int, player_name: str):
     JOIN PlayerProps pp 
         ON pp.player_name = p.name AND pp.week = tbo.week AND pp.season = tbo.season
     WHERE 
-        p.name = %s AND
+        p.name = '%s' AND
         tbo.week = %s AND tbo.season = %s
     GROUP BY 
         p.position, t.off_rush_rank, t.off_pass_rank, df.def_rush_rank, df.def_pass_rank, 
-        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props;
+        tbo.game_over_under, tbo.spread, tbo.favorite_team_id, player_avg.avg_fantasy_points, is_favorited, pp.props,
+		t_tr.off_rush_rank, t_tr.off_pass_rank, t_td.def_rush_rank, t_td.def_pass_rank;
     """
 
     df = None
@@ -745,7 +754,102 @@ def fetch_players_active_in_specified_year(year):
 
     return names 
     
+
+def fetch_players_active_in_one_of_specified_seasons(start_year: int, end_year: int):
+    """
+    Retrieve players who were on an active roster in at least one of the specified seasons.
+
+    Args:
+        start_year (int): The starting season year.
+        end_year (int): The ending season year.
+
+    Returns:
+        list: List of distinct players.
+    """
     
+    sql = """
+        SELECT DISTINCT
+            p.player_id,
+            p.name,
+            p.position
+        FROM 
+            player p 
+        JOIN 
+            player_teams pt 
+        ON
+            p.player_id = pt.player_id 
+        WHERE 
+            pt.season BETWEEN %s AND %s
+    """
+    
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (start_year, end_year))
+            rows = cur.fetchall()
+            
+            for row in rows:
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2]})
+    
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players active between seasons {start_year} and {end_year}: {e}"
+        )
+        raise e
+
+    return players
+
+
+def fetch_players_on_a_roster_in_specific_year(year: int):
+    """
+    Retrieve players on an active roster in specific year 
+
+    Args:
+        year (int): season to account for 
+    
+    Returns:
+        list: list of disitinct players 
+    """
+    
+    sql = """ 
+        SELECT DISTINCT
+            p.player_id,
+            p.name,
+            p.position
+        FROM 
+            player p 
+        JOIN 
+            player_teams pt 
+        ON
+            p.player_id = pt.player_id 
+        WHERE 
+            pt.season = %s
+    """
+    
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2]})
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players on active roster in season {year}: {e}"
+        )
+        raise e
+
+    return players
 
 
 """
@@ -760,13 +864,13 @@ Return:
 
 
 def fetch_max_week_persisted_in_team_betting_odds_table(year: int):
-    sql = "SELECT week FROM team_betting_odds WHERE season = %s AND week = (SELECT MAX(week) FROM team_betting_odds)"
+    sql = "SELECT week FROM team_betting_odds WHERE season = %s AND week = (SELECT MAX(week) FROM team_betting_odds WHERE season = %s)"
 
     try:
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (year,))
+            cur.execute(sql, (year,year))
             row = cur.fetchone()
 
             if row:
@@ -830,5 +934,143 @@ def validate_week_and_corresponding_player_entry_exists(
     except Exception as e:
         logging.error(
             f"An error occurred while fetching the latest week persisted in team_betting_odds for year {year}: {e}"
+        )
+        raise e
+
+
+
+def check_bye_week_rankings_exists(team_id: int, season: int): 
+    """
+    Functionality to check if the bye week rankings exists for a given team in a given season 
+
+    Args:
+        team_id (int): team to check for 
+        season (int): season to check for 
+    
+    Returns: 
+        bye_week (int): the bye week for given team
+    """
+
+    sql = "SELECT week FROM team_ranks WHERE team_id = %s AND season = %s AND off_rush_rank = -1 AND off_pass_rank = -1 AND def_pass_rank = -1 AND def_rush_rank = -1" 
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (team_id, season))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while checking if the bye week ranking exists for the team {team_id} in the corresponding season: {season}: {e}"
+        )
+        raise e
+
+
+
+def fetch_max_week_rankings_calculated_for_season(season: int):
+    """
+    Retrieve the max week persisted in the team_ranks table for the specified season 
+
+    Args:
+        season (int): season to retrieve max week for 
+    
+    Returns: 
+        max (int): maximum week with rank associated with it for given season
+    """
+
+    sql = "SELECT MAX(week) FROM team_ranks WHERE season = %s AND off_rush_rank != -1"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season,))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving hte max week with rankings persisted for the corresponding season: {season}: {e}"
+        )
+        raise e
+    
+
+def fetch_player_teams_record_by_pk(record: dict): 
+    """
+    Retrieve player_teams record by PK 
+
+    Args:
+        record (dict): mapping of PK's 
+    
+    Returns:
+        record (dict): record in DB 
+    """
+
+    sql = "SELECT * FROM player_teams WHERE player_id = %s AND team_id = %s AND season = %s AND strt_wk = %s AND end_wk = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (record["player_id"], record["team_id"], record['season'], record["strt_wk"], record["end_wk"]))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving hte max week with rankings persisted for the corresponding season: {season}: {e}"
+        )
+        raise e
+
+
+def fetch_player_fantasy_points(player_id: int, season: int, end_week: int): 
+    """
+    Functionality to retrieve players fantasy points from beginning of season to specific week
+
+    Args:
+        player_id (int): player ID to fetch fantasy points for 
+        season (int): season corresponding to fantasy points 
+        end_week (int): week to retrieve points up to 
+    
+    Return: 
+        fantasy_ponts (list): list of fantasy points 
+    """
+
+    sql = " \
+        SELECT week, fantasy_points \
+        FROM player_game_log WHERE year = %s AND week >= 1 AND week <= %s AND player_id = %s \
+        ORDER BY week \
+    "
+
+    try:
+        connection = get_connection()
+        
+        fantasy_points = [] 
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, end_week, player_id))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                fantasy_points.append({"week": row[0], "fantasy_points": row[1]})
+            
+            return fantasy_points
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching fantasy points corresponding season {season} and end week {end_week}: {e}"
         )
         raise e

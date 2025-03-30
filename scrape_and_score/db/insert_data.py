@@ -28,30 +28,26 @@ Functionality to persist a single player
 
 Args: 
    player (dict): player to insert into our db 
-   team_id (int): ID of the team corresponding to the player
 """
 
 
 def insert_player(player: dict):
     query = """
-      INSERT INTO player (team_id, name, position) 
-      VALUES (%s, %s, %s)
+      INSERT INTO player (name, position) 
+      VALUES (%s, %s)
    """
 
     try:
-        # ensure that team_id and player fields are correctly passed into the query
-        player_name = player["player_name"]
+        player_name = player["name"]
         player_position = player["position"]
-        team_id = player["team_id"]
 
-        # fetch connection to the DB
         connection = get_connection()
 
         with connection.cursor() as cur:
             cur.execute(
-                query, (team_id, player_name, player_position)
-            )  # Pass parameters as a tuple
-
+                query, (player_name, player_position)
+            )  
+            
             # Commit the transaction to persist data
             connection.commit()
             logging.info(
@@ -63,6 +59,7 @@ def insert_player(player: dict):
             f"An exception occurred while inserting the player {player}", exc_info=True
         )
         raise e
+    
 
 
 """
@@ -309,29 +306,31 @@ def add_fantasy_points(fantasy_points: list):
 
 
 """
-Update 'team' record with newly determined rankings 
+Insert record into 'team_ranks' with newly determined rankings 
 
 Args:
    rankings (list): list of rankings to persist 
-   col (str): column in 'team' to update based on rankings
 """
 
 
-def update_team_rankings(rankings: list, col: str):
-    sql = f"UPDATE team SET {col} = %s WHERE team_id = %s"
+def insert_team_rankings(rankings: list):
+    sql = f"""
+            INSERT INTO team_ranks (off_rush_rank, off_pass_rank, def_pass_rank, def_rush_rank, week, season, team_id) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s) 
+        """
 
     try:
         connection = get_connection()
 
         params = [
-            (rank["rank"], rank["team_id"]) for rank in rankings
+            (rank["off_rush_rank"], rank["off_pass_rank"], rank["def_pass_rank"], rank["def_rush_rank"], rank['week'], rank['season'], rank["team_id"]) for rank in rankings
         ]  # create tuple needed to update records
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
             logging.info(
-                f"Successfully updated {len(rankings)} {col} rankings in the database"
+                f"Successfully inserted {len(rankings)} rankings in the database"
             )
 
     except Exception as e:
@@ -529,6 +528,111 @@ def update_team_betting_odds_records_with_outcomes(update_records: list):
     except Exception as e:
         logging.error(
             f"An exception occurred while updating the following team_betting_odds: {update_records}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+def insert_bye_week_rankings(team_bye_weeks: list, season: int, ): 
+    sql = f"""
+            INSERT INTO team_ranks (team_id, week, season, off_rush_rank, off_pass_rank, def_rush_rank, def_pass_rank)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["team_id"],
+                record["week"],
+                season,
+                -1, 
+                -1,
+                -1,
+                -1
+            )
+            for record in team_bye_weeks 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(team_bye_weeks)} team bye week rankings into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following team bye week rankings into team_ranks: {team_bye_weeks}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+def insert_player_teams_records(player_teams_records: list): 
+    sql = f"""
+            INSERT INTO player_teams (player_id, team_id, season, strt_wk, end_wk)
+            VALUES (%s, %s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["player_id"],
+                record["team_id"],
+                record["season"],
+                record["strt_wk"],
+                record["end_wk"]
+            )
+            for record in player_teams_records 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(player_teams_records)} player_teams records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_teams records into our Databse: {player_teams_records}",
+            exc_info=True,
+        )
+        raise e
+
+
+def insert_player_weekly_aggregate_metrics(player_agg_metrics: list): 
+    sql = f"""
+            INSERT INTO player_weekly_agg_metrics (player_id, week, season, avg_fantasy_points)
+            VALUES (%s, %s, %s, %s)
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["player_id"],
+                record["week"],
+                record["season"],
+                record["fantasy_points"]
+            )
+            for record in player_agg_metrics 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(player_agg_metrics)} player_weekly_agg_metrics records into the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_weekly_agg_metrics records into our db: {player_agg_metrics}",
             exc_info=True,
         )
         raise e

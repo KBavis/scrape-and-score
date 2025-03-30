@@ -20,9 +20,9 @@ Returns:
 """
 
 
-def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
+def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, year: int = None):
 
-    remove_previously_inserted_games(player_metrics, depth_charts)
+    remove_previously_inserted_games(player_metrics, depth_charts, year)
 
     if len(player_metrics) == 0:
         logging.info("No new player game logs to persist; skipping insertion")
@@ -48,13 +48,13 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list):
 
         # iterate through game logs, generate tuples, and insert into db
         if position == "QB":
-            tuples = get_qb_game_log_tuples(df, player_id)
+            tuples = get_qb_game_log_tuples(df, player_id, year)
             insert_data.insert_qb_player_game_logs(tuples)
         elif position == "RB":
-            tuples = get_rb_game_log_tuples(df, player_id)
+            tuples = get_rb_game_log_tuples(df, player_id, year)
             insert_data.insert_rb_player_game_logs(tuples)
         elif position == "TE" or position == "WR":
-            tuples = get_wr_or_te_game_log_tuples(df, player_id)
+            tuples = get_wr_or_te_game_log_tuples(df, player_id, year)
             insert_data.insert_wr_or_te_player_game_logs(tuples)
         else:
             raise Exception(
@@ -110,20 +110,23 @@ Utility function to fetch game log tuples to insert into our database for a QB
 
 Args: 
    df (pd.DataFrame): data frame to extract into tuples
+   player_id (int): player ID to acount for 
+   year (int): season the game log pertains to 
 
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
 
 
-def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int):
+def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int, year):
     tuples = []
     for _, row in df.iterrows():
+
         game_log = (
             player_id,
             row["week"],
             service_util.extract_day_from_date(row["date"]),
-            service_util.extract_year_from_date(row["date"]),
+            year,
             service_util.extract_home_team_from_game_location(row["game_location"]),
             team_service.get_team_id_by_name(
                 service_util.get_team_name_by_pfr_acronym(row["opp"])
@@ -152,20 +155,25 @@ Utility function to fetch game log tuples to insert into our database for a RB
 
 Args: 
    df (pd.DataFrame): data frame to extract into tuples
+   player_id (int): player ID to acount for 
+   year (int): season the game log pertains to 
+   team_name_mapping (dict): look up table for team names that have changed over years
+
 
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
 
 
-def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int):
+def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
     tuples = []
     for _, row in df.iterrows():
+
         game_log = (
             player_id,
             row["week"],
             service_util.extract_day_from_date(row["date"]),
-            service_util.extract_year_from_date(row["date"]),
+            year,
             service_util.extract_home_team_from_game_location(row["game_location"]),
             team_service.get_team_id_by_name(
                 service_util.get_team_name_by_pfr_acronym(row["opp"])
@@ -191,20 +199,23 @@ Utility function to fetch game log tuples to insert into our database for a WR o
 
 Args: 
    df (pd.DataFrame): data frame to extract into tuples
+   player_id (int): player ID to acount for 
+   year (int): season the game log pertains to 
 
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
 
 
-def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int):
+def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
     tuples = []
     for _, row in df.iterrows():
+
         game_log = (
             player_id,
             row["week"],
             service_util.extract_day_from_date(row["date"]),
-            service_util.extract_year_from_date(row["date"]),
+            year,
             service_util.extract_home_team_from_game_location(row["game_location"]),
             team_service.get_team_id_by_name(
                 service_util.get_team_name_by_pfr_acronym(row["opp"])
@@ -249,13 +260,14 @@ Utility function to remove games that have already been persisted
 Args:
    player_metrics (list): list of dictionaries containing player's name, position, and game_logs
    depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
+   year (int): season corresponding to game logs
 
 Returns:
    None
 """
 
 
-def remove_previously_inserted_games(player_metrics, depth_charts):
+def remove_previously_inserted_games(player_metrics, depth_charts, year):
     player_metric_pks = []
 
     # generate pks for each team game log
@@ -266,7 +278,7 @@ def remove_previously_inserted_games(player_metrics, depth_charts):
                 {
                     "player_id": get_player_id_by_name(player["player"], depth_charts),
                     "week": str(df.iloc[0]["week"]),
-                    "year": service_util.extract_year_from_date(df.iloc[0]["date"]),
+                    "year": year,
                 }
             )
 
@@ -297,18 +309,30 @@ TODO (FFM-128): Account for 2-Pt Conversions
 
 Args:
    recent_game (bool): flag to indicate if we should only be accounting for most recent game or all games 
-   year (int): year that game log occured 
+   start_year (int): either the start year of a range, or the sole year to account for 
+   end_year (int): the end year of the range to calculate fantasy points for 
 
 Returns:
    None
 """
 
 
-def calculate_fantasy_points(recent_game: bool, year: int):
+def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int = None):
+    # determine if this is for recent week, single year, or a range of years
     if recent_game:
-        player_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(year)
+        logging.info(f"Recent game flag passed; calculating fantasy points for most recent week in the year {start_year}")
+        player_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(start_year)
     else:
-        player_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(year)
+        if end_year == None:
+            logging.info(f"Calculating fantasy points for the year {start_year}")
+            player_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(start_year)
+        else:
+            logging.info(f"Calculating fantasy points from the year {start_year} to the year {end_year}")
+            player_game_logs = []
+            for curr_year in range(start_year, end_year + 1):
+                curr_year_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(curr_year)
+                player_game_logs.extend(curr_year_game_logs)
+    
     logging.info(f"Successfully fetched {len(player_game_logs)} player game logs")
 
     (
@@ -411,6 +435,52 @@ def insert_fantasy_points(points: list):
 
     logging.info(f"Attempting to insert players calculated fantasy points into our DB")
     insert_data.add_fantasy_points(points)
+
+
+"""
+Functionality to calculate and persist the weekly fantasy point averages for players. The average calculated 
+will only take into account the current season AND the games that have been played in this current season 
+based on the current week 
+
+Args:
+    start_week (int): week to start calculating averages for 
+    end_week (int): week to stop calcualting averages for 
+    season (int): season to calculate averages for 
+
+Returns:
+    None 
+"""
+def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, season: int): 
+    # retrieve active players in specified season 
+    players = fetch_data.fetch_players_active_in_specified_year(season)
+
+    player_agg_metrics = []
+
+    # calculate weekly fantasy point averages
+    for player in players: 
+        player_id = player['id']
+
+        # fetch aggregate fantasy points for each week
+        for curr_week in range(start_week, end_week + 1): 
+            logging.info(f"Calculating weekly fantasy point averages from week 1 to week {curr_week} in the {season} season for player {player['name']}.")
+
+            weekly_fantasy_points = fetch_data.fetch_player_fantasy_points(player_id, season, curr_week)
+            if not any(record["week"] == curr_week for record in weekly_fantasy_points):
+                logging.info(f"Skipping week {curr_week} for player {player['name']} as no data is available.")
+                continue
+            
+            weeks_active = len(weekly_fantasy_points)   
+            total_fpts = sum(record["fantasy_points"] for record in weekly_fantasy_points)
+
+            avg_fpts = round(float(total_fpts) / weeks_active, 2) if weeks_active > 0 else 0.0
+
+            player_agg_metrics.append({"player_id": player_id, "week": curr_week, "season": season, "fantasy_points": avg_fpts})
+    
+    
+    # insert aggregate fantasy point avgs per week for specified season 
+    logging.info(f"Attempting to insert aggregate fantasy points for the {season} NFL season.")
+    insert_data.insert_player_weekly_aggregate_metrics(player_agg_metrics)
+
 
 
 """

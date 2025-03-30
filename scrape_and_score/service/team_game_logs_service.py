@@ -16,11 +16,11 @@ Returns:
 """
 
 
-def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list):
+def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list, year: int = None):
 
     curr_year = props.get_config("nfl.current-year")  # fetch current year
 
-    remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
+    remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids, year)
 
     if len(team_metrics) == 0:
         logging.info("No new team game logs to persist; skipping insertion")
@@ -41,7 +41,7 @@ def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list):
         team_id = get_team_id_by_name(team_name, teams_and_ids)
 
         # fetch team game logs
-        tuples = get_team_log_tuples(df, team_id, curr_year)
+        tuples = get_team_log_tuples(df, team_id, year)
 
         # insert team game logs into db
         insert_data.insert_team_game_logs(tuples)
@@ -58,20 +58,29 @@ Args:
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
-
-
 def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
     tuples = []
+
+    # account for differing team names over the years
+    opponent_map = {
+        "Oakland Raiders": "Las Vegas Raiders",
+        "Washington Redskins": "Washington Commanders",
+        "Washington Football Team": "Washington Commanders",
+        "San Diego Chargers": "Los Angeles Chargers"
+    }
+
     for _, row in df.iterrows():
+        opponent = opponent_map.get(row["opp"], row["opp"])
+
         game_log = (
             team_id,
             row["week"],
             row["day"],
-            service_util.get_game_log_year(row["week"], year),
+            year,
             row["rest_days"],
             row["home_team"],
             row["distance_traveled"],
-            team_service.get_team_id_by_name(row["opp"]),
+            team_service.get_team_id_by_name(opponent),
             row["result"],
             row["points_for"],
             row["points_allowed"],
@@ -85,6 +94,7 @@ def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
         tuples.append(game_log)
 
     return tuples
+
 
 
 """
@@ -148,15 +158,15 @@ Utility function to determine if a teams game log has previously been inserted
 
 Args: 
    team_metrics (list): list of dictionaries containing team's name & game logs 
-   curr_year (int): current year
    teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
+   year (int): season pertaining to game log
    
 Returns:
    None
 """
 
 
-def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids):
+def remove_previously_inserted_game_logs(team_metrics,teams_and_ids,year):
     team_metric_pks = []
 
     # generate pks for each team game log
@@ -168,7 +178,7 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
                 {
                     "team_id": get_team_id_by_name(team["team_name"], teams_and_ids),
                     "week": week,
-                    "year": service_util.get_game_log_year(week, curr_year),
+                    "year": year
                 }
             )
 
@@ -196,16 +206,16 @@ def remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids)
 Functionality to calculate rankings (offense & defense) for a team
 
 Args:
-   curr_year (int): year to take into account when fetching rankings 
+   year (int): year to take into account when fetching rankings 
 
 Returns 
    None 
 """
 
 
-def calculate_all_teams_rankings(curr_year: int):
+def calculate_all_teams_rankings(year: int):
     logging.info(
-        f"Attemtping to calculate teams off/def rankings based on metrics for {curr_year} season"
+        f"Attemtping to calculate teams off/def rankings based on metrics for {year} season"
     )
 
     # fetch all teams
@@ -213,33 +223,204 @@ def calculate_all_teams_rankings(curr_year: int):
 
     # accumulate relevant metrics (off/def) for given season for each team
     logging.info(
-        f"Aggergating relevant offensive and defensive metrics for the following season: {curr_year}"
+        f"Aggergating relevant offensive and defensive metrics for the following season: {year}"
     )
-    teams_metrics = [
-        get_aggregate_season_metrics(
-            get_teams_game_logs_for_season(team.get("team_id"), curr_year)
-        )
-        for team in teams
-    ]
+    
+    # fetch all game logs for current season
+    teams_game_logs = [ get_teams_game_logs_for_season(team.get("team_id"), year) for team in teams ] 
 
-    # calculate rankings
-    off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks = calculate_rankings(
-        teams_metrics
-    )
+    # calculate weekly aggregate metrics 
+    teams_weekly_aggregate_metrics = [ get_weekly_aggergate_metrics(season_game_logs) for season_game_logs in teams_game_logs] 
 
-    logging.info(f"Offense Rush Ranks: {off_rush_ranks}\n\n")
-    logging.info(f"Offense Pass Ranks: {off_pass_ranks}\n\n")
-    logging.info(f"Defense Rush Ranks: {def_rush_ranks}\n\n")
-    logging.info(f"Defense Pass Ranks: {def_pass_ranks}\n\n")
+    # calculate rankings up to max week 
+    calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics, year)
 
-    # persist rankings
-    update_teams_rankings(
-        off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks
-    )
+
+
+def calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics: list, season: int):
+    """
+    Function to calculate the weekly rankings for a team 
+
+    Args:
+        teams_weekly_aggregate_metrics (list): list of season long aggregate metrics for a team 
+        season (int): season to calculate weekly rankings for 
+    
+    Returns:
+        weekly_rankings (list): weekly rankings that need to be persisted 
+    """
+    
+    # isnert bye week rankings 
+    insert_bye_week_rankings(teams_weekly_aggregate_metrics, season)
+
+    # determine max week we have metrics for 
+    max_week = max(metrics['week'] for team_metrics in teams_weekly_aggregate_metrics for metrics in team_metrics)
+
+    # determine week to start calculating metrics for
+    max_persisted_week = fetch_data.fetch_max_week_rankings_calculated_for_season(season) 
+    curr_week = 1 if max_persisted_week is None else max_persisted_week + 1
+
+    if curr_week >= max_week:
+        logging.info(f"All team rankings are persisted for the season {season}; skipping calculating & persisting of team rankings")
+    
+    # loop through relevant weeks
+    for week in range(curr_week, max_week + 1):
+        print(week)
+        
+        # extract each teams cumulative rankings corresponding to current week 
+        teams_curr_week_agg_metrics = []
+        for team_metrics in teams_weekly_aggregate_metrics: 
+            week_metrics = [ metrics for metrics in team_metrics if metrics['week'] == week]
+            teams_curr_week_agg_metrics.extend(week_metrics)
+
+        # calculate rankings 
+        off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks = calculate_rankings(teams_curr_week_agg_metrics)
+
+        team_ranks_records= generate_team_ranks_records(off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks, week, season)
+
+        insert_teams_ranks(team_ranks_records)
+
+
+def generate_team_ranks_records(off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks, week, season):
+    """
+    Functionality to generate proper records needed to insert into our database 
+
+    Args:
+        off_rush_ranks (list): team_ids and corresponding ranks
+        off_pass_ranks (list): team_ids and corresponding ranks
+        def_rush_ranks (list): team_ids and corresponding ranks
+        def_pass_ranks (list): team_ids and corresponding ranks 
+        week (int): week we are accounting for 
+        season (int): season we are accounting for 
+    """
+
+    team_ids = [ team.get("team_id") for team in off_rush_ranks ]
+
+    records = []
+    for team_id in team_ids: 
+        record = {}
+        
+        record["off_rush_rank"] = next(team['rank'] for team in off_rush_ranks if team['team_id'] == team_id)
+        record['off_pass_rank'] = next(team['rank'] for team in off_pass_ranks if team['team_id'] == team_id)
+        record['def_pass_rank'] = next(team['rank'] for team in def_pass_ranks if team['team_id'] == team_id)
+        record['def_rush_rank'] = next(team['rank'] for team in def_rush_ranks if team['team_id'] == team_id)
+        record['team_id'] = team_id
+        record['season'] = season
+        record['week'] = week 
+
+        records.append(record)
+    
+    return records
+        
+        
+
+
+
+def insert_bye_week_rankings(teams_weekly_aggregate_metrics: list, season: int): 
+    """ 
+    Determine teams bye week rankings 
+
+    Args:
+        teams_weekly_aggregate_metrics (list): list of teams accumualted weekly metrics 
+    
+    Returns: 
+        None 
+    """
+
+    logging.info(f"Attempting to insert bye week rankings for the season: {season}")
+
+    team_bye_weeks = [] 
+    for curr_team_weekly_metrics in teams_weekly_aggregate_metrics: 
+
+        # skip teams with bye weeks already persisted for given season
+        bye_week = fetch_data.check_bye_week_rankings_exists(curr_team_weekly_metrics[0]['team_id'], season)
+        if bye_week is not None:
+            continue
+        
+
+        # init first metric and prev_week 
+        metric = curr_team_weekly_metrics[0] 
+        prev_week = metric['week']
+
+        for metric in curr_team_weekly_metrics[1:]: 
+            curr_week = metric['week']
+            
+            # check if bye week 
+            if curr_week - prev_week > 1: 
+                bye_week = curr_week - 1
+                break
+            
+            prev_week = curr_week
+        
+        team_bye = {
+            "team_id": metric["team_id"], 
+            "week": bye_week
+        }
+        team_bye_weeks.append(team_bye)
+    
+    # insert bye week rankings into DB
+    if len(team_bye_weeks) == 0:
+        logging.info(f"All bye weeks for teams in the season {season} have already been inserted into our DB; skipping insertion")
+        return
+    insert_data.insert_bye_week_rankings(team_bye_weeks, season)
+
+
+
+def get_weekly_aggergate_metrics(season_game_logs: list):
+    """
+    Helper function to calculate the weekly aggergate metrics of a teams season game log metrics 
+
+    Args:
+        season_game_logs (list): list of season long game logs 
+    
+    Returns:
+        list: weekly aggregate metrics 
+    """
+    # metrics to account for
+    points_for = 0
+    points_against = 0
+    pass_yards_for = 0
+    pass_yards_against = 0
+    rush_yards_for = 0
+    rush_yards_against = 0
+
+    weekly_aggregate_metrics = []
+
+    for weekly_game_log in season_game_logs: 
+
+        points_for += weekly_game_log.get("points_for", 0)
+        points_against += weekly_game_log.get("points_allowed", 0)
+        pass_yards_for += weekly_game_log.get("pass_yds", 0)
+        pass_yards_against += weekly_game_log.get("opp_pass_yds", 0)
+        rush_yards_for += weekly_game_log.get("rush_yds", 0)
+        rush_yards_against += weekly_game_log.get("opp_rush_yds", 0)
+
+
+        metrics = {
+            "team_id": weekly_game_log.get("team_id"),
+            "week": weekly_game_log.get("week"), 
+            "points_for": points_for,
+            "points_against": points_against,
+            "pass_yards_for": pass_yards_for,
+            "pass_yards_against": pass_yards_against,
+            "rush_yards_for": rush_yards_for,
+            "rush_yards_against": rush_yards_against,
+        }
+        weekly_aggregate_metrics.append(metrics)
+    
+    return weekly_aggregate_metrics
+
+    
+
+        
+
+
+    
 
 
 """
 Functionality to calculate the rankings of teams based on relevant metric accumulations
+
+TODO: Account for the break down of scoring (i.e rushing tds for, rushing tds against, etc)
 
 Args:
    team_game_logs (list): list of game logs for a particular team 
@@ -400,29 +581,23 @@ def get_aggregate_season_metrics(team_game_logs: list):
 
 
 """
-Persists updated team rankings 
+Persists team rankings 
 
 Args:
-   off_rush_ranks (list): offensive rush rankings
-   off_pass_ranks (list): offensive pass rankings
-   def_rush_ranks (list): defensive rush rankings
-   def_pass_ranks (list): defensive pass rankings
+    records (list): list of team ranking records to persist 
 
 Returns:
    None
 """
 
 
-def update_teams_rankings(
-    off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks
+def insert_teams_ranks(
+    records
 ):
     logging.info(
-        "Attempting to update team records with updated off/def passing/rushing rankings"
+        "Attempting to insert team rankings records"
     )
-    insert_data.update_team_rankings(off_rush_ranks, "off_rush_rank")
-    insert_data.update_team_rankings(off_pass_ranks, "off_pass_rank")
-    insert_data.update_team_rankings(def_pass_ranks, "def_pass_rank")
-    insert_data.update_team_rankings(def_rush_ranks, "def_rush_rank")
+    insert_data.insert_team_rankings(records)
 
 
 """
@@ -485,6 +660,8 @@ def normalize_metrics_and_apply_weights(team_metrics: list):
 Apply weights determined in configurations to normalized aggregate season metrics in order to properly rank 
 
 TODO (FFM-129): Optimize Points_For & Points_Against to account for where points came from when applying weights (i.e passing tds/rushing tds/def tds)
+
+TODO: Account for history of rankings when applying weights
 
 Args:
    normalized_metrics (dict): normalized metrics to apply weights to 

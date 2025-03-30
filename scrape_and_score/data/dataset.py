@@ -17,6 +17,7 @@ class FantasyDataset(Dataset):
 
         scaler = StandardScaler()
 
+        #TODO: Don't scale categorical variables (i.e position)
         self.X = torch.from_numpy(
             scaler.fit_transform(df.drop(columns=["fantasy_points"]).values)
         ).float()

@@ -1,13 +1,14 @@
 import logging
 import pandas as pd
 from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES, VALID_POSITIONS
-from service import team_service, player_service
+from service import team_service, player_service, player_game_logs_service, team_game_logs_service
 from config import props
 from .util import fetch_page
 from datetime import date, datetime
 from bs4 import BeautifulSoup
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
+from db import fetch_data
 
 
 """
@@ -39,6 +40,41 @@ def scrape_all(team_and_player_data: list, teams: list):
     player_metrics = fetch_player_metrics(team_and_player_data, year)
     # return metrics
     return team_metrics, player_metrics
+
+
+
+def scrape_historical(start_year: int, end_year: int):
+    """
+    Functionality to scrape player and team game logs across multiple seasons 
+
+    Args:
+        start_year (int): the starting year to scrape historical data from 
+        end_year (int): the ending year to scrape historical data from 
+    """
+    team_template_url = props.get_config(
+        "website.pro-football-reference.urls.team-metrics"
+    )
+
+    teams = team_service.get_all_teams()
+    team_names = [team["name"] for team in teams]
+
+    for year in range (start_year, end_year + 1): 
+        logging.info(f"\n\nScraping team and player game logs for the {year} season")
+
+        # # fetch team metrics for given season 
+        season_team_metrics = fetch_team_metrics(team_names, team_template_url, year)
+        team_game_logs_service.insert_multiple_teams_game_logs(season_team_metrics, teams, year)
+
+        # fetch players relevant to current season 
+        players = fetch_data.fetch_players_on_a_roster_in_specific_year(year)
+        
+        # fetch player metrics for given season
+        season_player_metrics = fetch_player_metrics(players, year) 
+        player_game_logs_service.insert_multiple_players_game_logs(season_player_metrics, players, year)
+
+    
+    logging.info(f"Successfully inserted all player and team game logs from {start_year} to {end_year}")
+
 
 
 """
@@ -111,11 +147,17 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
 
         # TODO (FFM-42): Gather Additional Data other than Game Logs
         logging.info(f"Fetching metrics for {position} '{player_name}'")
+
+        game_log = get_game_log(soup, position, recent_games)
+        if game_log.empty:
+            logging.warn(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
+            continue # skip players with no metrics 
+
         player_metrics.append(
             {
                 "player": player_name,
                 "position": position,
-                "player_metrics": get_game_log(soup, position, recent_games),
+                "player_metrics": game_log,
             }
         )
     return player_metrics
@@ -216,7 +258,7 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
     # load game data
     games = soup.find_all("tbody")[1].find_all("tr")
 
-    remove_uneeded_games(games)
+    remove_uneeded_games(games, year)
 
     # determine how many games to process
     if recent_games:
@@ -346,10 +388,11 @@ and games yet to be played so that they aren't accounted for
 
 Args: 
     games (BeautifulSoup): parsed HTML containing game data 
+    year (int): current eyar to account for 
 """
 
 
-def remove_uneeded_games(games: BeautifulSoup):
+def remove_uneeded_games(games: BeautifulSoup, year: int):
     # remove playoff games
     j = 0
     while (
@@ -384,6 +427,11 @@ def remove_uneeded_games(games: BeautifulSoup):
     # remove games that have yet to be played
     to_delete = []
     current_date = date.today()
+
+    # skip logic if we are in the past 
+    if year <= current_date.year:
+        return 
+
     for j in range(len(games)):
         game_date = get_game_date(games[j], current_date)
         if game_date >= current_date:
@@ -606,7 +654,7 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
         if (
             start_year <= year <= end_year
             and position in player_text
-            and check_name_similarity(player_text, player_name) >= 95
+            and check_name_similarity(player_text, player_name) >= 93
         ):
             a_tag = player.find("a")
             if a_tag and a_tag.get("href"):
@@ -638,6 +686,8 @@ Returns:
 def check_name_similarity(player_text: str, player_name: str):
     words = player_text.split()
     name = " ".join(words[:2])
+    name = name.title()
+    player_name = player_name.title()
     return fuzz.partial_ratio(name, player_name)
 
 
@@ -670,16 +720,29 @@ def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
     }
     data.update(get_additional_metrics(position))  # update data with additonal metrics
 
-    table_rows = soup.find("tbody").find_all("tr")
+    # skip players with no table
+    table_body = soup.find("tbody")
+    if table_body == None:
+        return pd.DataFrame()
+
+    table_rows = table_body.find_all("tr")
 
     # ignore inactive/DNP games
     ignore_statuses = ["Inactive", "Did Not Play", "Injured Reserve"]
     filtered_table_rows = []
     for tr in table_rows:
         elements = tr.find_all("td")
+
+        if not elements:
+            continue
+
         status = elements[-1].text
 
-        if status not in ignore_statuses:
+        # account for trade specific information
+        team_cell = tr.find("td", {"data-stat": "team_name_abbr"})
+        is_trade = team_cell and team_cell.has_attr("colspan") and "went from" in team_cell.text
+
+        if status not in ignore_statuses and not is_trade:
             filtered_table_rows.append(tr)
 
     # check if we only want to fetch recent game log
@@ -793,15 +856,24 @@ Returns:
 
 
 def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
-    data["date"].append(tr.find("td", {"data-stat": "game_date"}).text)
+    # account for game_date element OR date element
+    game_date = tr.find("td", {"data-stat": "game_date"}) 
+    data["date"].append(game_date.text if game_date else tr.find("td", {"data-stat": "date"}).text)
+
     data["week"].append(int(tr.find("td", {"data-stat": "week_num"}).text))
-    data["team"].append(tr.find("td", {"data-stat": "team"}).text)
+
+    # account for team OR team_name_abbr
+    team = tr.find("td", {"data-stat": "team"})
+    data["team"].append(team.text if team else tr.find("td", {"data-stat": "team_name_abbr"}).text)
+
     data["game_location"].append(tr.find("td", {"data-stat": "game_location"}).text)
-    data["opp"].append(tr.find("td", {"data-stat": "opp"}).text)
+
+    opp = tr.find("td", {"data-stat": "opp"})
+    data["opp"].append(opp.text if opp else tr.find("td", {"data-stat": "opp_name_abbr"}).text)
 
     # For result, team_pts, and opp_pts, split the text properly
     game_result_text = tr.find("td", {"data-stat": "game_result"}).text.split(" ")
-    data["result"].append(game_result_text[0])
+    data["result"].append(game_result_text[0].replace(",", ""))
     data["team_pts"].append(int(game_result_text[1].split("-")[0]))
     data["opp_pts"].append(int(game_result_text[1].split("-")[1]))
 
