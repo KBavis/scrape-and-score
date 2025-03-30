@@ -1102,14 +1102,6 @@ def add_wr_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
     data["rec_yds"].append(extract_int(tr, "rec_yds"))
     data["rec_td"].append(extract_int(tr, "rec_td"))
 
-    # Handle snap percentage
-    snap_pct_td = tr.find("td", {"data-stat": "off_pct"})
-    if snap_pct_td and snap_pct_td.text:  # Check for valid data
-        snap_pct = snap_pct_td.text[:-1]  # Remove '%' symbol
-        data["snap_pct"].append(float(snap_pct) / 100)  # Convert to float percentage
-    else:
-        data["snap_pct"].append(0.0)  # Append 0 if snap percentage is not available
-
 
 """
 Functionality to retireve common game log metrics for a given player 
@@ -1144,6 +1136,22 @@ def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
     data["result"].append(game_result_text[0].replace(",", ""))
     data["team_pts"].append(int(game_result_text[1].split("-")[0]))
     data["opp_pts"].append(int(game_result_text[1].split("-")[1]))
+
+    # account for # of offensive snaps and snap pct 
+    snap_pct_td = tr.find("td", {"data-stat": "snap_counts_off_pct"})
+    if snap_pct_td and snap_pct_td.text:
+        snap_pct = float(snap_pct_td.text) 
+        data["snap_pct"].append(snap_pct)
+    else:
+        data["snap_pct"].append(0)
+    
+    snap_counts_off_td = tr.find("td", {"data-stat": "snap_counts_offense"})
+    if snap_counts_off_td and snap_counts_off_td.text: 
+        snap_counts_off = int(snap_counts_off_td.text)
+        data["off_snps"].append(snap_counts_off)
+    else:
+        data["off_snps"].append(0)
+
 
 
 """
