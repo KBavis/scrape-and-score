@@ -11,9 +11,10 @@ def preprocess():
 
    parsed_df = parse_player_props(df)
 
-   processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categoricla variable
+   processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
    processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
-   processed_df.fillna(-1, inplace=True) # fill NA values with -1
+
+   processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
 
    return processed_df
    
@@ -35,11 +36,18 @@ def scale_and_transform(df: pd.DataFrame):
    xs = df.drop(columns=['fantasy_points']).copy()
 
    # independent variables to avoid scaling due to categorical nature
-   categorical_df = xs[['position_QB', 'position_RB', 'position_WR', 'position_TE']].copy()
+   position_columns = ['position_QB', 'position_RB', 'position_WR', 'position_TE']
+   valid_positions = [] 
+   for position in position_columns: 
+      if position in xs.columns: 
+         valid_positions.append(position)
+      
+   categorical_df = xs[valid_positions].copy()
    categorical_vals = categorical_df.values
 
    # independent variables to account for cyclical nature
    cyclical_df = xs[['week', 'season']].copy()
+
    cyclical_df['max_week'] = cyclical_df['season'].apply(lambda season: 17 if season < 2021 else 18)
    cyclical_df['week_cos'] = np.cos(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
    cyclical_df['week_sin'] = np.sin(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
@@ -47,11 +55,13 @@ def scale_and_transform(df: pd.DataFrame):
    cyclical_week_vals = cyclical_df.values
 
    # drop un-needed columns in original indep. variables 
-   xs = xs.drop(columns=['position_QB', 'position_RB', 'position_WR', 'position_TE', 'week', 'season'])
+   columns_to_drop = valid_positions + ['week', 'season']
+   xs = xs.drop(columns=columns_to_drop)
 
    scaled_x_vals = scaler.fit_transform(xs.values)
    
    Xs = np.concatenate((scaled_x_vals, categorical_vals, cyclical_week_vals), axis=1)
+   logging.info(f"Xs shape: {Xs.shape}")
    return Xs
    
 
@@ -102,4 +112,5 @@ def fetch_data():
    """
       Retrieve indepdenent variables 
    """
+   logging.info("Fetching inputs & outputs for Neural Network training & testing")
    return fetch.fetch_independent_and_dependent_variables()
