@@ -5,10 +5,11 @@ from service import team_service, player_service, player_game_logs_service, team
 from config import props
 from .util import fetch_page
 from datetime import date, datetime
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
-from db import fetch_data
+from db import fetch_data, insert_data
+import time
 
 
 """
@@ -176,7 +177,7 @@ Returns:
     team_metrics (list) - list of df's containing team metrics
 """
 
-
+#TODO: Rename me to fetch game logs 
 def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=False):
     logging.info(f"Attempting to scrape team metrics for the following teams [{teams}]")
 
@@ -209,7 +210,274 @@ def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=F
 
     return team_metrics
 
+#TODO: UPDATE THIS LOGIC TO ACCOUNT FOR CHANGING KEYS OVER YEARS OF DATA-STAT 
+def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
+    teams = props.get_config("nfl.teams")
+    team_template_url = props.get_config(
+        "website.pro-football-reference.urls.team-metrics"
+    )
+    acronym_mapping = { team["name"]: team["acronym"] for team in teams }
 
+
+    for year in range(start_year, end_year + 1): 
+        for team in teams: 
+            # fetch team ID 
+            team_id = team_service.get_team_id_by_name(team["name"])
+
+            # retrieve team page for specific year
+            url = team_template_url.replace("{TEAM_ACRONYM}", acronym_mapping[team["name"]]).replace("{CURRENT_YEAR}", str(year))
+            raw_html = fetch_page(url)
+
+            # parse data 
+            soup = BeautifulSoup(raw_html, "html.parser")
+
+            # parse 'Team Stats and Rankings' table
+            team_stats_table = soup.find("table", {"id": "team_stats"})
+            team_stats_table_body = team_stats_table.find("tbody")
+            team_stats = parse_stats(team_stats_table_body) 
+
+            # parse 'Team Conversions' table
+            team_conversions_table = soup.find("table", {"id": "team_conversions"})
+            team_conversions_table_body = team_conversions_table.find("tbody")
+            team_conversions = parse_conversions(team_conversions_table_body)
+
+            # parse 'Passing' table 
+            player_and_team_passing_table = soup.find("table", {"id": "passing"})
+            team_passing_totals = player_and_team_passing_table.find_next("tfoot")
+            player_passing_table = player_and_team_passing_table.find("tbody")
+            player_passing_stats, team_passing_stats = parse_player_and_team_totals(player_passing_table, team_passing_totals)
+
+            # parse 'Rushing and Receiving' table 
+            player_and_team_rushing_and_receiving_table = soup.find("table", {"id": "rushing_and_receiving"})
+            team_rushing_and_receiving_totals = player_and_team_rushing_and_receiving_table.find_next("tfoot")
+            player_rushing_and_receiving_table = player_and_team_rushing_and_receiving_table.find("tbody")
+            rushing_receiving_player_stats, rushing_receiving_team_stats = parse_player_and_team_totals(player_rushing_and_receiving_table, team_rushing_and_receiving_totals)
+
+            # parse 'Kicking' table (infomration stored in a comment)
+            kicking_div = soup.find('div', {'id': 'all_kicking'})
+            comment = kicking_div.find(string=lambda text: isinstance(text, Comment))
+            if comment:   
+                table_soup = BeautifulSoup(comment, 'html.parser')
+                tfoot = table_soup.find('tfoot')
+                team_kicking_stats = parse_team_totals(tfoot)
+            
+            # parse 'Punting' table (infomration stored in a comment)
+            punting_div = soup.find('div', {'id': 'all_punting'})
+            comment = punting_div.find(string=lambda text: isinstance(text, Comment))
+            if comment: 
+                table_soup = BeautifulSoup(comment, 'html.parser')
+                tfoot = table_soup.find('tfoot')
+                team_punting_stats = parse_team_totals(tfoot)
+            
+
+            # parse 'Defenesne & Fumbles' table 
+            defensve_div = soup.find('div', {'id': 'all_defense'})
+            tfoot = defensve_div.find('tfoot')
+            team_defensive_stats = parse_team_totals(tfoot)
+
+            # parse 'Scoring Summary' 
+            scoring_summary_div =  soup.find('div', {'id': 'all_scoring'})
+            comment = scoring_summary_div.find(string=lambda text: isinstance(text, Comment))
+            if comment: 
+                table_soup = BeautifulSoup(comment, 'html.parser')
+                player_tbody = table_soup.find('tbody')
+                team_tfoot = table_soup.find('tfoot')
+                player_scoring_summary, team_scoring_summary = parse_player_and_team_totals(player_tbody, team_tfoot)
+
+            #TODO: Consider if we want to acocunt for Touchdown Log & Opponent Touchdown Log in future
+
+            # insert team records 
+            insert_data.format_and_insert_team_seasonal_general_metrics(team_stats, team_conversions, team_id, year)
+            insert_data.insert_team_seasonal_passing_metrics(team_passing_stats, team_id, year)
+            insert_data.insert_team_seasonal_rushing_and_receiving_metrics(rushing_receiving_team_stats, team_id, year)
+            insert_data.insert_team_seasonal_kicking_and_punting_metrics(team_punting_stats, team_kicking_stats, team_id, year)
+            insert_data.insert_team_seasonal_defense_and_fumbles_metrics(team_stats, team_defensive_stats, team_conversions, team_id, year)
+            insert_data.insert_team_seasonal_scoring_metrics(team_scoring_summary, team_id, year)
+            insert_data.insert_team_seasonal_rankings_metrics(team_stats, team_conversions, team_id, year)
+
+            # generate player records 
+            insert_data.insert_player_seasonal_passing_metrics(player_passing_stats, year, team_id)
+            insert_data.insert_player_seasonal_rushing_and_receiving_metrics(rushing_receiving_player_stats, year, team_id)
+            insert_data.insert_player_seasonal_scoring_metrics(player_scoring_summary, year, team_id)
+
+
+
+
+
+
+def parse_team_totals(team_totals: BeautifulSoup) -> dict:
+    """Parse the teams kicking and punting totals
+
+    Args:
+        team_kicking_totals (BeautifulSoup): parsed HTML containing team totals for kicking
+
+    Returns:
+        dict: key-value paris of kicking stats
+    """
+
+    team_totals_stats = {}
+    prefix = "team_total_"
+    tds = team_totals.find_next('tr').find_all("td")
+    for td in tds:
+        key = prefix + td.get('data-stat')
+        value = td.get_text() 
+
+        # skip name 
+        if key == 'team_total_name_display':
+            continue
+
+        if value is not None and value != "":
+            team_totals_stats[key] = value
+    
+    return team_totals_stats
+
+
+
+
+def parse_player_and_team_totals(players_table: BeautifulSoup, team_totals: BeautifulSoup):
+    """
+    Parse PFR Player and Team Totals 
+
+    Args:
+        players_table (BeautifulSoup): table containing player totals 
+        team_totals (BeautifulSoup): table containing team totals 
+    
+    Return:
+        tuple: player and team totals 
+    """
+
+    # team totals 
+    team_metrics = {}
+    prefix = "team_total_"
+    tds = team_totals.find_next('tr').find_all("td")
+    for td in tds:
+        key = prefix + td.get('data-stat')
+        value = td.get_text() 
+
+        # skip name
+        if key == 'team_total_name_display':
+            continue
+
+        if value is not None and value != "":
+            team_metrics[key] = value
+
+    
+    # player totals
+    trs = players_table.find_all("tr")
+    player_metrics = {}
+    for tr in trs: 
+        metrics = {}
+
+        td = tr.find('td', {'data-stat': 'name_display'})
+        if td is not None:
+            player_name = td.find_next('a').get_text() 
+            normalized_name = player_service.normalize_name(player_name)
+        else:
+            # skip row if no name is present
+            continue
+
+
+        tds = tr.find_all("td")
+        for td in tds:
+            key = td.get('data-stat')
+
+            # skip over name and position as its not a metric
+            if key == 'name_display' or key == 'pos':
+                continue
+            value = td.get_text() 
+
+            if value is not None and value != "":
+                metrics[key] = value
+        
+
+        if metrics:
+            player_metrics[normalized_name] = metrics 
+
+
+
+    return player_metrics, team_metrics
+
+
+def parse_conversions(team_conversion: BeautifulSoup):
+    """
+    Extract relevant team conversion ratios (i.e 3rd down, red zone, etc)
+
+    Args:
+        team_conversion (BeautifulSoup): table body containing table rows with conversion metrics 
+    
+    Returns:
+        dict: key-values of teams conversion ratios & rankings
+    """
+    conversions = {} 
+    trs = team_conversion.find_all("tr")
+    for tr in trs: 
+        header = tr.find_next("th").get_text() 
+
+        # prefix for data stats
+        if header == 'Team Stats':
+            prefix = 'team_'
+        elif header == 'Opp. Stats':
+            prefix = 'opp_'
+        elif header == 'Lg Rank Defense': 
+            prefix = 'off_rank_'
+        else:
+            prefix = 'def_rank_'
+
+        # loop through cells in row
+        for td in tr.find_all("td"):
+            key = prefix + str(td.get("data-stat")) 
+            value = td.get_text() 
+
+            if value is not None and value != '':
+                conversions[key] = value
+
+
+    
+    return conversions
+
+
+def parse_stats(team_stats_tbody: BeautifulSoup):
+    """
+    Functionality to extract relevant team & opponent stat totals for a given year 
+
+    Args:
+        team_stats_tbody (BeautifulSoup): parsed html 
+    
+    Returns:
+        dict: mapping of team stats 
+    """
+    stats = {}
+    trs = team_stats_tbody.find_all("tr")
+
+    for tr in trs:
+        header = tr.find_next("th").get_text() 
+
+        # prefix for data stats
+        if header == 'Team Stats':
+            prefix = 'team_'
+        elif header == 'Opp. Stats':
+            prefix = 'opp_'
+        elif header == 'Lg Rank Defense': 
+            prefix = 'off_rank_'
+        else:
+            prefix = 'def_rank_'
+
+        for td in tr: 
+            stat = td.get("data-stat")
+
+            # skip row names
+            if stat == 'player':
+                continue
+            
+            key = prefix + stat
+            value = td.get_text()
+            
+            # ensure value exists 
+            if value is not None and value != '':
+                stats[key] = value
+    
+    return stats
+   
 """
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 

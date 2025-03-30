@@ -1,3 +1,4 @@
+-- Store weekly aggregate metrics for a player at a specific point in a season 
 CREATE TABLE player_weekly_agg_metrics (
 	player_id INT NOT NULL, 
 	week INT NOT NULL, 

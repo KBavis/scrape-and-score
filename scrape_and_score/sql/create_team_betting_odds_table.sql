@@ -1,3 +1,4 @@
+-- Store relevant team betting odds (i.e spread, o/u) for a given week/season
 CREATE TABLE team_betting_odds (
 	home_team_id INT NOT NULL,
 	away_team_id INT NOT NULL, 

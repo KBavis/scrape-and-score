@@ -1,3 +1,4 @@
+-- Store team game logs for a specific week/season 
 CREATE TABLE team_game_log (
     team_id INT NOT NULL,
     week INT NOT NULL,

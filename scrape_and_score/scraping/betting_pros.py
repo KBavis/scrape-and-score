@@ -25,7 +25,7 @@ def fetch_historical_odds(season: int):
         markets = markets[:-4] # remove last 4 occurence 
 
     players = fetch_data.fetch_players_active_in_specified_year(season) 
-    
+
 
     # iterate through each potential player
     #TODO: account for najee harris slug being 'najee-harris-rb'

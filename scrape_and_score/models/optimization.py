@@ -11,15 +11,31 @@ def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_
    """
 
    loss_fn = nn.MSELoss() 
-   learning_rate = 0.01
+   learning_rate = 3e-4
    
-   optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate)
+   # optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate)
+   optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
    epochs = 250
+   best_test_loss = float('inf')
+   counter = 0
+   patience = 20
    
    for training_iteration in range(epochs):
       print(f"Starting Epoch {training_iteration + 1}\n--------------------------")
       train_loop(train_data_loader, model, loss_fn, optimizer)
-      test_loop(test_data_loader, model, loss_fn)
+      test_loss = test_loop(test_data_loader, model, loss_fn)
+
+      if test_loss < best_test_loss:
+         best_test_loss = test_loss
+         counter = 0
+      else:
+         counter += 1
+         if counter >= patience:
+            print(f"Test loss has plateaued; The best loss achieved was {best_test_loss}")
+            break
+
+
+
    
    print("\nDone with optimization loop")
    
@@ -78,5 +94,8 @@ def test_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn
 
     # Print final metrics
    print(f"Test Error: \n Accuracy: {accuracy:>0.1f}%, Avg loss: {test_loss:>8f} \n")
+   
+   # return test loss for early stops
+   return test_loss
       
    

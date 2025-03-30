@@ -5,7 +5,7 @@ from . import util
 from bs4 import BeautifulSoup
 from config import props
 import logging
-from service import team_service
+from service import team_service, player_service
 from datetime import datetime
 from db import fetch_data, insert_data
 import re
@@ -79,6 +79,7 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
             end_date_mapping = {} # mapping of a player name to their end date 
             unique_player_records = [] # unique player records to persist 
             previous_dt = None
+            player_depth_chart_position_records = [] # list of player depth chart position records 
             
             # loop through relevant months in current season (from Sept - Jan)
             for date, id in reversed(archives.items()): 
@@ -97,6 +98,9 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
                 # extract fantasy relevant players 
                 players = extract_fantasy_relevant_players(depth_chart)
 
+                # generate player depth chart position records 
+                generate_player_depth_chart_positions(players, date, date_week_mapping, player_depth_chart_position_records, season)
+
                 # account for unique player records 
                 add_unique_player_records(unique_player_records, players)
 
@@ -112,12 +116,78 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
             # update player name to id mapping 
             for player_name in relevant_players:
                 if player_name not in player_name_id_mapping:
-                    player = fetch_data.fetch_player_by_name(player_name)
+                    normalized_name = player_service.normalize_name(player_name)
+                    player = fetch_data.fetch_player_by_normalized_name(normalized_name)
                     player_name_id_mapping[player_name] = player['player_id']
 
 
             insert_player_teams_records(relevant_players, start_date_mapping, end_date_mapping, team_id, season, team, player_name_id_mapping)
+            insert_player_depth_chart_position_records(player_name_id_mapping, player_depth_chart_position_records, season)
                     
+
+def insert_player_depth_chart_position_records(player_name_id_mapping: dict, player_depth_chart_position_records: list, season: int):
+    """
+    Functionality to insert player depth chart position records into our database 
+
+    Args:
+        player_name_id_mapping (dict): mapping of a player name to an ID 
+        player_depth_chart_position_records (list): list of relevant records to insert into our database 
+        season (int): relevatn season this corresponds to 
+    
+    Returns: None
+    """
+    logging.info("Attempting to insert player depth chart position records")
+
+    # update records with corresponding player ID 
+    for record in player_depth_chart_position_records: 
+        record["player_id"] = player_name_id_mapping[record["name"]]
+        record["season"] = season
+    
+    # ensure record is unique (i.e not already inserted, and not a duplicate)
+    filtered_depth_chart_records = []
+    seen_records = set()
+    for record in player_depth_chart_position_records:
+        if fetch_data.fetch_player_depth_chart_record_by_pk(record) is None:
+            record_key = (record["player_id"], record["week"], record["season"])
+
+            if record_key not in seen_records:
+                seen_records.add(record_key)
+                filtered_depth_chart_records.append(record)
+
+    if not filtered_depth_chart_records:
+        logging.info(f"No new player depth chart records in the {season} season; skipping insertion")
+    else:
+        insert_data.insert_player_depth_charts(filtered_depth_chart_records)
+
+
+def generate_player_depth_chart_positions(players: list, date: str, date_week_mapping: dict, player_depth_chart_position_records: list, season: int):
+    """
+    Functionality to generate relevant player depth chart records 
+
+    Args:
+        player (list): list of players that correspond to a depth chart position 
+        date (str): date these players were retrieved from 
+        date_week_mapping (dict): mapping of a date to a particular start and end date
+        player_depth_chart_position_records: list of player depth chart positions 
+        season (int): relevant season this depth chart corresponds to 
+    
+    Returns:    
+        None
+    """
+    weeks = date_week_mapping.get(date)
+    start_week = weeks["strt_wk"]
+    end_week = weeks["end_wk"]
+
+    for player in players:
+        player_name = player["name"]
+        depth_chart_pos = player["depth_chart_pos"]
+
+        # generate depth chart position records 
+        for week in range(start_week, end_week + 1):
+            player_depth_chart_position_records.append({"name": player_name, "week": week, "depth_chart_pos": depth_chart_pos})
+
+
+
 
 
 
@@ -252,9 +322,9 @@ def is_previously_inserted_player(player_name: str, player_name_id_mapping: dict
     
     Returns:
         bool: whether the record exists or not 
-    """                       
-
-    player = fetch_data.fetch_player_by_name(player_name)
+    """
+    normalized_name = player_service.normalize_name(player_name)
+    player = fetch_data.fetch_player_by_normalized_name(normalized_name)
     if player == None: 
         return False
     
@@ -317,6 +387,9 @@ def extract_fantasy_relevant_players(depth_chart: BeautifulSoup):
         if position == 'LWR' or position == 'RWR' or position == 'SWR':
             position = 'WR'
 
+        # first depth chart position will be starter
+        depth_chart_pos = 1
+
         # loop through table cells in row & extract name & position 
         for td in tds[1:]: 
             content = td.get_text()
@@ -337,10 +410,14 @@ def extract_fantasy_relevant_players(depth_chart: BeautifulSoup):
                     # skip player if position isn't valid 
                     if player_position not in relevant_positions: 
                         continue
+
+                    # in the case a players on IR, their depth chart position can indicate -1 
+                    depth_chart_pos = -1
                 else:
                     players_name = parse_name(content)
                         
-                players.append({"name": players_name, "position": position})
+                players.append({"name": players_name, "position": position, "depth_chart_pos": depth_chart_pos})
+                depth_chart_pos += 1 # next player for current position will be further down depth chart
 
     return players
 
@@ -423,6 +500,3 @@ def extract_archive_dates(archive_dates_soup: BeautifulSoup, start_year: int, en
         relevant_archive_dates.append(yearly_archives)
 
     return relevant_archive_dates
-
-
-
