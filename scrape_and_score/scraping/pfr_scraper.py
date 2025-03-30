@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES, VALID_POSITIONS
+from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES
 from service import team_service, player_service, player_game_logs_service, team_game_logs_service
 from config import props
 from .util import fetch_page
@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from db import fetch_data, insert_data
-import time
 
 
 """
