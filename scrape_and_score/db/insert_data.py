@@ -62,7 +62,43 @@ def insert_player(player: dict):
             f"An exception occurred while inserting the player {player}", exc_info=True
         )
         raise e
-    
+
+
+def update_player_hashed_name(hashed_names: list): 
+    """
+    Update player records with a players hashed name (href for pro-football-refernece player pages)
+
+    Args:
+        hashed_names (list): list of dictionary elements containing 'player_id' and 'hashed_name' 
+    """
+    query = """
+        UPDATE player 
+        SET hashed_name = %s 
+        WHERE player_id = %s
+    """
+
+
+    try:
+        params = [(player["hashed_name"], player["player_id"]) for player in hashed_names]
+
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(
+                query, params
+            )  
+            
+            # Commit the transaction to persist data
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(params)} player records with hashed names"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating player records with hashed names", exc_info=True
+        )
+        raise e
 
 
 """
