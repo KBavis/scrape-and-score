@@ -135,35 +135,32 @@ def main():
             start_year, end_year = cl_args.collect_data
             logging.info(f"Attempting to collect relevant player and team data from the year {start_year} to {end_year}")
 
-            # account for teams potentially not being persisted yet TODO: Uncomment me 
-            # teams = fetch_all_teams() 
-            # if not teams:
-            #     teams = [
-            #         team["name"] for team in get_config("nfl.teams")
-            #     ]             
-            #     insert_teams(teams)
+            # account for teams potentially not being persisted yet
+            teams = fetch_all_teams() 
+            if not teams:
+                teams = [
+                    team["name"] for team in get_config("nfl.teams")
+                ]             
+                insert_teams(teams)
+            
+            #TODO: Ensure that this logic is resilient for issues where records already exist
 
             # fetch & persist player records and their corresponding player_teams recrods
-            # our_lads.scrape_and_persist(start_year, end_year) #TODO Uncomment me 
+            our_lads.scrape_and_persist(start_year, end_year)
 
             # fetch & persist player and team game logs 
-            # pfr.scrape_historical(start_year, end_year) TODO: Uncomment me
+            pfr.scrape_historical(start_year, end_year) 
 
             # calculate & persist fantasy points, TODO: Account for fumbles and 2 PT conversions for better accuracy
-            # player_game_logs_service.calculate_fantasy_points(False, start_year, end_year) TODO: Uncommet me 
-
-            # calculate aggregate player metrics 
-            # for curr_year in range(start_year, end_year + 1): TODO: Uncomment me
-            #     player_game_logs_service.calculate_weekly_fantasy_point_averages(1, 18, curr_year) TODO: Uncomment me
-
+            player_game_logs_service.calculate_fantasy_points(False, start_year, end_year) 
 
             # calculate & persist team rankings for relevant years
-            # for curr_year in range(start_year, end_year):TODO: Uncomemt me
-            #     team_game_logs_service.calculate_all_teams_rankings(curr_year)
+            for curr_year in range(start_year, end_year):
+                team_game_logs_service.calculate_all_teams_rankings(curr_year)
 
 
             # fetch & persist team betting odds for relevant seasons
-            # rotowire_scraper.scrape_all(start_year, end_year) TODO: Uncommet me
+            rotowire_scraper.scrape_all(start_year, end_year) 
 
             # fetch & persist player betting odds for relevant season
             # for curr_year in range(start_year, end_year + 1):

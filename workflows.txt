@@ -1,9 +1,0 @@
-Workflows to make sure we account for when using this application 
-
-1. First time running this application and a need to collect all relevant data across multiple years in order to train our model(s) 
-
-2. Collecting relevant inputs needed for an upcoming week in order to make predictions for all relevant players 
-
-3. Scraping and persisting relevant data (player game logs, team game logs, betting outcomes, etc) after the conclusion of the previous upcoming week 
-
-4. The process of actually generating predictions for an upcoming week automatically (i.e on Wednesday before Thursday night football) and being able to read them in readble format (i.e split up by position, only accounting for top 40 player positions, creating hiearchy)
