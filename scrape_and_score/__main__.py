@@ -21,9 +21,11 @@ from scraping import rotowire_scraper, our_lads, betting_pros
 from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
-from models import optimization
+from models import optimization, post_training
 import torch
+from data import ingest
 import os
+import pandas as pd
 
 
 """
@@ -142,7 +144,7 @@ def main():
             #     insert_teams(teams)
 
             # fetch & persist player records and their corresponding player_teams recrods
-            our_lads.scrape_and_persist(start_year, end_year) #TODO Uncomment me 
+            # our_lads.scrape_and_persist(start_year, end_year) #TODO Uncomment me 
 
             # fetch & persist player and team game logs 
             # pfr.scrape_historical(start_year, end_year) TODO: Uncomment me
@@ -167,8 +169,10 @@ def main():
             # for curr_year in range(start_year, end_year + 1):
             #     betting_pros.fetch_historical_odds(curr_year)
 
+            # ingest.ingest_data_sets(start_year, end_year)
 
-
+            
+            # pfr.fetch_teams_and_players_seasonal_metrics(start_year, end_year)
 
         # scrape relevant betting odds based on specified arg
         if cl_args.upcoming:
@@ -220,19 +224,27 @@ def main():
                 training_data_set = FantasyDataset(training_df)
                 testing_data_set = FantasyDataset(testing_df)
                 
-                test_data_loader = DataLoader(testing_data_set, batch_size=64, shuffle=False) # TODO: determine appropiate batchsize 
-                train_data_loader = DataLoader(training_data_set, batch_size=64, shuffle=True) # TODO: determine appropiate batchsize 
+                test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
+                train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
                 
-                print(f"Accelator Available: {torch.accelerator.is_available()}")
+                # print(f"Accelator Available: {torch.accelerator.is_available()}")
                 
-                nn = NeuralNetwork(input_dim = df.shape[1] - 1) # -1 for dependent variable 
+                number_inputs = df.shape[1] - 1
+                columns = list(df.columns)
+                inputs = [col for col in columns if col != "fantasy_points"]
+                nn = NeuralNetwork(input_dim = number_inputs)  
+                print(f"Attempting to train Neural Network:\n\nNumber of Inputs: {number_inputs}\n\nModel: {nn}\n\nList of Inputs: {inputs}")
+
+                # start optimization loop
                 optimization.optimization_loop(train_data_loader, test_data_loader, nn)
 
                 torch.save(nn, 'model.pth')
-            
-            print("Printing out our Model")
-            print(nn)
 
+                # determine feautre importance 
+                post_training.feature_importance(nn, training_data_set)
+
+                
+            
 
 
         # determine type of predicitions to make
