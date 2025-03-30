@@ -11,7 +11,7 @@ def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_
    """
 
    loss_fn = nn.MSELoss() 
-   learning_rate = 1e-3
+   learning_rate = 3e-4
    
    # optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate)
    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
@@ -66,7 +66,7 @@ def train_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_f
          loss, current = loss.item(), batch * batch * 64 + len(X)
          print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-def test_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn: nn.MSELoss, tolerance: float = 1.0): 
+def test_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn: nn.MSELoss, tolerance: float = 3.0): 
    """Loop for testing our neural network 
 
    Args:
