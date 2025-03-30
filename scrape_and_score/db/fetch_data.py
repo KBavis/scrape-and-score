@@ -80,7 +80,7 @@ Returns:
 
 
 def fetch_all_players():
-    sql = "SELECT * FROM player"
+    sql = "SELECT player_id, player_name, position, normalized_name, hashed_name FROM player"
     players = []
 
     try:
@@ -96,7 +96,8 @@ def fetch_all_players():
                         "player_id": row[0],
                         "player_name": row[1],
                         "position": row[2],
-                        "normalized_name": row[3]
+                        "normalized_name": row[3],
+                        "hashed_name": row[4]
                     }
                 )
 
@@ -119,7 +120,7 @@ Returns:
 
 
 def fetch_player_by_name(player_name: str):
-    sql = "SELECT * FROM player WHERE name = %s"
+    sql = "SELECT player_id, name, position, normalized_name, hashed_name FROM player WHERE name = %s"
     player = None
 
     try:
@@ -134,7 +135,8 @@ def fetch_player_by_name(player_name: str):
                     "player_id": row[0],
                     "name": row[1],
                     "position": row[2],
-                    "normalized_name": row[3]
+                    "normalized_name": row[3],
+                    "hashed_name": row[4]
                 }
 
     except Exception as e:
@@ -155,7 +157,7 @@ def fetch_player_by_normalized_name(normalized_name: str):
     Args:
         normalized_name (str): the players name normalized 
     """
-    sql = "SELECT * FROM player WHERE normalized_name = %s"
+    sql = "SELECT player_id, name, position, normalized_name, hashed_name FROM player WHERE normalized_name = %s"
     player = None
 
     try:
@@ -170,7 +172,8 @@ def fetch_player_by_normalized_name(normalized_name: str):
                     "player_id": row[0],
                     "name": row[1],
                     "position": row[2],
-                    "normalized_name": row[3]
+                    "normalized_name": row[3], 
+                    "hashed_name": row[4]
                 }
 
     except Exception as e:
