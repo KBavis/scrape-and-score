@@ -578,7 +578,7 @@ Returns:
 
 """
 
-#TODO: Ensure that we include additonal variables 
+#TODO: Optimize query so it doesn't take forever to run 
 #TODO: Ensure that the we update join statement for previous year data to ensure we don't just exclude all rookies!
 def fetch_independent_and_dependent_variables():
     sql = """
@@ -659,6 +659,41 @@ def fetch_independent_and_dependent_variables():
          tsgm.red_zone_att as prev_year_team_total_red_zone_att,
          tsgm.red_zone_scores as prev_year_team_total_red_zone_scores,
          tsgm.red_zone_pct as prev_year_team_total_red_zone_pct,
+         -- opposing team previous year general stats
+         opp_tsgm.fumble_lost as prev_year_opp_total_fumbles_lost,
+         opp_tsgm.home_wins as prev_year_opp_totals_home_wins,
+         opp_tsgm.home_losses as prev_year_opp_total_home_losses,
+         opp_tsgm.away_wins as prev_year_opp_total_away_wins,
+         opp_tsgm.away_losses as prev_year_opp_total_away_losses,
+         opp_tsgm.wins as prev_year_opp_total_wins,
+         opp_tsgm.losses as prev_year_opp_total_losses,
+         opp_tsgm.win_pct as prev_year_opp_total_win_pct,
+         opp_tsgm.total_games as prev_year_opp_total_games,
+         opp_tsgm.total_yards as prev_year_opp_total_yards,
+         opp_tsgm.plays_offense as prev_year_opp_total_plays_offense,
+         opp_tsgm.yds_per_play as prev_year_opp_yds_per_play,
+         opp_tsgm.turnovers as prev_year_opp_total_turnovers,
+         opp_tsgm.first_down as prev_year_opp_total_first_downs,
+         opp_tsgm.penalties as prev_year_opp_total_penalties,
+         opp_tsgm.penalties_yds as prev_year_opp_total_penalties_yds,
+         opp_tsgm.pen_fd as prev_year_opp_total_pen_fd,
+         opp_tsgm.drives as prev_year_opp_total_drives,
+         opp_tsgm.score_pct as prev_year_opp_total_score_pct,
+         opp_tsgm.turnover_pct as prev_year_opp_total_turnover_pct,
+         opp_tsgm.start_avg as prev_year_opp_total_start_avg,
+         opp_tsgm.time_avg as prev_year_opp_total_time_avg,
+         opp_tsgm.plays_per_drive as prev_year_opp_total_plays_per_drive,
+         opp_tsgm.yds_per_drive as prev_year_opp_total_yds_per_drive,
+         opp_tsgm.points_avg as prev_year_opp_total_points_avg,
+         opp_tsgm.third_down_att as prev_year_opp_total_third_down_att,
+         opp_tsgm.third_down_success as prev_year_opp_total_third_down_success,
+         opp_tsgm.third_down_pct as prev_year_opp_total_third_down_pct,
+         opp_tsgm.fourth_down_att as prev_year_opp_total_fourth_down_att,
+         opp_tsgm.fourth_down_success as prev_year_opp_total_fourth_down_success,
+         opp_tsgm.fourth_down_pct as prev_year_opp_total_fourth_down_pct,
+         opp_tsgm.red_zone_att as prev_year_opp_total_red_zone_att,
+         opp_tsgm.red_zone_scores as prev_year_opp_total_red_zone_scores,
+         opp_tsgm.red_zone_pct as prev_year_opp_total_red_zone_pct,
 		 -- players team previous year passing stats 
 		 tspassingmetrics.pass_attempts as prev_year_team_total_pass_attempts,
          tspassingmetrics.complete_pass as prev_year_team_total_complete_pass,
@@ -684,6 +719,31 @@ def fetch_independent_and_dependent_variables():
          tspassingmetrics.adj_net_yds_per_att as prev_year_team_total_adj_net_yds_per_att,
          tspassingmetrics.comebacks as prev_year_team_total_comebacks,
          tspassingmetrics.game_winning_drives as prev_year_team_total_game_winning_drives,
+         -- opposing team previous year passing stats
+         opp_tspassingmetrics.pass_attempts as prev_year_opp_total_pass_attempts,
+         opp_tspassingmetrics.complete_pass as prev_year_opp_total_complete_pass,
+         opp_tspassingmetrics.incomplete_pass as prev_year_opp_total_incomplete_pass,
+         opp_tspassingmetrics.passing_yards as prev_year_opp_total_passing_yards,
+         opp_tspassingmetrics.pass_td as prev_year_opp_total_pass_td,
+         opp_tspassingmetrics.interception as prev_year_opp_total_interception,
+         opp_tspassingmetrics.net_yds_per_att as prev_year_opp_total_net_yds_per_att,
+         opp_tspassingmetrics.first_downs as prev_year_opp_total_first_downs,
+         opp_tspassingmetrics.cmp_pct as prev_year_opp_total_cmp_pct,
+         opp_tspassingmetrics.td_pct as prev_year_opp_total_td_pct,
+         opp_tspassingmetrics.int_pct as prev_year_opp_total_int_pct,
+         opp_tspassingmetrics.success as prev_year_opp_total_success,
+         opp_tspassingmetrics.long as prev_year_opp_total_long,
+         opp_tspassingmetrics.yds_per_att as prev_year_opp_total_yds_per_att,
+         opp_tspassingmetrics.adj_yds_per_att as prev_year_opp_total_adj_yds_per_att,
+         opp_tspassingmetrics.yds_per_cmp as prev_year_opp_total_yds_per_cmp,
+         opp_tspassingmetrics.yds_per_g as prev_year_opp_total_yds_per_g,
+         opp_tspassingmetrics.rating as prev_year_opp_total_rating,
+         opp_tspassingmetrics.sacked as prev_year_opp_total_sacked,
+         opp_tspassingmetrics.sacked_yds as prev_year_opp_total_sacked_yds,
+         opp_tspassingmetrics.sacked_pct as prev_year_opp_total_sacked_pct,
+         opp_tspassingmetrics.adj_net_yds_per_att as prev_year_opp_total_adj_net_yds_per_att,
+         opp_tspassingmetrics.comebacks as prev_year_opp_total_comebacks,
+         opp_tspassingmetrics.game_winning_drives as prev_year_opp_total_game_winning_drives,
 		 -- players team previous year rushing/receiving stats
 		 tsrm.rush_att as prev_year_team_total_rush_att,
          tsrm.rush_yds_per_att as prev_year_team_total_rush_yds_per_att,
@@ -711,6 +771,33 @@ def fetch_independent_and_dependent_variables():
          tsrm.yds_from_scrimmage as prev_year_team_total_yds_from_scrimmage,
          tsrm.rush_receive_td as prev_year_team_total_rush_receive_td,
          tsrm.fumbles as prev_year_team_total_fumbles,
+         -- opposing team previous year rushing/receiving stats
+         opp_tsrm.rush_att as prev_year_opp_total_rush_att,
+         opp_tsrm.rush_yds_per_att as prev_year_opp_total_rush_yds_per_att,
+         opp_tsrm.rush_fd as prev_year_opp_total_rush_fd,
+         opp_tsrm.rush_success as prev_year_opp_total_rush_success,
+         opp_tsrm.rush_long as prev_year_opp_total_rush_long,
+         opp_tsrm.rush_yds_per_g as prev_year_opp_total_rush_yds_per_g,
+         opp_tsrm.rush_att_per_g as prev_year_opp_total_rush_att_per_g,
+         opp_tsrm.rush_yds as prev_year_opp_total_rush_yds,
+         opp_tsrm.rush_tds as prev_year_opp_total_rush_tds,
+         opp_tsrm.targets as prev_year_opp_total_targets,
+         opp_tsrm.rec as prev_year_opp_total_rec,
+         opp_tsrm.rec_yds as prev_year_opp_total_rec_yds,
+         opp_tsrm.rec_yds_per_rec as prev_year_opp_total_rec_yds_per_rec,
+         opp_tsrm.rec_td as prev_year_opp_total_rec_td,
+         opp_tsrm.rec_first_down as prev_year_opp_total_rec_first_down,
+         opp_tsrm.rec_success as prev_year_opp_total_rec_success,
+         opp_tsrm.rec_long as prev_year_opp_total_rec_long,
+         opp_tsrm.rec_per_g as prev_year_opp_total_rec_per_g,
+         opp_tsrm.rec_yds_per_g as prev_year_opp_total_rec_yds_per_g,
+         opp_tsrm.catch_pct as prev_year_opp_total_catch_pct,
+         opp_tsrm.rec_yds_per_tgt as prev_year_opp_total_rec_yds_per_tgt,
+         opp_tsrm.touches as prev_year_opp_total_touches,
+         opp_tsrm.yds_per_touch as prev_year_opp_total_yds_per_touch,
+         opp_tsrm.yds_from_scrimmage as prev_year_opp_total_yds_from_scrimmage,
+         opp_tsrm.rush_receive_td as prev_year_opp_total_rush_receive_td,
+         opp_tsrm.fumbles as prev_year_opp_total_fumbles,
 		 -- players team previous year kicking stats 
 		 tskm.team_total_fg_long as prev_year_team_total_fg_long,
          tskm.team_total_fg_pct as prev_year_team_total_fg_pct,
@@ -719,6 +806,14 @@ def fetch_independent_and_dependent_variables():
          tskm.team_total_xp_pct as prev_year_team_total_xp_pct,
          tskm.team_total_kickoff_yds as prev_year_team_total_kickoff_yds,
          tskm.team_total_kickoff_tb_pct as prev_year_team_total_kickoff_tb_pct,
+         -- opposing team previous year kicking stats
+         opp_tskm.team_total_fg_long as prev_year_opp_total_fg_long,
+         opp_tskm.team_total_fg_pct as prev_year_opp_total_fg_pct,
+         opp_tskm.team_total_xpa as prev_year_opp_total_xpa,
+         opp_tskm.team_total_xpm as prev_year_opp_total_xpm,
+         opp_tskm.team_total_xp_pct as prev_year_opp_total_xp_pct,
+         opp_tskm.team_total_kickoff_yds as prev_year_opp_total_kickoff_yds,
+         opp_tskm.team_total_kickoff_tb_pct as prev_year_opp_total_kickoff_tb_pct,
 		 -- players team previous year punting stats 
 		 tspuntingmetrics.team_total_punt as prev_year_team_total_punt,
          tspuntingmetrics.team_total_punt_yds as prev_year_team_total_punt_yds,
@@ -731,6 +826,18 @@ def fetch_independent_and_dependent_variables():
          tspuntingmetrics.team_total_punt_tb_pct as prev_year_team_total_punt_tb_pct,
          tspuntingmetrics.team_total_punt_in_20 as prev_year_team_total_punt_in_20,
          tspuntingmetrics.team_total_punt_in_20_pct as prev_year_team_total_punt_in_20_pct,
+         -- opposing team previous year punting stats
+         opp_tspuntingmetrics.team_total_punt as prev_year_opp_total_punt,
+         opp_tspuntingmetrics.team_total_punt_yds as prev_year_opp_total_punt_yds,
+         opp_tspuntingmetrics.team_total_punt_yds_per_punt as prev_year_opp_total_punt_yds_per_punt,
+         opp_tspuntingmetrics.team_total_punt_ret_yds_opp as prev_year_opp_total_punt_ret_yds_opp,
+         opp_tspuntingmetrics.team_total_punt_net_yds as prev_year_opp_total_punt_net_yds,
+         opp_tspuntingmetrics.team_total_punt_net_yds_per_punt as prev_year_opp_total_punt_net_yds_per_punt,
+         opp_tspuntingmetrics.team_total_punt_long as prev_year_opp_total_punt_long,
+         opp_tspuntingmetrics.team_total_punt_tb as prev_year_opp_total_punt_tb,
+         opp_tspuntingmetrics.team_total_punt_tb_pct as prev_year_opp_total_punt_tb_pct,
+         opp_tspuntingmetrics.team_total_punt_in_20 as prev_year_opp_total_punt_in_20,
+         opp_tspuntingmetrics.team_total_punt_in_20_pct as prev_year_opp_total_punt_in_20_pct,
 		 -- players team previous year scoring stats 
 		 tssm.rush_td as prev_year_rush_td,
          tssm.rec_td as prev_year_rec_td,
@@ -748,6 +855,23 @@ def fetch_independent_and_dependent_variables():
          tssm.fga as prev_year_fga,
          tssm.safety_md as prev_year_safety_md,
          tssm.scoring as prev_year_scoring,
+         -- opposing team previous year scoring stats
+         opp_tssm.rush_td as prev_year_opp_rush_td,
+         opp_tssm.rec_td as prev_year_opp_rec_td,
+         opp_tssm.punt_ret_td as prev_year_opp_punt_ret_td,
+         opp_tssm.kick_ret_td as prev_year_opp_kick_ret_td,
+         opp_tssm.fumbles_rec_td as prev_year_opp_fumbles_rec_td,
+         opp_tssm.def_int_td as prev_year_opp_def_int_td,
+         opp_tssm.other_td as prev_year_opp_other_td,
+         opp_tssm.total_td as prev_year_opp_total_td,
+         opp_tssm.two_pt_md as prev_year_opp_two_pt_md,
+         opp_tssm.def_two_pt as prev_year_opp_def_two_pt,
+         opp_tssm.xpm as prev_year_opp_xpm,
+         opp_tssm.xpa as prev_year_opp_xpa,
+         opp_tssm.fgm as prev_year_opp_fgm,
+         opp_tssm.fga as prev_year_opp_fga,
+         opp_tssm.safety_md as prev_year_opp_safety_md,
+         opp_tssm.scoring as prev_year_opp_scoring,
 	     -- players team previous year seasonal offensive rankings 
 		 tsr.off_points as prev_year_off_points,
          tsr.off_total_yards as prev_year_off_total_yards,
@@ -773,87 +897,192 @@ def fetch_independent_and_dependent_variables():
          tsr.off_third_down_pct as prev_year_off_third_down_pct,
          tsr.off_fourth_down_pct as prev_year_off_fourth_down_pct,
          tsr.off_red_zone_pct as prev_year_off_red_zone_pct,
+         -- opposing team previous year seasonal offensive rankings 
+		 opp_tsr.off_points as prev_year_opp_off_points,
+         opp_tsr.off_total_yards as prev_year_opp_off_total_yards,
+         opp_tsr.off_turnovers as prev_year_opp_off_turnovers,
+         opp_tsr.off_fumbles_lost as prev_year_opp_off_fumbles_lost,
+         opp_tsr.off_first_down as prev_year_opp_off_first_down,
+         opp_tsr.off_pass_att as prev_year_opp_off_pass_att,
+         opp_tsr.off_pass_yds as prev_year_opp_off_pass_yds,
+         opp_tsr.off_pass_td as prev_year_opp_off_pass_td,
+         opp_tsr.off_pass_int as prev_year_opp_off_pass_int,
+         opp_tsr.off_pass_net_yds_per_att as prev_year_opp_off_pass_net_yds_per_att,
+         opp_tsr.off_rush_att as prev_year_opp_off_rush_att,
+         opp_tsr.off_rush_yds as prev_year_opp_off_rush_yds,
+         opp_tsr.off_rush_td as prev_year_opp_off_rush_td,
+         opp_tsr.off_rush_yds_per_att as prev_year_opp_off_rush_yds_per_att,
+         opp_tsr.off_score_pct as prev_year_opp_off_score_pct,
+         opp_tsr.off_turnover_pct as prev_year_opp_off_turnover_pct,
+         opp_tsr.off_start_avg as prev_year_opp_off_start_avg,
+         opp_tsr.off_time_avg as prev_year_opp_off_time_avg,
+         opp_tsr.off_plays_per_drive as prev_year_opp_off_plays_per_drive,
+         opp_tsr.off_yds_per_drive as prev_year_opp_off_yds_per_drive,
+         opp_tsr.off_points_avg as prev_year_opp_off_points_avg,
+         opp_tsr.off_third_down_pct as prev_year_opp_off_third_down_pct,
+         opp_tsr.off_fourth_down_pct as prev_year_opp_off_fourth_down_pct,
+         opp_tsr.off_red_zone_pct as prev_year_opp_off_red_zone_pct,
+         -- players team previous year seasonal defensive rankings
+         tsr.def_points as prev_year_team_def_points,
+         tsr.def_total_yards as prev_year_team_def_total_yards,
+         tsr.def_turnovers as prev_year_team_def_turnovers,
+         tsr.def_fumbles_lost as prev_year_team_def_fumbles_lost,
+         tsr.def_first_down as prev_year_team_def_first_down,
+         tsr.def_pass_att as prev_year_team_def_pass_att,
+         tsr.def_pass_yds as prev_year_team_def_pass_yds,
+         tsr.def_pass_td as prev_year_team_def_pass_td,
+         tsr.def_pass_int as prev_year_team_def_pass_int,
+         tsr.def_pass_net_yds_per_att as prev_year_team_def_pass_net_yds_per_att,
+         tsr.def_rush_att as prev_year_team_def_rush_att,
+         tsr.def_rush_yds as prev_year_team_def_rush_yds,
+         tsr.def_rush_td as prev_year_team_def_rush_td,
+         tsr.def_rush_yds_per_att as prev_year_team_def_rush_yds_per_att,
+         tsr.def_score_pct as prev_year_team_def_score_pct,
+         tsr.def_turnover_pct as prev_year_team_def_turnover_pct,
+         tsr.def_start_avg as prev_year_team_def_start_avg,
+         tsr.def_time_avg as prev_year_team_def_time_avg,
+         tsr.def_plays_per_drive as prev_year_team_def_plays_per_drive,
+         tsr.def_yds_per_drive as prev_year_team_def_yds_per_drive,
+         tsr.def_points_avg as prev_year_team_def_points_avg,
+         tsr.def_third_down_pct as prev_year_team_def_third_down_pct,
+         tsr.def_fourth_down_pct as prev_year_team_def_fourth_down_pct,
 		 -- opposing teams previous year seasonal defensive rankings
-         tsr_def.def_points as prev_year_def_points,
-         tsr_def.def_total_yards as prev_year_def_total_yards,
-         tsr_def.def_turnovers as prev_year_def_turnovers,
-         tsr_def.def_fumbles_lost as prev_year_def_fumbles_lost,
-         tsr_def.def_first_down as prev_year_def_first_down,
-         tsr_def.def_pass_att as prev_year_def_pass_att,
-         tsr_def.def_pass_yds as prev_year_def_pass_yds,
-         tsr_def.def_pass_td as prev_year_def_pass_td,
-         tsr_def.def_pass_int as prev_year_def_pass_int,
-         tsr_def.def_pass_net_yds_per_att as prev_year_def_pass_net_yds_per_att,
-         tsr_def.def_rush_att as prev_year_def_rush_att,
-         tsr_def.def_rush_yds as prev_year_def_rush_yds,
-         tsr_def.def_rush_td as prev_year_def_rush_td,
-         tsr_def.def_rush_yds_per_att as prev_year_def_rush_yds_per_att,
-         tsr_def.def_score_pct as prev_year_def_score_pct,
-         tsr_def.def_turnover_pct as prev_year_def_turnover_pct,
-         tsr_def.def_start_avg as prev_year_def_start_avg,
-         tsr_def.def_time_avg as prev_year_def_time_avg,
-         tsr_def.def_plays_per_drive as prev_year_def_plays_per_drive,
-         tsr_def.def_yds_per_drive as prev_year_def_yds_per_drive,
-         tsr_def.def_points_avg as prev_year_def_points_avg,
-         tsr_def.def_third_down_pct as prev_year_def_third_down_pct,
-         tsr_def.def_fourth_down_pct as prev_year_def_fourth_down_pct,
-         tsr_def.def_red_zone_pct as prev_year_def_red_zone_pct,
+         opp_tsr.def_points as prev_year_def_points,
+         opp_tsr.def_total_yards as prev_year_def_total_yards,
+         opp_tsr.def_turnovers as prev_year_def_turnovers,
+         opp_tsr.def_fumbles_lost as prev_year_def_fumbles_lost,
+         opp_tsr.def_first_down as prev_year_def_first_down,
+         opp_tsr.def_pass_att as prev_year_def_pass_att,
+         opp_tsr.def_pass_yds as prev_year_def_pass_yds,
+         opp_tsr.def_pass_td as prev_year_def_pass_td,
+         opp_tsr.def_pass_int as prev_year_def_pass_int,
+         opp_tsr.def_pass_net_yds_per_att as prev_year_def_pass_net_yds_per_att,
+         opp_tsr.def_rush_att as prev_year_def_rush_att,
+         opp_tsr.def_rush_yds as prev_year_def_rush_yds,
+         opp_tsr.def_rush_td as prev_year_def_rush_td,
+         opp_tsr.def_rush_yds_per_att as prev_year_def_rush_yds_per_att,
+         opp_tsr.def_score_pct as prev_year_def_score_pct,
+         opp_tsr.def_turnover_pct as prev_year_def_turnover_pct,
+         opp_tsr.def_start_avg as prev_year_def_start_avg,
+         opp_tsr.def_time_avg as prev_year_def_time_avg,
+         opp_tsr.def_plays_per_drive as prev_year_def_plays_per_drive,
+         opp_tsr.def_yds_per_drive as prev_year_def_yds_per_drive,
+         opp_tsr.def_points_avg as prev_year_def_points_avg,
+         opp_tsr.def_third_down_pct as prev_year_def_third_down_pct,
+         opp_tsr.def_fourth_down_pct as prev_year_def_fourth_down_pct,
+         opp_tsr.def_red_zone_pct as prev_year_def_red_zone_pct,
 		 -- opposing teams previous year defensive metrics 
-		 tsdm.points as prev_year_points,
-         tsdm.total_yards as prev_year_total_yards,
-         tsdm.plays_offense as prev_year_plays_offense,
-         tsdm.yds_per_play_offense as prev_year_yds_per_play_offense,
-         tsdm.turnovers as prev_year_turnovers,
-         tsdm.fumbles_lost as prev_year_fumbles_lost,
-         tsdm.first_down as prev_year_first_down,
-         tsdm.pass_cmp as prev_year_pass_cmp,
-         tsdm.pass_att as prev_year_pass_att,
-         tsdm.pass_yds as prev_year_pass_yds,
-         tsdm.pass_td as prev_year_pass_td,
-         tsdm.pass_int as prev_year_pass_int,
-         tsdm.pass_net_yds_per_att as prev_year_pass_net_yds_per_att,
-         tsdm.pass_fd as prev_year_pass_fd,
-         tsdm.rush_att as prev_year_rush_att,
-         tsdm.rush_yds as prev_year_rush_yds,
-         tsdm.rush_td as prev_year_rush_td,
-         tsdm.rush_yds_per_att as prev_year_rush_yds_per_att,
-         tsdm.rush_fd as prev_year_rush_fd,
-         tsdm.penalties as prev_year_penalties,
-         tsdm.penalties_yds as prev_year_penalties_yds,
-         tsdm.pen_fd as prev_year_pen_fd,
-         tsdm.drives as prev_year_drives,
-         tsdm.score_pct as prev_year_score_pct,
-         tsdm.turnover_pct as prev_year_turnover_pct,
-         tsdm.start_avg as prev_year_start_avg,
-         tsdm.time_avg as prev_year_time_avg,
-         tsdm.plays_per_drive as prev_year_plays_per_drive,
-         tsdm.yds_per_drive as prev_year_yds_per_drive,
-         tsdm.points_avg as prev_year_points_avg,
-         tsdm.third_down_att as prev_year_third_down_att,
-         tsdm.third_down_success as prev_year_third_down_success,
-         tsdm.third_down_pct as prev_year_third_down_pct,
-         tsdm.fourth_down_att as prev_year_fourth_down_att,
-         tsdm.fourth_down_success as prev_year_fourth_down_success,
-         tsdm.fourth_down_pct as prev_year_fourth_down_pct,
-         tsdm.red_zone_att as prev_year_red_zone_att,
-         tsdm.red_zone_scores as prev_year_red_zone_scores,
-         tsdm.red_zone_pct as prev_year_red_zone_pct,
-         tsdm.def_int as prev_year_def_int,
-         tsdm.def_int_yds as prev_year_def_int_yds,
-         tsdm.def_int_td as prev_year_def_int_td,
-         tsdm.def_int_long as prev_year_def_int_long,
-         tsdm.pass_defended as prev_year_pass_defended,
-         tsdm.fumbles_forced as prev_year_fumbles_forced,
-         tsdm.fumbles_rec as prev_year_fumbles_rec,
-         tsdm.fumbles_rec_yds as prev_year_fumbles_rec_yds,
-         tsdm.fumbles_rec_td as prev_year_fumbles_rec_td,
-         tsdm.sacks as prev_year_sacks,
-         tsdm.tackles_combined as prev_year_tackles_combined,
-         tsdm.tackles_solo as prev_year_tackles_solo,
-         tsdm.tackles_assists as prev_year_tackles_assists,
-         tsdm.tackles_loss as prev_year_tackles_loss,
-         tsdm.qb_hits as prev_year_qb_hits,
-         tsdm.safety_md as prev_year_safety_md,
+		 opp_tsdm.points as prev_year_opp_def_points,
+         opp_tsdm.total_yards as prev_year_opp_def_total_yards,
+         opp_tsdm.plays_offense as prev_year_opp_def_plays_offense,
+         opp_tsdm.yds_per_play_offense as prev_year_opp_def_yds_per_play_offense,
+         opp_tsdm.turnovers as prev_year_opp_def_turnovers,
+         opp_tsdm.fumbles_lost as prev_year_opp_def_fumbles_lost,
+         opp_tsdm.first_down as prev_year_opp_def_first_down,
+         opp_tsdm.pass_cmp as prev_year_opp_def_pass_cmp,
+         opp_tsdm.pass_att as prev_year_opp_def_pass_att,
+         opp_tsdm.pass_yds as prev_year_opp_def_pass_yds,
+         opp_tsdm.pass_td as prev_year_opp_def_pass_td,
+         opp_tsdm.pass_int as prev_year_opp_def_pass_int,
+         opp_tsdm.pass_net_yds_per_att as prev_year_opp_def_pass_net_yds_per_att,
+         opp_tsdm.pass_fd as prev_year_opp_def_pass_fd,
+         opp_tsdm.rush_att as prev_year_opp_def_rush_att,
+         opp_tsdm.rush_yds as prev_year_opp_def_rush_yds,
+         opp_tsdm.rush_td as prev_year_opp_def_rush_td,
+         opp_tsdm.rush_yds_per_att as prev_year_opp_def_rush_yds_per_att,
+         opp_tsdm.rush_fd as prev_year_opp_def_rush_fd,
+         opp_tsdm.penalties as prev_year_opp_def_penalties,
+         opp_tsdm.penalties_yds as prev_year_opp_def_penalties_yds,
+         opp_tsdm.pen_fd as prev_year_opp_def_pen_fd,
+         opp_tsdm.drives as prev_year_opp_def_drives,
+         opp_tsdm.score_pct as prev_year_opp_def_score_pct,
+         opp_tsdm.turnover_pct as prev_year_opp_def_turnover_pct,
+         opp_tsdm.start_avg as prev_year_opp_def_start_avg,
+         opp_tsdm.time_avg as prev_year_opp_def_time_avg,
+         opp_tsdm.plays_per_drive as prev_year_opp_def_plays_per_drive,
+         opp_tsdm.yds_per_drive as prev_year_opp_def_yds_per_drive,
+         opp_tsdm.points_avg as prev_year_opp_def_points_avg,
+         opp_tsdm.third_down_att as prev_year_opp_def_third_down_att,
+         opp_tsdm.third_down_success as prev_year_opp_def_third_down_success,
+         opp_tsdm.third_down_pct as prev_year_opp_def_third_down_pct,
+         opp_tsdm.fourth_down_att as prev_year_opp_def_fourth_down_att,
+         opp_tsdm.fourth_down_success as prev_year_opp_def_fourth_down_success,
+         opp_tsdm.fourth_down_pct as prev_year_opp_def_fourth_down_pct,
+         opp_tsdm.red_zone_att as prev_year_opp_def_red_zone_att,
+         opp_tsdm.red_zone_scores as prev_year_opp_def_red_zone_scores,
+         opp_tsdm.red_zone_pct as prev_year_opp_def_red_zone_pct,
+         opp_tsdm.def_int as prev_year_opp_def_int,
+         opp_tsdm.def_int_yds as prev_year_opp_def_int_yds,
+         opp_tsdm.def_int_td as prev_year_opp_def_int_td,
+         opp_tsdm.def_int_long as prev_year_opp_def_int_long,
+         opp_tsdm.pass_defended as prev_year_opp_def_pass_defended,
+         opp_tsdm.fumbles_forced as prev_year_opp_def_fumbles_forced,
+         opp_tsdm.fumbles_rec as prev_year_opp_def_fumbles_rec,
+         opp_tsdm.fumbles_rec_yds as prev_year_opp_def_fumbles_rec_yds,
+         opp_tsdm.fumbles_rec_td as prev_year_opp_def_fumbles_rec_td,
+         opp_tsdm.sacks as prev_year_opp_def_sacks,
+         opp_tsdm.tackles_combined as prev_year_opp_def_tackles_combined,
+         opp_tsdm.tackles_solo as prev_year_opp_def_tackles_solo,
+         opp_tsdm.tackles_assists as prev_year_opp_def_tackles_assists,
+         opp_tsdm.tackles_loss as prev_year_opp_def_tackles_loss,
+         opp_tsdm.qb_hits as prev_year_opp_def_qb_hits,
+         opp_tsdm.safety_md as prev_year_opp_def_safety_md,
+         -- players team previous year defensive metrics
+         tsdm.points as prev_year_team_def_points_metrics,
+         tsdm.total_yards as prev_year_team_def_total_yards_metrics,
+         tsdm.plays_offense as prev_year_team_def_plays_offense,
+         tsdm.yds_per_play_offense as prev_year_team_def_yds_per_play_offense,
+         tsdm.turnovers as prev_year_team_def_turnovers_metrics,
+         tsdm.fumbles_lost as prev_year_team_def_fumbles_lost_metrics,
+         tsdm.first_down as prev_year_team_def_first_down_metrics,
+         tsdm.pass_cmp as prev_year_team_def_pass_cmp,
+         tsdm.pass_att as prev_year_team_def_pass_att_metrics,
+         tsdm.pass_yds as prev_year_team_def_pass_yds_metrics,
+         tsdm.pass_td as prev_year_team_def_pass_td_metrics,
+         tsdm.pass_int as prev_year_team_def_pass_int_metrics,
+         tsdm.pass_net_yds_per_att as prev_year_team_def_pass_net_yds_per_att_metrics,
+         tsdm.pass_fd as prev_year_team_def_pass_fd,
+         tsdm.rush_att as prev_year_team_def_rush_att_metrics,
+         tsdm.rush_yds as prev_year_team_def_rush_yds_metrics,
+         tsdm.rush_td as prev_year_team_def_rush_td_metrics,
+         tsdm.rush_yds_per_att as prev_year_team_def_rush_yds_per_att_metrics,
+         tsdm.rush_fd as prev_year_team_def_rush_fd,
+         tsdm.penalties as prev_year_team_def_penalties,
+         tsdm.penalties_yds as prev_year_team_def_penalties_yds,
+         tsdm.pen_fd as prev_year_team_def_pen_fd,
+         tsdm.drives as prev_year_team_def_drives,
+         tsdm.score_pct as prev_year_team_def_score_pct_metrics,
+         tsdm.turnover_pct as prev_year_team_def_turnover_pct_metrics,
+         tsdm.start_avg as prev_year_team_def_start_avg_metrics,
+         tsdm.time_avg as prev_year_team_def_time_avg_metrics,
+         tsdm.plays_per_drive as prev_year_team_def_plays_per_drive_metrics,
+         tsdm.yds_per_drive as prev_year_team_def_yds_per_drive_metrics,
+         tsdm.points_avg as prev_year_team_def_points_avg_metrics,
+         tsdm.third_down_att as prev_year_team_def_third_down_att,
+         tsdm.third_down_success as prev_year_team_def_third_down_success,
+         tsdm.third_down_pct as prev_year_team_def_third_down_pct_metrics,
+         tsdm.fourth_down_att as prev_year_team_def_fourth_down_att,
+         tsdm.fourth_down_success as prev_year_team_def_fourth_down_success,
+         tsdm.fourth_down_pct as prev_year_team_def_fourth_down_pct_metrics,
+         tsdm.red_zone_att as prev_year_team_def_red_zone_att,
+         tsdm.red_zone_scores as prev_year_team_def_red_zone_scores,
+         tsdm.red_zone_pct as prev_year_team_def_red_zone_pct_metrics,
+         tsdm.def_int as prev_year_team_def_int,
+         tsdm.def_int_yds as prev_year_team_def_int_yds,
+         tsdm.def_int_td as prev_year_team_def_int_td,
+         tsdm.def_int_long as prev_year_team_def_int_long,
+         tsdm.pass_defended as prev_year_team_def_pass_defended,
+         tsdm.fumbles_forced as prev_year_team_def_fumbles_forced,
+         tsdm.fumbles_rec as prev_year_team_def_fumbles_rec,
+         tsdm.fumbles_rec_yds as prev_year_team_def_fumbles_rec_yds,
+         tsdm.fumbles_rec_td as prev_year_team_def_fumbles_rec_td,
+         tsdm.sacks as prev_year_team_def_sacks,
+         tsdm.tackles_combined as prev_year_team_def_tackles_combined,
+         tsdm.tackles_solo as prev_year_team_def_tackles_solo,
+         tsdm.tackles_assists as prev_year_team_def_tackles_assists,
+         tsdm.tackles_loss as prev_year_team_def_tackles_loss,
+         tsdm.qb_hits as prev_year_team_def_qb_hits,
+         tsdm.safety_md as prev_year_team_def_safety_md,
 		 -- player passing stats from previous year
 		 pssm.games_started,
 		 pssm.pass_att,
@@ -924,57 +1153,71 @@ def fetch_independent_and_dependent_variables():
 		 pp.props
       FROM
          player_game_log pgl -- player game logs (week to week games)
-	  JOIN 
-	  	 player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id  = pam.player_id -- weekly aggregate metrics for player 
-	  JOIN
-	  	 player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id -- player depth chart position 
+      JOIN 
+         player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- weekly aggregate metrics for player 
+      JOIN
+         player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id -- player depth chart position 
       JOIN 
          player p ON p.player_id = pgl.player_id -- player information 
       JOIN 
          player_teams pt ON p.player_id = pt.player_id AND pgl.week >= pt.strt_wk AND pgl.week <= pt.end_wk AND pt.season = pgl.year -- players 
       JOIN 
-	  	 player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player 
-	  JOIN 
-	  	 team t ON pt.team_id = t.team_id -- team the player is on
-	  JOIN 
+         player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player 
+      JOIN 
+         team t ON pt.team_id = t.team_id -- team the player is on
+      JOIN 
          team td ON pgl.opp = td.team_id -- team the player is playing against 
-	  LEFT JOIN 
-	  	 player_seasonal_passing_metrics pssm ON p.player_id = pssm.player_id AND pssm.season = pgl.year AND pssm.team_id = t.team_id -- player seasonal passing metrics for previous year 
-	  LEFT JOIN 
-	  	 player_seasonal_rushing_receiving_metrics psrrm ON p.player_id = psrrm.player_id AND psrrm.season = pgl.year AND psrrm.team_id = t.team_id -- player seasonal rushing / receiving metrics for previous year 
-	  LEFT JOIN 
-	  	 player_seasonal_scoring_metrics player_seasonal_sm ON p.player_id = player_seasonal_sm.player_id AND player_seasonal_sm.season = pgl.year AND player_seasonal_sm.team_id = t.team_id -- player seasonal scoring metrics for previous year 
-	  JOIN
-	  	 team_seasonal_general_metrics tsgm ON t.team_id = tsgm.team_id AND (pgl.year - 1) = tsgm.season -- team general metrics for previous year
-	  JOIN
-	  	 team_seasonal_rushing_receiving_metrics tsrm ON t.team_id = tsrm.team_id AND (pgl.year - 1) = tsrm.season -- team rushing/receiving metrics for previous year
-	  JOIN 
-	  	 team_seasonal_passing_metrics tspassingmetrics ON t.team_id = tspassingmetrics.team_id AND (pgl.year - 1) = tspassingmetrics.season -- team passing metrics for previous year 
-	  JOIN 
-	  	 team_seasonal_kicking_metrics tskm ON t.team_id = tskm.team_id AND (pgl.year - 1) = tskm.season -- team kicking metrics for previous year 
-	  JOIN 
-	  	 team_seasonal_punting_metrics tspuntingmetrics ON t.team_id = tspuntingmetrics.team_id AND (pgl.year - 1) = tspuntingmetrics.season -- team punting metrics for previous year 
-	  JOIN 
-	  	 team_seasonal_scoring_metrics tssm ON t.team_id = tssm.team_id AND (pgl.year - 1) = tssm.season -- team scoring metrics for previous years 
-	  JOIN 
-	  	 team_seasonal_defensive_metrics tsdm ON tsdm.team_id = td.team_id AND (pgl.year - 1) = tsdm.season -- opposing team defensive metrics for previous year 
-	  JOIN 
-	  	 team_seasonal_ranks tsr ON tsr.team_id = t.team_id AND (pgl.year - 1) = tsr.season -- team seasonal ranks for previous year 
-	  JOIN
-	  	 team_seasonal_ranks tsr_def ON tsr_def.team_id = td.team_id AND (pgl.year - 1) = tsr_def.season -- opposing team seasonal ranks for previous year 
-	  JOIN 
-	  	 team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season -- players team weekly rankings heading into matchup
-	  JOIN
-	  	 team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season -- opposing team weekly rankings heading into matchup
+      LEFT JOIN 
+         player_seasonal_passing_metrics pssm ON p.player_id = pssm.player_id AND pssm.season = pgl.year AND pssm.team_id = t.team_id -- player seasonal passing metrics for previous year 
+      LEFT JOIN 
+         player_seasonal_rushing_receiving_metrics psrrm ON p.player_id = psrrm.player_id AND psrrm.season = pgl.year AND psrrm.team_id = t.team_id -- player seasonal rushing / receiving metrics for previous year 
+      LEFT JOIN 
+         player_seasonal_scoring_metrics player_seasonal_sm ON p.player_id = player_seasonal_sm.player_id AND player_seasonal_sm.season = pgl.year AND player_seasonal_sm.team_id = t.team_id -- player seasonal scoring metrics for previous year 
+      LEFT JOIN
+         team_seasonal_general_metrics tsgm ON t.team_id = tsgm.team_id AND (pgl.year - 1) = tsgm.season -- team general metrics for previous year
+      LEFT JOIN
+         team_seasonal_general_metrics opp_tsgm ON td.team_id = opp_tsgm.team_id AND (pgl.year - 1) = opp_tsgm.season -- opposing team general metrics for previous year
+      LEFT JOIN
+         team_seasonal_rushing_receiving_metrics tsrm ON t.team_id = tsrm.team_id AND (pgl.year - 1) = tsrm.season -- team rushing/receiving metrics for previous year
+      LEFT JOIN
+         team_seasonal_rushing_receiving_metrics opp_tsrm ON td.team_id = opp_tsrm.team_id AND (pgl.year - 1) = opp_tsrm.season -- opposing team rushing/receiving metrics for previous year
+      LEFT JOIN 
+         team_seasonal_passing_metrics tspassingmetrics ON t.team_id = tspassingmetrics.team_id AND (pgl.year - 1) = tspassingmetrics.season -- team passing metrics for previous year 
+      LEFT JOIN 
+         team_seasonal_passing_metrics opp_tspassingmetrics ON td.team_id = opp_tspassingmetrics.team_id AND (pgl.year - 1) = opp_tspassingmetrics.season -- opposing team passing metrics for previous year
+      LEFT JOIN 
+         team_seasonal_kicking_metrics tskm ON t.team_id = tskm.team_id AND (pgl.year - 1) = tskm.season -- team kicking metrics for previous year 
+      LEFT JOIN 
+         team_seasonal_kicking_metrics opp_tskm ON td.team_id = opp_tskm.team_id AND (pgl.year - 1) = opp_tskm.season -- opposing team kicking metrics for previous year
+      LEFT JOIN 
+         team_seasonal_punting_metrics tspuntingmetrics ON t.team_id = tspuntingmetrics.team_id AND (pgl.year - 1) = tspuntingmetrics.season -- team punting metrics for previous year 
+      LEFT JOIN 
+         team_seasonal_punting_metrics opp_tspuntingmetrics ON td.team_id = opp_tspuntingmetrics.team_id AND (pgl.year - 1) = opp_tspuntingmetrics.season -- opposing team punting metrics for previous year
+      LEFT JOIN 
+         team_seasonal_scoring_metrics tssm ON t.team_id = tssm.team_id AND (pgl.year - 1) = tssm.season -- team scoring metrics for previous years 
+      LEFT JOIN 
+         team_seasonal_scoring_metrics opp_tssm ON td.team_id = opp_tssm.team_id AND (pgl.year - 1) = opp_tssm.season -- opposing team scoring metrics for previous years
+      LEFT JOIN 
+         team_seasonal_defensive_metrics tsdm ON t.team_id = tsdm.team_id AND (pgl.year - 1) = tsdm.season -- team defensive metrics for previous year
+      LEFT JOIN
+         team_seasonal_defensive_metrics opp_tsdm ON td.team_id = opp_tsdm.team_id AND (pgl.year - 1) = opp_tsdm.season -- opposing team defensive metrics for previous year
+      LEFT JOIN 
+         team_seasonal_ranks tsr ON t.team_id = tsr.team_id AND (pgl.year - 1) = tsr.season -- team seasonal ranks for previous year 
+      LEFT JOIN
+         team_seasonal_ranks opp_tsr ON td.team_id = opp_tsr.team_id AND (pgl.year - 1) = opp_tsr.season -- opposing team seasonal ranks for previous year
+      JOIN 
+         team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season -- players team weekly rankings heading into matchup
       JOIN
-	  	 PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season -- player betting lines 
-	  JOIN 
+         team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season -- opposing team weekly rankings heading into matchup
+      JOIN
+         PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season -- player betting lines 
+      JOIN 
          team_betting_odds tbo -- team betting lines 
       ON (
         (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week) 
-        	OR 
+            OR 
         (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
-     )
+      ) 
 
    """
 
