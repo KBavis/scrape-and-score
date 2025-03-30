@@ -3,7 +3,7 @@ from db import insert_data
 from config import props
 import time
 
-
+#TODO: This file is deprecated. We should remove it.
 def ingest_data_sets(start_year: int, end_year: int):
     """Functionality to ingest data sets and insert relevant records into our database
 
