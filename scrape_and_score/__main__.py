@@ -163,13 +163,10 @@ def main():
             rotowire_scraper.scrape_all(start_year, end_year) 
 
             # fetch & persist player betting odds for relevant season
-            # for curr_year in range(start_year, end_year + 1):
-            #     betting_pros.fetch_historical_odds(curr_year)
+            for curr_year in range(start_year, end_year + 1):
+                betting_pros.fetch_historical_odds(curr_year)
 
-            # ingest.ingest_data_sets(start_year, end_year)
-
-            
-            # pfr.fetch_teams_and_players_seasonal_metrics(start_year, end_year)
+            pfr.fetch_teams_and_players_seasonal_metrics(start_year, end_year)
 
         # scrape relevant betting odds based on specified arg
         if cl_args.upcoming:
