@@ -729,10 +729,6 @@ def get_team_metrics_html(team_name, year, url):
 
 """
 Functionality to calculate the distance between two cities 
-
-All credit for the following code in this function goes to the developer of the repository:
-      - https://github.com/mjk2244/pro-football-reference-web-scraper
-
    
 Args: 
     city1 (dict) - dictionary containing a cities latitude & longitude 
