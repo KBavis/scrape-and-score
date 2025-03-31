@@ -126,12 +126,22 @@ Args:
 def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     logging.info(f"Attempting to scrape player metrics for the year {year}")
     player_metrics = []
+    player_urls = []
 
-    # order players by last name inital
-    ordered_players = order_players_by_last_name(team_and_player_data)
+    # sort players with hashed names persisted or not to optimize URL construction
+    players_with_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is not None]
+    players_without_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is None]
 
-    # construct each players metrics link
-    player_urls = get_player_urls(ordered_players, year)
+    # order players by last name first initial 
+    ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
+
+    # construct each players metrics link for players with no hashed name persisted 
+    if players_without_hashed_name is not None:
+        player_urls.extend(get_player_urls(ordered_players, year))
+
+    # construct players metrics link for players with hashed name persisted 
+    if players_with_hashed_name is not None:
+        player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, year))
 
     # for each player url, fetch relevant metrics
     for player_url in player_urls:
@@ -162,6 +172,41 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
         )
     return player_metrics
 
+
+
+def get_player_urls_with_hash(players: list, year: int): 
+    """
+    Construct player URLs when the player has a hashed previously persisted 
+
+    Args:
+        players (list): list of players with hashes persisted 
+        year (int): year we want to retireve a game log for 
+    
+    Returns 
+        list : list of player hashes 
+    """
+
+    base_url = "https://www.pro-football-reference.com/%s/%s/gamelog/%s"
+    player_urls = [
+        {
+            "player": player['player_name'], 
+            "position": player['position'], 
+            "url": base_url.format(get_last_name_first_initial(player['player_name']), player['hashed_name'], year)
+        } for player in players
+    ]
+
+    return player_urls
+
+
+def get_last_name_first_initial(player_name: str): 
+    first_and_last = player_name.split(" ")
+
+    if len(first_and_last) < 2:
+        raise Exception(f'Unable to extract first inital of last name of the players name: {player_name}')
+    
+    return first_and_last[1][0]
+    
+    
 
 """
 Functionality to fetch the metrics for each NFL team 
@@ -852,6 +897,7 @@ Returns:
 def get_player_urls(ordered_players: dict, year: int):
     base_url = "https://www.pro-football-reference.com%s/gamelog/%s"
     urls = []
+    player_hashed_names = []
 
     for inital, player_list in ordered_players.items():
         logging.info(f"Constructing player URLs for players with the inital '{inital}'")
@@ -870,7 +916,7 @@ def get_player_urls(ordered_players: dict, year: int):
             player_position = player["position"]
 
             href = get_href(
-                player_name, player_position, year, soup
+                player_name, player_position, year, soup, player_hashed_names
             )  # extract href from parsed HTML
             if href == None:
                 continue
@@ -879,6 +925,9 @@ def get_player_urls(ordered_players: dict, year: int):
                 urls.append(
                     {"player": player_name, "position": player_position, "url": url}
                 )  # append each players URL to our list of URLs
+
+    # insert player hashed names into database 
+    insert_data.update_player_hashed_name(player_hashed_names)
 
     return urls
 
@@ -890,13 +939,14 @@ Args:
     player_name (str): players name to search for 
     year (int): year corresponding to the season we are searching for metrics for 
     soup (BeautifulSoup): soup pertaining to raw HTML containing players hrefs
+    player_hashed_names (list): list to add player_hashed_names records to in order to persist 
 
 Returns:
     href (str): href needed to construct URL 
 """
 
 
-def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
+def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup, player_hashed_names: list):
     players = soup.find("div", id="div_players").find_all(
         "p"
     )  # find players HTML element
@@ -922,6 +972,7 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
             a_tag = player.find("a")
             if a_tag and a_tag.get("href"):
                 href = a_tag.get("href").replace(".htm", "")
+                update_players_hashed_name(player_name, href, player_hashed_names) # account for hashed name & player ID in our player_hashed_names list
                 return href
             else:
                 logging.warning(
@@ -932,6 +983,31 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
     # TODO (FFM-40): Add Ability to Re-try Finding Players Name
     logging.warning(f"Cannot find a {position} named {player_name} from {year}")
     return None
+
+
+def update_players_hashed_name(player_name: str, href: str, player_hashed_names: list): 
+    """
+    Helper function to extract relevant hashed name from HREF and persist for player 
+
+    Args:
+        player_name (str): player name to persist 
+        href (str): href corresponding to players game logs & advanced metrics 
+        player_hashed_names (list): list to update with player hashed name & ID 
+    """
+    # extract hashed name from href
+    hashed_name_index = href.rfind('/')
+    hashed_name = href[hashed_name_index + 1:]
+
+    # extract player ID by hashed name
+    normalized_name = player_service.normalize_name(player_name)
+    player_id = player_service.get_player_id_by_normalized_name(normalized_name)
+
+    if player_id is None or hashed_name is None: 
+        raise Exception(f'Unable to correctly extract players hashed name or ID for player {player_name}')
+
+    player_hashed_names.append({"hashed_name": hashed_name, "player_id": player_id})
+
+    
 
 
 """
