@@ -1469,7 +1469,8 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
             p.name,
             p.position,
             p.normalized_name,
-            p.hashed_name
+            p.hashed_name,
+            p.pfr_available
         FROM 
             player p 
         JOIN 
@@ -1490,7 +1491,7 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
             rows = cur.fetchall()
             
             for row in rows: 
-                players.append({"player_id": row[0], "player_name": row[1], "position": row[2], "normalized_name": row[3], "hashed_name": row[4]})
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2], "normalized_name": row[3], "hashed_name": row[4], "pfr_available": row[5]})
                 
 
 
