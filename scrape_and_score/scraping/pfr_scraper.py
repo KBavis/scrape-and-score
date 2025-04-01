@@ -898,6 +898,7 @@ def get_player_urls(ordered_players: dict, year: int):
     base_url = "https://www.pro-football-reference.com%s/gamelog/%s"
     urls = []
     player_hashed_names = []
+    pfr_unavailable_player_ids = []
 
     for inital, player_list in ordered_players.items():
         logging.info(f"Constructing player URLs for players with the inital '{inital}'")
@@ -916,7 +917,7 @@ def get_player_urls(ordered_players: dict, year: int):
             player_position = player["position"]
 
             href = get_href(
-                player_name, player_position, year, soup, player_hashed_names
+                player_name, player_position, year, soup, player_hashed_names, pfr_unavailable_player_ids
             )  # extract href from parsed HTML
             if href == None:
                 continue
@@ -929,6 +930,10 @@ def get_player_urls(ordered_players: dict, year: int):
     # insert player hashed names into database 
     insert_data.update_player_hashed_name(player_hashed_names)
 
+    # update players who are not available in pfr for future optimziations 
+    if pfr_unavailable_player_ids is not None:
+        insert_data.update_player_pfr_availablity_status(pfr_unavailable_player_ids)
+
     return urls
 
 
@@ -940,13 +945,14 @@ Args:
     year (int): year corresponding to the season we are searching for metrics for 
     soup (BeautifulSoup): soup pertaining to raw HTML containing players hrefs
     player_hashed_names (list): list to add player_hashed_names records to in order to persist 
+    pfr_unavailable_player_ids (list): list of player IDs that correspond to players unavailable in PFR
 
 Returns:
     href (str): href needed to construct URL 
 """
 
 
-def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup, player_hashed_names: list):
+def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup, player_hashed_names: list, pfr_unavailable_player_ids: list):
     players = soup.find("div", id="div_players").find_all(
         "p"
     )  # find players HTML element
@@ -982,6 +988,9 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup, pl
 
     # TODO (FFM-40): Add Ability to Re-try Finding Players Name
     logging.warning(f"Cannot find a {position} named {player_name} from {year}")
+
+    # account for player being unavailable 
+    pfr_unavailable_player_ids.append(player_service.get_player_id_by_normalized_name(player_service.normalize_name(player_name)))
     return None
 
 
