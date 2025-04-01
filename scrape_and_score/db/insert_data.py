@@ -101,6 +101,45 @@ def update_player_hashed_name(hashed_names: list):
         raise e
 
 
+
+def update_player_pfr_availablity_status(player_ids: list): 
+    """
+    Update player records to indicate they are not available in PFR (unable to find HREF)
+
+    Args:
+        player_ids (list): list of player_ids to update 
+    """
+    query = """
+        UPDATE player 
+        SET pfr_available = 0
+        WHERE player_id = %s
+    """
+
+
+    try:
+        params = [(player_id,) for player_id in player_ids]
+
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(
+                query, params
+            )  
+            
+            # Commit the transaction to persist data
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(params)} player records indicating that the player is not pfr_available"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating player records with pfr_available status", exc_info=True
+        )
+        raise e
+    
+
+
 """
 Functionality to persist mutliple teams into our db 
 
