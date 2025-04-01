@@ -84,7 +84,7 @@ def update_player_hashed_name(hashed_names: list):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(
+            cur.executemany(
                 query, params
             )  
             
