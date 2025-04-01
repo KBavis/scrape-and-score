@@ -186,7 +186,7 @@ def get_player_urls_with_hash(players: list, year: int):
         list : list of player hashes 
     """
 
-    base_url = "https://www.pro-football-reference.com/%s/%s/gamelog/%s"
+    base_url = "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}"
     player_urls = [
         {
             "player": player['player_name'], 
