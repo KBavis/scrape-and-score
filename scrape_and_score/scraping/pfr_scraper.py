@@ -553,6 +553,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
             for player in players
         ]
 
+        # scrape and persist advanced passing, rushing, and receiving metrics 
         for player_url in player_urls:
             html = fetch_page(player_url)
             soup = BeautifulSoup(html, "html.parser")
@@ -564,7 +565,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
                 
                 # parse stats for player and persist 
                 advanced_passing_metrics = parse_advanced_passing_table(advanced_passing_table)
-            
+                insert_data.insert_player_advanced_passing_metrics(advanced_passing_metrics, player_url['player_id'], year)
 
             # rushing & receiving table 
             advanced_rushing_receiving_table = soup.find("table", {"id": "advanced_rushing_and_receiving"})
@@ -572,6 +573,8 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
                 logging.info(f"Scraping advanced rushing/receiving metrics for player {player_url['player_name']} for the {year} season")
 
                 # parse rushing/receiving 
+                advanced_rushing_receiving_metrics = parse_advanced_rushing_receiving_table(advanced_rushing_receiving_table)
+                insert_data.insert_player_advanced_rushing_receiving_metrics(advanced_rushing_receiving_metrics, player_url['player_id'], year)
 
 
 def parse_advanced_passing_table(table: BeautifulSoup):
@@ -588,12 +591,104 @@ def parse_advanced_passing_table(table: BeautifulSoup):
     if table_body is None:
         logging.warning("Table body for advanced passing table is null")
         return None
+    
+    table_rows = table_body.find_all("tr")
+    if table_rows is None:
+        logging.warning("Table rows for advanced passing table is null")
+        return None
+    
+    metrics = []
+    
+    # loop advanced passing metrics table rows 
+    for row in table_rows:
+        table_data = row.find_all("td")
 
-    return None
+        # skip row if no data is present
+        if table_data is None:
+            continue
+        
+        weekly_metrics = {}
+        weekly_metrics['week'] = row.find("td", {"data-stat": "week_num"}).get_text()
+        weekly_metrics['age'] = row.find("td", {"data-stat": "age"}).get_text()
+        weekly_metrics['first_downs'] = row.find("td", {"data-stat": "pass_first_down"}).get_text()
+        weekly_metrics['first_down_passing_per_pass_play'] = row.find("td", {"data-stat": "pass_first_down_pct"}).get_text()
+        weekly_metrics['intended_air_yards'] = row.find("td", {"data-stat": "pass_target_yds"}).get_text()
+        weekly_metrics['intended_air_yards_per_pass_attempt'] = row.find("td", {"data-stat": "pass_tgt_yds_per_att"}).get_text()
+        weekly_metrics['completed_air_yards'] = row.find("td", {"data-stat": "pass_air_yds"}).get_text()
+        weekly_metrics['completed_air_yards_per_cmp'] = row.find("td", {"data-stat": "pass_air_yds_per_cmp"}).get_text()
+        weekly_metrics['completed_air_yards_per_att'] = row.find("td", {"data-stat": "pass_air_yds_per_att"}).get_text()
+        weekly_metrics['yds_after_catch'] = row.find("td", {"data-stat": "pass_yac"}).get_text()
+        weekly_metrics['yds_after_catch_per_cmp'] = row.find("td", {"data-stat": "pass_yac_per_cmp"}).get_text()
+        weekly_metrics['drops'] = row.find("td", {"data-stat": "pass_drops"}).get_text()
+        weekly_metrics['drop_pct'] = row.find("td", {"data-stat": "pass_drop_pct"}).get_text()
+        weekly_metrics['poor_throws'] = row.find("td", {"data-stat": "pass_poor_throws"}).get_text()
+        weekly_metrics['poor_throws_pct'] = row.find("td", {"data-stat": "pass_poor_throw_pct"}).get_text()
+        weekly_metrics['sacked'] = row.find("td", {"data-stat": "pass_sacked"}).get_text()
+        weekly_metrics['blitzed'] = row.find("td", {"data-stat": "pass_blitzed"}).get_text()
+        weekly_metrics['hurried'] = row.find("td", {"data-stat": "pass_hurried"}).get_text()
+        weekly_metrics['hits'] = row.find("td", {"data-stat": "pass_hits"}).get_text()
+        weekly_metrics['pressured'] = row.find("td", {"data-stat": "pass_pressured"}).get_text()
+        weekly_metrics['pressured_pct'] = row.find("td", {"data-stat": "pass_pressured_pct"}).get_text()
+        weekly_metrics['scrmbl'] = row.find("td", {"data-stat": "rush_scrambles"}).get_text()
+        weekly_metrics['yds_per_scrmbl'] = row.find("td", {"data-stat": "rush_scrambles_yds_per_att"}).get_text()
+
+        metrics.append(weekly_metrics)    
+
+    return metrics
 
 def parse_advanced_rushing_receiving_table(table: BeautifulSoup):
-    return None
-   
+    """
+    Parse relevant advanced rushing and receiving metrics for a player in a given season
+
+    Args:
+        table (BeautifulSoup): advanced rushing and receiving table 
+        
+    """
+    table_body = table.find_next("tbody")
+    if table_body is None:
+        logging.warning("Table body for advanced rushing and receiving table is null")
+        return None
+    
+    table_rows = table_body.find_all("tr")
+    if table_rows is None:
+        logging.warning("Table rows for advanced rushing and receiving table is null")
+        return None
+    
+    metrics = []    
+
+    for row in table_rows:
+        table_data = row.find_all("td")
+
+        # skip row if no data is present
+        if table_data is None:
+            continue
+
+        weekly_metrics = {}
+        weekly_metrics['week'] = row.find("td", {"data-stat": "week_num"}).get_text()
+        weekly_metrics['age'] = row.find("td", {"data-stat": "age"}).get_text()
+        weekly_metrics['rush_first_downs'] = row.find("td", {"data-stat": "rush_first_down"}).get_text()
+        weekly_metrics['rush_yds_before_contact'] = row.find("td", {"data-stat": "rush_yds_before_contact"}).get_text()
+        weekly_metrics['rush_yds_before_contact_per_att'] = row.find("td", {"data-stat": "rush_yds_bc_per_rush"}).get_text()
+        weekly_metrics['rush_yds_afer_contact'] = row.find("td", {"data-stat": "rush_yac"}).get_text()
+        weekly_metrics['rush_yds_after_contact_per_att'] = row.find("td", {"data-stat": "rush_yac_per_rush"}).get_text()
+        weekly_metrics['rush_brkn_tackles'] = row.find("td", {"data-stat": "rush_broken_tackles"}).get_text()
+        weekly_metrics['rush_att_per_brkn_tackle'] = row.find("td", {"data-stat": "rush_broken_tackles_per_rush"}).get_text()
+        weekly_metrics['rec_first_downs'] = row.find("td", {"data-stat": "rec_first_down"}).get_text()
+        weekly_metrics['yds_before_catch'] = row.find("td", {"data-stat": "rec_air_yds"}).get_text()
+        weekly_metrics['yds_before_catch_per_rec'] = row.find("td", {"data-stat": "rec_air_yds_per_rec"}).get_text()
+        weekly_metrics['yds_after_catch'] = row.find("td", {"data-stat": "rec_yac"}).get_text()
+        weekly_metrics['yds_after_catch_per_rec'] = row.find("td", {"data-stat": "rec_yac_per_rec"}).get_text()
+        weekly_metrics['avg_depth_of_tgt'] = row.find("td", {"data-stat": "rec_adot"}).get_text()
+        weekly_metrics['rec_brkn_tackles'] = row.find("td", {"data-stat": "rec_broken_tackles"}).get_text()
+        weekly_metrics['rec_per_brkn_tackle'] = row.find("td", {"data-stat": "rec_broken_tackles_per_rec"}).get_text()
+        weekly_metrics['dropped_passes'] = row.find("td", {"data-stat": "rec_drops"}).get_text()
+        weekly_metrics['drop_pct'] = row.find("td", {"data-stat": "rec_drop_pct"}).get_text()
+        weekly_metrics['int_when_tgted'] = row.find("td", {"data-stat": "rec_target_int"}).get_text()
+        weekly_metrics['qbr_when_tgted'] = row.find("td", {"data-stat": "rec_pass_rating"}).get_text()
+
+        metrics.append(weekly_metrics)
+    
+    return metrics
 """
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 
