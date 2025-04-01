@@ -59,7 +59,7 @@ def scrape_historical(start_year: int, end_year: int):
     team_names = [team["name"] for team in teams]
 
     for year in range (start_year, end_year + 1): 
-        logging.info(f"\n\nScraping team and player game logs for the {year} season")
+        logging.info(f"Scraping team and player game logs for the {year} season\n\n")
 
         # # fetch team metrics for given season 
         season_team_metrics = fetch_team_metrics(team_names, team_template_url, year)
