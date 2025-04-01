@@ -1694,6 +1694,129 @@ def insert_player_seasonal_scoring_metrics(record: dict, year: int, team_id: int
         )
         raise e
 
+def insert_player_advanced_passing_metrics(record: dict, player_id: int, week: int, season: int):
+    """Insert player advanced passing metrics into our database
+
+    Args:
+        record (dict): record containing relevant advanced passing metrics
+        player_id (int): ID of the player
+        week (int): week number
+        season (int): season year
+    """
+    sql = """
+    INSERT INTO player_advanced_passing (
+        player_id, week, season, age, first_downs, first_down_passing_per_pass_play,
+        intended_air_yards, intended_air_yards_per_pass_attempt, completed_air_yards,
+        completed_air_yards_per_cmp, completed_air_yards_per_att, yds_after_catch,
+        yds_after_catch_per_cmp, drops, drop_pct, poor_throws, poor_throws_pct, sacked,
+        blitzed, hurried, hits, pressured, pressured_pct, scrmbl, yds_per_scrmbl
+    )
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    try:
+        connection = get_connection()
+
+        params = (
+            player_id, week, season,
+            float(record['age']),
+            int(record.get('first_downs', 0)),
+            float(record.get('first_down_passing_per_pass_play', 0)),
+            float(record.get('intended_air_yards', 0)),
+            float(record.get('intended_air_yards_per_pass_attempt', 0)),
+            float(record.get('completed_air_yards', 0)),
+            float(record.get('completed_air_yards_per_cmp', 0)),
+            float(record.get('completed_air_yards_per_att', 0)),
+            float(record.get('yds_after_catch', 0)),
+            float(record.get('yds_after_catch_per_cmp', 0)),
+            int(record.get('drops', 0)),
+            float(record.get('drop_pct', 0)),
+            int(record.get('poor_throws', 0)),
+            float(record.get('poor_throws_pct', 0)),
+            int(record.get('sacked', 0)),
+            int(record.get('blitzed', 0)),
+            int(record.get('hurried', 0)),
+            int(record.get('hits', 0)),
+            int(record.get('pressured', 0)),
+            float(record.get('pressured_pct', 0)),
+            int(record.get('scrmbl', 0)),
+            float(record.get('yds_per_scrmbl', 0))
+        )
+
+        with connection.cursor() as cur:
+            cur.execute(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted player_advanced_passing record for player {player_id} week {week} season {season}"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_advanced_passing record into our db: {record}",
+            exc_info=True,
+        )
+        raise e
+
+
+def insert_player_advanced_rushing_receiving_metrics(record: dict, player_id: int, week: int, season: int):
+    """Insert player advanced rushing and receiving metrics into our database
+
+    Args:
+        record (dict): record containing relevant advanced rushing and receiving metrics
+        player_id (int): ID of the player
+        week (int): week number
+        season (int): season year
+    """
+    sql = """
+    INSERT INTO player_advanced_rushing_receiving (
+        player_id, week, season, age, rush_first_downs, rush_yds_before_contact,
+        rush_yds_before_contact_per_att, rush_yds_afer_contact, rush_yds_after_contact_per_att,
+        rush_brkn_tackles, rush_att_per_brkn_tackle, rec_first_downs, yds_before_catch,
+        yds_before_catch_per_rec, yds_after_catch, yds_after_catch_per_rec, avg_depth_of_tgt,
+        rec_brkn_tackles, rec_per_brkn_tackle, dropped_passes, drop_pct, int_when_tgted, qbr_when_tgted
+    )
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    try:
+        connection = get_connection()
+
+        params = (
+            player_id, week, season,
+            float(record['age']),
+            int(record.get('rush_first_downs', 0)),
+            float(record.get('rush_yds_before_contact', 0)),
+            float(record.get('rush_yds_before_contact_per_att', 0)),
+            float(record.get('rush_yds_afer_contact', 0)),
+            float(record.get('rush_yds_after_contact_per_att', 0)),
+            int(record.get('rush_brkn_tackles', 0)),
+            float(record.get('rush_att_per_brkn_tackle', 0)),
+            int(record.get('rec_first_downs', 0)),
+            float(record.get('yds_before_catch', 0)),
+            float(record.get('yds_before_catch_per_rec', 0)),
+            float(record.get('yds_after_catch', 0)),
+            float(record.get('yds_after_catch_per_rec', 0)),
+            float(record.get('avg_depth_of_tgt', 0)),
+            int(record.get('rec_brkn_tackles', 0)),
+            float(record.get('rec_per_brkn_tackle', 0)),
+            int(record.get('dropped_passes', 0)),
+            float(record.get('drop_pct', 0)),
+            int(record.get('int_when_tgted', 0)),
+            float(record.get('qbr_when_tgted', 0))
+        )
+
+        with connection.cursor() as cur:
+            cur.execute(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted player_advanced_rushing_receiving record for player {player_id} week {week} season {season}"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_advanced_rushing_receiving record into our db: {record}",
+            exc_info=True,
+        )
+        raise e
+
 
 def convert_time_to_seconds(time_str):
     minutes, seconds = map(int, time_str.split(":"))
