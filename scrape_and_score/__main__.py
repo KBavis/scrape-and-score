@@ -23,7 +23,6 @@ from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
 from models import optimization, post_training
 import torch
-from data import ingest
 import os
 import pandas as pd
 
