@@ -1056,6 +1056,8 @@ def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
         "result": [],
         "team_pts": [],
         "opp_pts": [],
+        "off_snps": [],
+        "snap_pct": []
     }
     data.update(get_additional_metrics(position))  # update data with additonal metrics
 
