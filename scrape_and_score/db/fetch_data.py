@@ -1504,6 +1504,60 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
     return players
 
 
+def fetch_players_on_a_roster_in_specific_year_with_hashed_name(year: int):
+    """
+    Retrieve players on an active roster in specific year that have a hashed name persisted
+
+    Args:
+        year (int): season to account for 
+    
+    Returns:
+        list: list of disitinct players 
+    """
+    
+    sql = """ 
+        SELECT DISTINCT
+            p.player_id,
+            p.name,
+            p.position,
+            p.normalized_name,
+            p.hashed_name,
+            p.pfr_available
+        FROM 
+            player p 
+        JOIN 
+            player_teams pt 
+        ON
+            p.player_id = pt.player_id 
+        WHERE 
+            pt.season = %s AND hashed_name IS NOT NULL
+    """
+    
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2], "normalized_name": row[3], "hashed_name": row[4], "pfr_available": row[5]})
+            
+            logging.info(f"Successfully fetched {len(players)} player records active in {year} with a hashed name persisted.")
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players on active roster with hashed name persisted in season {year}: {e}"
+        )
+        raise e
+
+    return players
+
+
 """
 Retrieve the latest week we have persisted data in our 'team_betting_odds' table 
 
