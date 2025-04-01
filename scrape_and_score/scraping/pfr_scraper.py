@@ -130,17 +130,20 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
 
     # sort players with hashed names persisted or not to optimize URL construction
     players_with_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is not None]
-    players_without_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is None]
+    players_without_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is None and player['pfr_available'] == 1] # disregard players previously indicated to be unavailable
+
+    # log players skipped due to being unavailable
+    log_disregarded_players(team_and_player_data)
 
     # order players by last name first initial 
     ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
 
     # construct each players metrics link for players with no hashed name persisted 
-    if players_without_hashed_name is not None:
+    if players_without_hashed_name is not None and len(players_without_hashed_name) > 0:
         player_urls.extend(get_player_urls(ordered_players, year))
 
     # construct players metrics link for players with hashed name persisted 
-    if players_with_hashed_name is not None:
+    if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
         player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, year))
 
     # for each player url, fetch relevant metrics
@@ -172,6 +175,18 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
         )
     return player_metrics
 
+
+def log_disregarded_players(players: list):
+    """
+    Log out players that are going to be disregarded 
+
+    Args:
+        players (list): all players active in specifid season
+    """
+
+    disregarded_players = [player['player_name'] for player in players if player['pfr_available'] == 0]
+    if disregarded_players is not None and len(disregarded_players) != 0:
+        logging.warn(f'The following players will be disregarded due to being unavailable in Pro-Football-Reference: \n\n{disregarded_players}\n\n')
 
 
 def get_player_urls_with_hash(players: list, year: int): 
