@@ -536,13 +536,66 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
                 stats[key] = value
     
     return stats
+
+
+def scrape_player_advanced_metrics(start_year: int, end_year: int): 
+
+    for year in range(start_year, end_year + 1):
+        logging.info(f"Scraping player advanced passing, rushing, and receiving metrics for the {year} season")
+        
+        # NOTE: All players that we want to extract advanced metrics for SHOULD have already had their game logs persisted, thus, the hashed names should be present (O/W, we can skip)
+        players = fetch_data.fetch_players_on_a_roster_in_specific_year_with_hashed_name(start_year)
+
+        # generate URLs 
+        base_url = props.get_config('website.pro-football-reference.urls.advanced-metrics')
+        player_urls = [
+            {"player_id": player['player_id'], "player_name": player['player_name'], "url": base_url.format(get_last_name_first_initial(player['player_name']), player['hashed_name'], year)}     
+            for player in players
+        ]
+
+        for player_url in player_urls:
+            html = fetch_page(player_url)
+            soup = BeautifulSoup(html, "html.parser")
+
+            # advanced_passing table 
+            advanced_passing_table = soup.find("table", {"id": "advanced_passing"})
+            if advanced_passing_table is not None: 
+                logging.info(f"Scraping advanced passing metrics for player {player_url['player_name']} for the {year} season")
+                
+                # parse stats for player and persist 
+                advanced_passing_metrics = parse_advanced_passing_table(advanced_passing_table)
+            
+
+            # rushing & receiving table 
+            advanced_rushing_receiving_table = soup.find("table", {"id": "advanced_rushing_and_receiving"})
+            if advanced_rushing_receiving_table is not None: 
+                logging.info(f"Scraping advanced rushing/receiving metrics for player {player_url['player_name']} for the {year} season")
+
+                # parse rushing/receiving 
+
+
+def parse_advanced_passing_table(table: BeautifulSoup):
+    """
+    Parse relevant advanced passing metrics for a player in a given season
+
+    Args:
+        table (BeautifulSoup): advanced passing table 
+
+    Returns:
+        list: list of dictionaries containing passing metrics for entire season
+    """
+    table_body = table.find_next("tbody")
+    if table_body is None:
+        logging.warning("Table body for advanced passing table is null")
+        return None
+
+    return None
+
+def parse_advanced_rushing_receiving_table(table: BeautifulSoup):
+    return None
    
 """
 Functionality to fetch relevant metrics corresponding to a specific NFL team
-
-
-All credit for the following code in this function goes to the developer of the repository:
-      - https://github.com/mjk2244/pro-football-reference-web-scraper
 
 Some subtle modifications were made to fix the repositories bug and to fit our use case.      
    
