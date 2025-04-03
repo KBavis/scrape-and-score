@@ -1504,6 +1504,50 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
     return players
 
 
+def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int):
+    """
+    Retrieve player IDs of players who have advanced metrics persisted 
+
+    Args:
+        year (int): season to account for 
+    
+    Returns:
+        dict: set of disitinct players ids that are already persisted
+    """
+    
+    sql = """ 
+        SELECT DISTINCT player_id
+        FROM player_advanced_passing
+        WHERE season = %s
+        UNION
+        SELECT DISTINCT player_id
+        FROM player_advanced_rushing_receiving
+        WHERE season = %s;
+    """
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,year))
+            rows = cur.fetchall()
+            
+            player_ids = {row[0] for row in rows}
+            
+            
+            logging.info(f"Successfully fetched {len(player_ids)} player IDs of players in advanced rushing/receiving/passing tables for season {year} .")
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players ID of players in advanced rushing/receiving/passing tables for season {year}"
+        )
+        raise e
+
+    return player_ids
+
+
 def fetch_players_on_a_roster_in_specific_year_with_hashed_name(year: int):
     """
     Retrieve players on an active roster in specific year that have a hashed name persisted
