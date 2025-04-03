@@ -1719,28 +1719,28 @@ def insert_player_advanced_passing_metrics(records: list, player_id: int, season
         params = [
             (
                 player_id, int(record['week']), season,
-                float(record['age']),
-                int(record.get('first_downs', 0)),
-                float(record.get('first_down_passing_per_pass_play', 0)),
-                float(record.get('intended_air_yards', 0)),
-                float(record.get('intended_air_yards_per_pass_attempt', 0)),
-                float(record.get('completed_air_yards', 0)),
-                float(record.get('completed_air_yards_per_cmp', 0)),
-                float(record.get('completed_air_yards_per_att', 0)),
-                float(record.get('yds_after_catch', 0)),
-                float(record.get('yds_after_catch_per_cmp', 0)),
-                int(record.get('drops', 0)),
-                float(record.get('drop_pct', 0)),
-                int(record.get('poor_throws', 0)),
-                float(record.get('poor_throws_pct', 0)),
-                int(record.get('sacked', 0)),
-                int(record.get('blitzed', 0)),
-                int(record.get('hurried', 0)),
-                int(record.get('hits', 0)),
-                int(record.get('pressured', 0)),
-                float(record.get('pressured_pct', 0)),
-                int(record.get('scrmbl', 0)),
-                float(record.get('yds_per_scrmbl', 0))
+                float(record.get('age', -1.0)),
+                int(record.get('first_downs', -1)),
+                float(record.get('first_down_passing_per_pass_play', -1)),
+                float(record.get('intended_air_yards', -1)),
+                float(record.get('intended_air_yards_per_pass_attempt', -1)),
+                float(record.get('completed_air_yards', -1)),
+                float(record.get('completed_air_yards_per_cmp', -1)),
+                float(record.get('completed_air_yards_per_att', -1)),
+                float(record.get('yds_after_catch', -1)),
+                float(record.get('yds_after_catch_per_cmp', -1)),
+                int(record.get('drops', -1)),
+                float(record.get('drop_pct', -1)),
+                int(record.get('poor_throws', -1)),
+                float(record.get('poor_throws_pct', -1)),
+                int(record.get('sacked', -1)),
+                int(record.get('blitzed', -1)),
+                int(record.get('hurried', -1)),
+                int(record.get('hits', -1)),
+                int(record.get('pressured', -1)),
+                float(record.get('pressured_pct', -1)),
+                int(record.get('scrmbl', -1)),
+                float(record.get('yds_per_scrmbl', -1))
             )
         for record in records]
 
@@ -1752,7 +1752,7 @@ def insert_player_advanced_passing_metrics(records: list, player_id: int, season
             )
     except Exception as e:
         logging.error(
-            f"An exception occurred while inserting the following player_advanced_passing record into our db: {record}",
+            f"An exception occurred while inserting the following player_advanced_passing record into our db: {records}",
             exc_info=True,
         )
         raise e
@@ -1774,37 +1774,37 @@ def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: i
         yds_before_catch_per_rec, yds_after_catch, yds_after_catch_per_rec, avg_depth_of_tgt,
         rec_brkn_tackles, rec_per_brkn_tackle, dropped_passes, drop_pct, int_when_tgted, qbr_when_tgted
     )
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
 
     try:
         connection = get_connection()
 
         params = [
-            (
-                player_id, int(record['week']), season,
-                float(record['age']),
-                int(record.get('rush_first_downs', 0)),
-                float(record.get('rush_yds_before_contact', 0)),
-                float(record.get('rush_yds_before_contact_per_att', 0)),
-                float(record.get('rush_yds_afer_contact', 0)),
-                float(record.get('rush_yds_after_contact_per_att', 0)),
-                int(record.get('rush_brkn_tackles', 0)),
-                float(record.get('rush_att_per_brkn_tackle', 0)),
-                int(record.get('rec_first_downs', 0)),
-                float(record.get('yds_before_catch', 0)),
-                float(record.get('yds_before_catch_per_rec', 0)),
-                float(record.get('yds_after_catch', 0)),
-                float(record.get('yds_after_catch_per_rec', 0)),
-                float(record.get('avg_depth_of_tgt', 0)),
-                int(record.get('rec_brkn_tackles', 0)),
-                float(record.get('rec_per_brkn_tackle', 0)),
-                int(record.get('dropped_passes', 0)),
-                float(record.get('drop_pct', 0)),
-                int(record.get('int_when_tgted', 0)),
-                float(record.get('qbr_when_tgted', 0))
-            ) 
-        for record in records]
+        (
+            player_id, int(record.get('week', -1)), season,
+            float(record.get('age', -1)),
+            int(record.get('rush_first_downs', -1)),
+            float(record.get('rush_yds_before_contact', -1)),
+            float(record.get('rush_yds_before_contact_per_att', -1)),
+            float(record.get('rush_yds_after_contact', -1)),
+            float(record.get('rush_yds_after_contact_per_att', -1)),
+            int(record.get('rush_brkn_tackles', -1)),
+            float(record.get('rush_att_per_brkn_tackle', -1)),
+            int(record.get('rec_first_downs', -1)),
+            float(record.get('yds_before_catch', -1)),
+            float(record.get('yds_before_catch_per_rec', -1)),
+            float(record.get('yds_after_catch', -1)),
+            float(record.get('yds_after_catch_per_rec', -1)),
+            float(record.get('avg_depth_of_tgt', -1)),
+            int(record.get('rec_brkn_tackles', -1)),
+            float(record.get('rec_per_brkn_tackle', -1)),
+            int(record.get('dropped_passes', -1)),
+            float(record.get('drop_pct', -1)),
+            int(record.get('int_when_tgted', -1)),
+            float(record.get('qbr_when_tgted', -1))
+        )
+        for record in records ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
