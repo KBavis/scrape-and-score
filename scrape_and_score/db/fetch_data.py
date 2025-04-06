@@ -571,8 +571,6 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year: int):
 Functionality to retrieve the needed dependent and independent variables needed 
 to create our predicition models 
 
-TODO (FFM-145): Include external factors such as weather, vegas projections, players depth chart position 
-
 Args:
    None 
 
@@ -582,7 +580,9 @@ Returns:
 """
 
 #TODO: Optimize query so it doesn't take forever to run 
+#TODO: Move SQL that stores this query somewhere outside of string 
 #TODO: Ensure that the we update join statement for previous year data to ensure we don't just exclude all rookies!
+#TODO: Ensure we update weekly agg metrics join to account for previous week (current week will contain )
 def fetch_independent_and_dependent_variables():
     sql = """
     WITH PlayerProps AS (
@@ -608,7 +608,64 @@ def fetch_independent_and_dependent_variables():
          p.position,
 		 -- player total fantasy points scored 
          pgl.fantasy_points,
-		 -- aggregate metrics 
+		 -- weekly aggregate metrics 
+		 pam.avg_pass_first_downs AS avg_wkly_pass_first_downs,
+		 pam.avg_pass_first_downs_per_pass_play AS avg_wkly_pass_first_downs_per_pass_play,
+		 pam.avg_intended_air_yards AS avg_wkly_intended_air_yards,
+		 pam.avg_intended_air_yards_per_pass_attempt AS avg_wkly_intended_air_yards_per_pass_attempt,
+		 pam.avg_completed_air_yards AS avg_wkly_completed_air_yards,
+		 pam.avg_completed_air_yards_per_cmp AS avg_wkly_completed_air_yards_per_cmp,
+		 pam.avg_completed_air_yards_per_att AS avg_wkly_completed_air_yards_per_att,
+		 pam.avg_pass_yds_after_catch AS avg_wkly_pass_yds_after_catch,
+		 pam.avg_pass_yds_after_catch_per_cmp AS avg_wkly_pass_yds_after_catch_per_cmp,
+		 pam.avg_pass_drops AS avg_wkly_pass_drops,
+		 pam.avg_pass_drop_pct AS avg_wkly_pass_drop_pct,
+		 pam.avg_pass_poor_throws AS avg_wkly_pass_poor_throws,
+		 pam.avg_pass_poor_throws_pct AS avg_wkly_pass_poor_throws_pct,
+		 pam.avg_pass_blitzed AS avg_wkly_pass_blitzed,
+		 pam.avg_pass_hurried AS avg_wkly_pass_hurried,
+		 pam.avg_pass_hits AS avg_wkly_pass_hits,
+		 pam.avg_pass_pressured AS avg_wkly_pass_pressured,
+		 pam.avg_pass_pressured_pct AS avg_wkly_pass_pressured_pct,
+		 pam.avg_pass_scrambles AS avg_wkly_pass_scrambles,
+		 pam.avg_pass_yds_per_scramble AS avg_wkly_pass_yds_per_scramble,
+		
+		 pam.avg_rush_first_downs AS avg_wkly_rush_first_downs,
+		 pam.avg_rush_yds_before_contact AS avg_wkly_rush_yds_before_contact,
+		 pam.avg_rush_yds_before_contact_per_att AS avg_wkly_rush_yds_before_contact_per_att,
+		 pam.avg_rush_yds_after_contact AS avg_wkly_rush_yds_after_contact,
+		 pam.avg_rush_yds_after_contact_per_att AS avg_wkly_rush_yds_after_contact_per_att,
+		 pam.avg_rush_broken_tackles AS avg_wkly_rush_broken_tackles,
+		 pam.avg_rush_att_per_broken_tackle AS avg_wkly_rush_att_per_broken_tackle,
+		 pam.avg_rec_first_downs AS avg_wkly_rec_first_downs,
+		 pam.avg_rec_yds_before_catch AS avg_wkly_rec_yds_before_catch,
+		 pam.avg_rec_yds_before_catch_per_rec AS avg_wkly_rec_yds_before_catch_per_rec,
+		 pam.avg_rec_yds_after_catch AS avg_wkly_rec_yds_after_catch,
+		 pam.avg_rec_yds_after_catch_per_rec AS avg_wkly_rec_yds_after_catch_per_rec,
+		 pam.avg_avg_depth_of_target AS avg_wkly_avg_depth_of_target,
+		 pam.avg_rec_broken_tackles AS avg_wkly_rec_broken_tackles,
+		 pam.avg_rec_per_broken_tackle AS avg_wkly_rec_per_broken_tackle,
+		 pam.avg_rec_dropped_passes AS avg_wkly_rec_dropped_passes,
+		 pam.avg_rec_drop_pct AS avg_wkly_rec_drop_pct,
+		 pam.avg_rec_int_when_targeted AS avg_wkly_rec_int_when_targeted,
+		 pam.avg_rec_qbr_when_targeted AS avg_wkly_rec_qbr_when_targeted,
+		
+		 pam.avg_completions AS avg_wkly_completions,
+		 pam.avg_attempts AS avg_wkly_attempts,
+		 pam.avg_pass_yds AS avg_wkly_pass_yds,
+		 pam.avg_pass_tds AS avg_wkly_pass_tds,
+		 pam.avg_interceptions AS avg_wkly_interceptions,
+		 pam.avg_rating AS avg_wkly_rating,
+		 pam.avg_sacked AS avg_wkly_sacked,
+		 pam.avg_rush_attempts AS avg_wkly_rush_attempts,
+		 pam.avg_rush_yds AS avg_wkly_rush_yds,
+		 pam.avg_rush_tds AS avg_wkly_rush_tds,
+		 pam.avg_targets AS avg_wkly_targets,
+		 pam.avg_receptions AS avg_wkly_receptions,
+		 pam.avg_rec_yds AS avg_wkly_rec_yds,
+		 pam.avg_rec_tds AS avg_wkly_rec_tds,
+		 pam.avg_snap_pct AS avg_wkly_snap_pct,
+		 pam.avg_offensive_snaps AS avg_wkly_offensive_snaps,
 		 pam.avg_fantasy_points AS avg_wkly_fantasy_points,
 		 --depth chart position 
 		 pdc.depth_chart_pos AS depth_chart_position,
@@ -1157,7 +1214,7 @@ def fetch_independent_and_dependent_variables():
       FROM
          player_game_log pgl -- player game logs (week to week games)
       JOIN 
-         player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- weekly aggregate metrics for player 
+         player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- weekly aggregate metrics for player 
       JOIN
          player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id -- player depth chart position 
       JOIN 
@@ -1165,11 +1222,11 @@ def fetch_independent_and_dependent_variables():
       JOIN 
          player_teams pt ON p.player_id = pt.player_id AND pgl.week >= pt.strt_wk AND pgl.week <= pt.end_wk AND pt.season = pgl.year -- players 
       JOIN 
-         player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player 
-      JOIN 
          team t ON pt.team_id = t.team_id -- team the player is on
       JOIN 
          team td ON pgl.opp = td.team_id -- team the player is playing against 
+	  LEFT JOIN 
+         player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player  	 
       LEFT JOIN 
          player_seasonal_passing_metrics pssm ON p.player_id = pssm.player_id AND pssm.season = pgl.year AND pssm.team_id = t.team_id -- player seasonal passing metrics for previous year 
       LEFT JOIN 
@@ -1221,7 +1278,6 @@ def fetch_independent_and_dependent_variables():
             OR 
         (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
       ) 
-
    """
 
     df = None
