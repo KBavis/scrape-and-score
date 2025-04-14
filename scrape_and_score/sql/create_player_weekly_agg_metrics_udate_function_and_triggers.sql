@@ -209,35 +209,45 @@ $$ LANGUAGE plpgsql;
 
 
 
---------------------------------------------------------------------------------
-------------TRIGGERS THAT WILL INVOKE ABOVE FUNCTION----------------------------
---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+------------TRIGGERS / TRIGGER FUNCTIONS THAT WILL INVOKE ABOVE FUNCTION----------------------------
+----------------------------------------------------------------------------------------------------
 
-CREATE TRIGGER trigger_upsert_player_game_log
-AFTER INSERT OR UPDATE ON player_game_log
-FOR EACH ROW
-EXECUTE FUNCTION upsert_player_weekly_agg_metrics(
-    NEW.player_id,
-    NEW.week,
-    NEW.year
-);
+-- Create Trigger Function For Player_Game_log 
+CREATE OR REPLACE FUNCTION trigger_upsert_for_player_game_log() 
+RETURNS TRIGGER AS $$
+BEGIN 
+	PERFORM upsert_player_weekly_agg_metrics(NEW.player_id, NEW.week, NEW.year);
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 
-CREATE TRIGGER trigger_upsert_player_advanced_passing
+-- Create Trigger Function For Player Advanced Metrics 
+CREATE OR REPLACE FUNCTION trigger_upsert_for_player_advanced_metrics()
+RETURNS TRIGGER AS $$
+BEGIN 
+	PERFORM upsert_player_weekly_agg_metrics(NEW.player_id, NEW.week, NEW.season);
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- Create Individual Triggers 
+CREATE OR REPLACE TRIGGER player_game_log_trigger
+AFTER INSERT OR UPDATE ON player_game_log 
+FOR EACH ROW 
+EXECUTE FUNCTION trigger_upsert_for_player_game_log(); 
+
+CREATE OR REPLACE TRIGGER player_advanced_passing_trigger 
 AFTER INSERT OR UPDATE ON player_advanced_passing
-FOR EACH ROW
-EXECUTE FUNCTION upsert_player_weekly_agg_metrics(
-    NEW.player_id,
-    NEW.week,
-    NEW.season
-);
+FOR EACH ROW 
+EXECUTE FUNCTION trigger_upsert_for_player_advanced_metrics()
 
 
-CREATE TRIGGER trigger_upsert_player_advanced_rushing_receiving
+CREATE OR REPLACE TRIGGER player_advanced_rushing_receiving_trigger 
 AFTER INSERT OR UPDATE ON player_advanced_rushing_receiving
-FOR EACH ROW
-EXECUTE FUNCTION upsert_player_weekly_agg_metrics(
-    NEW.player_id,
-    NEW.week,
-    NEW.season
-);
+FOR EACH ROW 
+EXECUTE FUNCTION trigger_upsert_for_player_advanced_metrics()
+
