@@ -2,6 +2,8 @@ from config import props
 
 """
 Module to act as intermediary between business logic & data access layer for player_game_logs 
+
+TODO: Rename this file to something else since its transforming into a larger scope than just player_game_logs
 """
 import logging
 from db import insert_data, fetch_data
@@ -443,9 +445,11 @@ def insert_fantasy_points(points: list):
 
 
 """
-Functionality to calculate and persist the weekly fantasy point averages for players. The average calculated 
+Functionality to calculate and persist the weekly averages for players. The average calculated 
 will only take into account the current season AND the games that have been played in this current season 
 based on the current week 
+
+TODO: Deprecated function with due to the creation of new update_player_weekly_agg DB function
 
 Args:
     start_week (int): week to start calculating averages for 
@@ -461,7 +465,7 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
 
     player_agg_metrics = []
 
-    # calculate weekly fantasy point averages
+    # calculate weekly averages (i.e fantasy points, advanced metrics, etc)
     for player in players: 
         player_id = player['id']
 
@@ -469,6 +473,8 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
         for curr_week in range(start_week, end_week + 1): 
             logging.info(f"Calculating weekly fantasy point averages from week 1 to week {curr_week} in the {season} season for player {player['name']}.")
 
+
+            # weekly fantasy point 
             weekly_fantasy_points = fetch_data.fetch_player_fantasy_points(player_id, season, curr_week)
             if not any(record["week"] == curr_week for record in weekly_fantasy_points):
                 logging.info(f"Skipping week {curr_week} for player {player['name']} as no data is available.")
