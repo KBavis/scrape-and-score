@@ -167,6 +167,8 @@ def main():
 
             pfr.fetch_teams_and_players_seasonal_metrics(start_year, end_year)
 
+            pfr.scrape_player_advanced_metrics(start_year, end_year)
+
         # scrape relevant betting odds based on specified arg
         if cl_args.upcoming:
             rotowire_scraper.scrape_upcoming()
