@@ -7,3 +7,4 @@ __pycache__/
 proxies.json
 .pytest_cache
 .DS_Store
+logs/
