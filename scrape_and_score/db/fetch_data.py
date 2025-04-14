@@ -608,6 +608,8 @@ def fetch_independent_and_dependent_variables():
          p.position,
 		 -- player total fantasy points scored 
          pgl.fantasy_points,
+         -- team rest days 
+         tgl.rest_days,
 		 -- weekly aggregate metrics 
 		 pam.avg_pass_first_downs AS avg_wkly_pass_first_downs,
 		 pam.avg_pass_first_downs_per_pass_play AS avg_wkly_pass_first_downs_per_pass_play,
@@ -1225,6 +1227,8 @@ def fetch_independent_and_dependent_variables():
          team t ON pt.team_id = t.team_id -- team the player is on
       JOIN 
          team td ON pgl.opp = td.team_id -- team the player is playing against 
+      JOIN 
+	  	 team_game_log tgl ON tgl.team_id = t.team_id AND tgl.week = pgl.week AND tgl.year = pgl.year
 	  LEFT JOIN 
          player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player  	 
       LEFT JOIN 
