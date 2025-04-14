@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES, VALID_POSITIONS
+from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES
 from service import team_service, player_service, player_game_logs_service, team_game_logs_service
 from config import props
 from .util import fetch_page
@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from db import fetch_data, insert_data
-import time
 
 
 """
@@ -60,7 +59,7 @@ def scrape_historical(start_year: int, end_year: int):
     team_names = [team["name"] for team in teams]
 
     for year in range (start_year, end_year + 1): 
-        logging.info(f"\n\nScraping team and player game logs for the {year} season")
+        logging.info(f"Scraping team and player game logs for the {year} season\n\n")
 
         # # fetch team metrics for given season 
         season_team_metrics = fetch_team_metrics(team_names, team_template_url, year)
@@ -127,12 +126,25 @@ Args:
 def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     logging.info(f"Attempting to scrape player metrics for the year {year}")
     player_metrics = []
+    player_urls = []
 
-    # order players by last name inital
-    ordered_players = order_players_by_last_name(team_and_player_data)
+    # sort players with hashed names persisted or not to optimize URL construction
+    players_with_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is not None]
+    players_without_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is None and player['pfr_available'] == 1] # disregard players previously indicated to be unavailable
 
-    # construct each players metrics link
-    player_urls = get_player_urls(ordered_players, year)
+    # log players skipped due to being unavailable
+    log_disregarded_players(team_and_player_data)
+
+    # order players by last name first initial 
+    ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
+
+    # construct each players metrics link for players with no hashed name persisted 
+    if players_without_hashed_name is not None and len(players_without_hashed_name) > 0:
+        player_urls.extend(get_player_urls(ordered_players, year))
+
+    # construct players metrics link for players with hashed name persisted 
+    if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
+        player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, year))
 
     # for each player url, fetch relevant metrics
     for player_url in player_urls:
@@ -163,6 +175,53 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
         )
     return player_metrics
 
+
+def log_disregarded_players(players: list):
+    """
+    Log out players that are going to be disregarded 
+
+    Args:
+        players (list): all players active in specifid season
+    """
+
+    disregarded_players = [player['player_name'] for player in players if player['pfr_available'] == 0]
+    if disregarded_players is not None and len(disregarded_players) != 0:
+        logging.warn(f'The following players will be disregarded due to being unavailable in Pro-Football-Reference: \n\n{disregarded_players}\n\n')
+
+
+def get_player_urls_with_hash(players: list, year: int): 
+    """
+    Construct player URLs when the player has a hashed previously persisted 
+
+    Args:
+        players (list): list of players with hashes persisted 
+        year (int): year we want to retireve a game log for 
+    
+    Returns 
+        list : list of player hashes 
+    """
+
+    base_url = "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}"
+    player_urls = [
+        {
+            "player": player['player_name'], 
+            "position": player['position'], 
+            "url": base_url.format(get_last_name_first_initial(player['player_name']), player['hashed_name'], year)
+        } for player in players
+    ]
+
+    return player_urls
+
+
+def get_last_name_first_initial(player_name: str): 
+    first_and_last = player_name.split(" ")
+
+    if len(first_and_last) < 2:
+        raise Exception(f'Unable to extract first inital of last name of the players name: {player_name}')
+    
+    return first_and_last[1][0]
+    
+    
 
 """
 Functionality to fetch the metrics for each NFL team 
@@ -477,13 +536,253 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
                 stats[key] = value
     
     return stats
-   
+
+
+def scrape_player_advanced_metrics(start_year: int, end_year: int): 
+
+    for year in range(start_year, end_year + 1):
+        logging.info(f"Scraping player advanced passing, rushing, and receiving metrics for the {year} season")
+        
+        # NOTE: All players that we want to extract advanced metrics for SHOULD have already had their game logs persisted, thus, the hashed names should be present (O/W, we can skip)
+        players = fetch_data.fetch_players_on_a_roster_in_specific_year_with_hashed_name(year)
+
+        # filter previously inserted records 
+        players_already_persisted = fetch_data.fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year)
+        players = [player for player in players if player['player_id'] not in players_already_persisted ]
+        logging.info(f"Players to fetch metrics for filtered down to length {len(players)} for season {year} of the NFL season")
+
+
+
+        # generate URLs 
+        base_url = props.get_config('website.pro-football-reference.urls.advanced-metrics')
+        player_urls = [
+            {"player_id": player['player_id'], "player_name": player['player_name'], "url": base_url.format(get_last_name_first_initial(player['player_name']), player['hashed_name'], year)}     
+            for player in players
+        ]
+
+        # scrape and persist advanced passing, rushing, and receiving metrics 
+        for player_url in player_urls:
+            html = fetch_page(player_url["url"])
+            soup = BeautifulSoup(html, "html.parser")
+
+            # advanced_passing table 
+            advanced_passing_table = soup.find("table", {"id": "passing_advanced"})
+
+            # resilience for table id name change
+            if advanced_passing_table is None:
+                advanced_passing_table = soup.find("table", {"id": "adv_passing"})
+                
+            if advanced_passing_table is not None: 
+                logging.info(f"Scraping advanced passing metrics for player {player_url['player_name']} for the {year} season")
+                
+                # parse stats for player and persist 
+                advanced_passing_metrics = parse_advanced_passing_table(advanced_passing_table)
+                if advanced_passing_metrics is None:
+                    logging.warn(f"No passing metrics for player {player_url['player_name']} and year {year} were not retreived; skipping insertion\n\n")
+                    continue
+                
+                filtered_metrics = filter_metrics_by_week(advanced_passing_metrics)
+                insert_data.insert_player_advanced_passing_metrics(filtered_metrics, player_url['player_id'], year)
+
+            # rushing & receiving table 
+            advanced_rushing_receiving_table = soup.find("table", {"id": "adv_rushing_and_receiving"})
+            
+            # resilince for table id name change 
+            if advanced_rushing_receiving_table is None:
+                advanced_rushing_receiving_table = soup.find("table", {"id": "adv_rushing_and_receiving"})
+
+            if advanced_rushing_receiving_table is not None: 
+                logging.info(f"Scraping advanced rushing/receiving metrics for player {player_url['player_name']} for the {year} season")
+
+                # parse rushing/receiving 
+                advanced_rushing_receiving_metrics = parse_advanced_rushing_receiving_table(advanced_rushing_receiving_table)
+                if advanced_rushing_receiving_metrics is None:
+                    logging.warn(f"No rushing/receiving metrics for player {player_url['player_name']} and season {year} were not retreived; skipping insertion\n\n")
+                    continue
+                filtered_metrics = filter_metrics_by_week(advanced_rushing_receiving_metrics)
+                insert_data.insert_player_advanced_rushing_receiving_metrics(filtered_metrics, player_url['player_id'], year)
+
+
+def filter_metrics_by_week(metrics: list):
+    """
+    Filters out duplicate entries based on the 'week' field. Keeps the first occurrence of each week.
+    
+    Args:
+        metrics (list): A list of dictionaries containing player metrics.
+        
+    Returns:
+        list: A filtered list with only the first instance for each week.
+    """
+    seen_weeks = set()
+    filtered_metrics = []
+
+    for metric in metrics:
+        week = metric.get('week') 
+        if week not in seen_weeks:
+            filtered_metrics.append(metric)
+            seen_weeks.add(week)
+
+    return filtered_metrics
+
+
+def parse_advanced_passing_table(table: BeautifulSoup):
+    """
+    Parse relevant advanced passing metrics for a player in a given season.
+
+    Args:
+        table (BeautifulSoup): Advanced passing table.
+
+    Returns:
+        list: List of dictionaries containing passing metrics for the entire season,
+              or None if no valid data is found.
+    """
+    table_body = table.find_next("tbody")
+    if table_body is None:
+        logging.warning("Table body for advanced passing table is null")
+        return None
+    
+    table_rows = table_body.find_all("tr")
+    if not table_rows:
+        logging.warning("Table rows for advanced passing table are null or empty")
+        return None
+    
+    metrics = []
+    required_stats = {
+        "week": "week_num", "age": "age", "first_downs": "pass_first_down",
+        "first_down_passing_per_pass_play": "pass_first_down_pct",
+        "intended_air_yards": "pass_target_yds",
+        "intended_air_yards_per_pass_attempt": "pass_tgt_yds_per_att",
+        "completed_air_yards": "pass_air_yds",
+        "completed_air_yards_per_cmp": "pass_air_yds_per_cmp",
+        "completed_air_yards_per_att": "pass_air_yds_per_att",
+        "yds_after_catch": "pass_yac",
+        "yds_after_catch_per_cmp": "pass_yac_per_cmp",
+        "drops": "pass_drops", "drop_pct": "pass_drop_pct",
+        "poor_throws": "pass_poor_throws",
+        "poor_throws_pct": "pass_poor_throw_pct",
+        "sacked": "pass_sacked", "blitzed": "pass_blitzed",
+        "hurried": "pass_hurried", "hits": "pass_hits",
+        "pressured": "pass_pressured", "pressured_pct": "pass_pressured_pct",
+        "scrmbl": "rush_scrambles",
+        "yds_per_scrmbl": "rush_scrambles_yds_per_att"
+    }
+    
+    # loop through entirety of table rows 
+    for row in table_rows:
+        table_data = row.find_all("td")
+
+        # skip row if no table data present
+        if not table_data:
+            continue
+        
+        weekly_metrics = {}
+
+        found_any = False  # track if at least one attribute was found
+
+        for key, stat in required_stats.items():
+            stat_element = row.find("td", {"data-stat": stat})
+            if stat_element:
+                metric = stat_element.get_text(strip=True)
+
+                # ensure metric isn't empty
+                if metric == '':
+                    metric = 0
+
+                weekly_metrics[key] = metric
+                if key != 'week':
+                    found_any = True  # at least one attribute was found other than week
+            else:
+                # resilience for week data-stat name change
+                if key == 'week': 
+                    stat_element = row.find("td", {"data-stat": "team_game_num_season"})
+                    if stat_element:
+                        weekly_metrics[key] = stat_element.get_text(strip=True)
+        
+        # append only if at least one attribute was successfully retrieved
+        if found_any:
+            metrics.append(weekly_metrics)
+        else:
+            logging.warning("Skipping row as all advanced passing attributes were missing.")
+
+    return metrics if metrics else None
+
+
+
+def parse_advanced_rushing_receiving_table(table: BeautifulSoup):
+    """
+    Parse relevant advanced rushing and receiving metrics for a player in a given season
+
+    args:
+        table (BeautifulSoup): advanced rushing and receiving table
+    """
+    table_body = table.find_next("tbody")
+    if table_body is None:
+        logging.warning("table body for advanced rushing and receiving table is null")
+        return None
+
+    table_rows = table_body.find_all("tr")
+    if not table_rows:
+        logging.warning("table rows for advanced rushing and receiving table are null or empty")
+        return None
+
+    metrics = []
+    required_stats = {
+        "week": "week_num", "age": "age", "rush_first_downs": "rush_first_down",
+        "rush_yds_before_contact": "rush_yds_before_contact",
+        "rush_yds_before_contact_per_att": "rush_yds_bc_per_rush",
+        "rush_yds_after_contact": "rush_yac",
+        "rush_yds_after_contact_per_att": "rush_yac_per_rush",
+        "rush_brkn_tackles": "rush_broken_tackles",
+        "rush_att_per_brkn_tackle": "rush_broken_tackles_per_rush",
+        "rec_first_downs": "rec_first_down", "yds_before_catch": "rec_air_yds",
+        "yds_before_catch_per_rec": "rec_air_yds_per_rec",
+        "yds_after_catch": "rec_yac", "yds_after_catch_per_rec": "rec_yac_per_rec",
+        "avg_depth_of_tgt": "rec_adot", "rec_brkn_tackles": "rec_broken_tackles",
+        "rec_per_brkn_tackle": "rec_broken_tackles_per_rec",
+        "dropped_passes": "rec_drops", "drop_pct": "rec_drop_pct",
+        "int_when_tgted": "rec_target_int", "qbr_when_tgted": "rec_pass_rating"
+    }
+
+    for row in table_rows:
+        table_data = row.find_all("td")
+
+        # skip row if no data is present
+        if not table_data:
+            continue
+
+        weekly_metrics = {}
+        found_any = False  # track if at least one attribute was found
+
+        for key, stat in required_stats.items():
+            stat_element = row.find("td", {"data-stat": stat})
+            if stat_element:
+                metric = stat_element.get_text(strip=True)
+
+                # ensure metric isn't empty
+                if metric == '':
+                    metric = 0
+
+                weekly_metrics[key] = metric
+                if key != 'week':
+                    found_any = True  # at least one attribute was found other than week
+            else:
+                # resilience for week data-stat name change
+                if key == 'week': 
+                    stat_element = row.find("td", {"data-stat": "team_game_num_season"})
+                    if stat_element:
+                        weekly_metrics[key] = stat_element.get_text(strip=True)
+        
+
+        # append only if at least one attribute was found
+        if found_any:
+            metrics.append(weekly_metrics)
+        else:
+            logging.warning("Skipping row as all advanced rushing/receiving attributes were missing")
+
+    return metrics if metrics else None
+
 """
 Functionality to fetch relevant metrics corresponding to a specific NFL team
-
-
-All credit for the following code in this function goes to the developer of the repository:
-      - https://github.com/mjk2244/pro-football-reference-web-scraper
 
 Some subtle modifications were made to fix the repositories bug and to fit our use case.      
    
@@ -730,10 +1029,6 @@ def get_team_metrics_html(team_name, year, url):
 
 """
 Functionality to calculate the distance between two cities 
-
-All credit for the following code in this function goes to the developer of the repository:
-      - https://github.com/mjk2244/pro-football-reference-web-scraper
-
    
 Args: 
     city1 (dict) - dictionary containing a cities latitude & longitude 
@@ -857,6 +1152,8 @@ Returns:
 def get_player_urls(ordered_players: dict, year: int):
     base_url = "https://www.pro-football-reference.com%s/gamelog/%s"
     urls = []
+    player_hashed_names = []
+    pfr_unavailable_player_ids = []
 
     for inital, player_list in ordered_players.items():
         logging.info(f"Constructing player URLs for players with the inital '{inital}'")
@@ -875,7 +1172,7 @@ def get_player_urls(ordered_players: dict, year: int):
             player_position = player["position"]
 
             href = get_href(
-                player_name, player_position, year, soup
+                player_name, player_position, year, soup, player_hashed_names, pfr_unavailable_player_ids
             )  # extract href from parsed HTML
             if href == None:
                 continue
@@ -884,6 +1181,13 @@ def get_player_urls(ordered_players: dict, year: int):
                 urls.append(
                     {"player": player_name, "position": player_position, "url": url}
                 )  # append each players URL to our list of URLs
+
+    # insert player hashed names into database 
+    insert_data.update_player_hashed_name(player_hashed_names)
+
+    # update players who are not available in pfr for future optimziations 
+    if pfr_unavailable_player_ids is not None:
+        insert_data.update_player_pfr_availablity_status(pfr_unavailable_player_ids)
 
     return urls
 
@@ -895,13 +1199,15 @@ Args:
     player_name (str): players name to search for 
     year (int): year corresponding to the season we are searching for metrics for 
     soup (BeautifulSoup): soup pertaining to raw HTML containing players hrefs
+    player_hashed_names (list): list to add player_hashed_names records to in order to persist 
+    pfr_unavailable_player_ids (list): list of player IDs that correspond to players unavailable in PFR
 
 Returns:
     href (str): href needed to construct URL 
 """
 
 
-def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
+def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup, player_hashed_names: list, pfr_unavailable_player_ids: list):
     players = soup.find("div", id="div_players").find_all(
         "p"
     )  # find players HTML element
@@ -927,6 +1233,7 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
             a_tag = player.find("a")
             if a_tag and a_tag.get("href"):
                 href = a_tag.get("href").replace(".htm", "")
+                update_players_hashed_name(player_name, href, player_hashed_names) # account for hashed name & player ID in our player_hashed_names list
                 return href
             else:
                 logging.warning(
@@ -936,7 +1243,35 @@ def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup):
 
     # TODO (FFM-40): Add Ability to Re-try Finding Players Name
     logging.warning(f"Cannot find a {position} named {player_name} from {year}")
+
+    # account for player being unavailable 
+    pfr_unavailable_player_ids.append(player_service.get_player_id_by_normalized_name(player_service.normalize_name(player_name)))
     return None
+
+
+def update_players_hashed_name(player_name: str, href: str, player_hashed_names: list): 
+    """
+    Helper function to extract relevant hashed name from HREF and persist for player 
+
+    Args:
+        player_name (str): player name to persist 
+        href (str): href corresponding to players game logs & advanced metrics 
+        player_hashed_names (list): list to update with player hashed name & ID 
+    """
+    # extract hashed name from href
+    hashed_name_index = href.rfind('/')
+    hashed_name = href[hashed_name_index + 1:]
+
+    # extract player ID by hashed name
+    normalized_name = player_service.normalize_name(player_name)
+    player_id = player_service.get_player_id_by_normalized_name(normalized_name)
+
+    if player_id is None or hashed_name is None: 
+        raise Exception(f'Unable to correctly extract players hashed name or ID for player {player_name}')
+
+    player_hashed_names.append({"hashed_name": hashed_name, "player_id": player_id})
+
+    
 
 
 """
@@ -985,6 +1320,8 @@ def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
         "result": [],
         "team_pts": [],
         "opp_pts": [],
+        "off_snps": [],
+        "snap_pct": []
     }
     data.update(get_additional_metrics(position))  # update data with additonal metrics
 
@@ -1102,14 +1439,6 @@ def add_wr_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
     data["rec_yds"].append(extract_int(tr, "rec_yds"))
     data["rec_td"].append(extract_int(tr, "rec_td"))
 
-    # Handle snap percentage
-    snap_pct_td = tr.find("td", {"data-stat": "off_pct"})
-    if snap_pct_td and snap_pct_td.text:  # Check for valid data
-        snap_pct = snap_pct_td.text[:-1]  # Remove '%' symbol
-        data["snap_pct"].append(float(snap_pct) / 100)  # Convert to float percentage
-    else:
-        data["snap_pct"].append(0.0)  # Append 0 if snap percentage is not available
-
 
 """
 Functionality to retireve common game log metrics for a given player 
@@ -1144,6 +1473,22 @@ def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
     data["result"].append(game_result_text[0].replace(",", ""))
     data["team_pts"].append(int(game_result_text[1].split("-")[0]))
     data["opp_pts"].append(int(game_result_text[1].split("-")[1]))
+
+    # account for # of offensive snaps and snap pct 
+    snap_pct_td = tr.find("td", {"data-stat": "snap_counts_off_pct"})
+    if snap_pct_td and snap_pct_td.text:
+        snap_pct = float(snap_pct_td.text) 
+        data["snap_pct"].append(snap_pct)
+    else:
+        data["snap_pct"].append(0)
+    
+    snap_counts_off_td = tr.find("td", {"data-stat": "snap_counts_offense"})
+    if snap_counts_off_td and snap_counts_off_td.text: 
+        snap_counts_off = int(snap_counts_off_td.text)
+        data["off_snps"].append(snap_counts_off)
+    else:
+        data["off_snps"].append(0)
+
 
 
 """

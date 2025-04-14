@@ -23,7 +23,6 @@ from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
 from models import optimization, post_training
 import torch
-from data import ingest
 import os
 import pandas as pd
 
@@ -167,6 +166,8 @@ def main():
                 betting_pros.fetch_historical_odds(curr_year)
 
             pfr.fetch_teams_and_players_seasonal_metrics(start_year, end_year)
+
+            pfr.scrape_player_advanced_metrics(start_year, end_year)
 
         # scrape relevant betting odds based on specified arg
         if cl_args.upcoming:

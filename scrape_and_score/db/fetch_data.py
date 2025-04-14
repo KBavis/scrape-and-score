@@ -80,7 +80,7 @@ Returns:
 
 
 def fetch_all_players():
-    sql = "SELECT * FROM player"
+    sql = "SELECT player_id, player_name, position, normalized_name, hashed_name FROM player"
     players = []
 
     try:
@@ -96,7 +96,8 @@ def fetch_all_players():
                         "player_id": row[0],
                         "player_name": row[1],
                         "position": row[2],
-                        "normalized_name": row[3]
+                        "normalized_name": row[3],
+                        "hashed_name": row[4]
                     }
                 )
 
@@ -119,7 +120,7 @@ Returns:
 
 
 def fetch_player_by_name(player_name: str):
-    sql = "SELECT * FROM player WHERE name = %s"
+    sql = "SELECT player_id, name, position, normalized_name, hashed_name FROM player WHERE name = %s"
     player = None
 
     try:
@@ -134,7 +135,8 @@ def fetch_player_by_name(player_name: str):
                     "player_id": row[0],
                     "name": row[1],
                     "position": row[2],
-                    "normalized_name": row[3]
+                    "normalized_name": row[3],
+                    "hashed_name": row[4]
                 }
 
     except Exception as e:
@@ -155,7 +157,7 @@ def fetch_player_by_normalized_name(normalized_name: str):
     Args:
         normalized_name (str): the players name normalized 
     """
-    sql = "SELECT * FROM player WHERE normalized_name = %s"
+    sql = "SELECT player_id, name, position, normalized_name, hashed_name FROM player WHERE normalized_name = %s"
     player = None
 
     try:
@@ -170,7 +172,8 @@ def fetch_player_by_normalized_name(normalized_name: str):
                     "player_id": row[0],
                     "name": row[1],
                     "position": row[2],
-                    "normalized_name": row[3]
+                    "normalized_name": row[3], 
+                    "hashed_name": row[4]
                 }
 
     except Exception as e:
@@ -568,8 +571,6 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year: int):
 Functionality to retrieve the needed dependent and independent variables needed 
 to create our predicition models 
 
-TODO (FFM-145): Include external factors such as weather, vegas projections, players depth chart position 
-
 Args:
    None 
 
@@ -579,7 +580,9 @@ Returns:
 """
 
 #TODO: Optimize query so it doesn't take forever to run 
+#TODO: Move SQL that stores this query somewhere outside of string 
 #TODO: Ensure that the we update join statement for previous year data to ensure we don't just exclude all rookies!
+#TODO: Ensure we update weekly agg metrics join to account for previous week (current week will contain )
 def fetch_independent_and_dependent_variables():
     sql = """
     WITH PlayerProps AS (
@@ -605,7 +608,66 @@ def fetch_independent_and_dependent_variables():
          p.position,
 		 -- player total fantasy points scored 
          pgl.fantasy_points,
-		 -- aggregate metrics 
+         -- team rest days 
+         tgl.rest_days,
+		 -- weekly aggregate metrics 
+		 pam.avg_pass_first_downs AS avg_wkly_pass_first_downs,
+		 pam.avg_pass_first_downs_per_pass_play AS avg_wkly_pass_first_downs_per_pass_play,
+		 pam.avg_intended_air_yards AS avg_wkly_intended_air_yards,
+		 pam.avg_intended_air_yards_per_pass_attempt AS avg_wkly_intended_air_yards_per_pass_attempt,
+		 pam.avg_completed_air_yards AS avg_wkly_completed_air_yards,
+		 pam.avg_completed_air_yards_per_cmp AS avg_wkly_completed_air_yards_per_cmp,
+		 pam.avg_completed_air_yards_per_att AS avg_wkly_completed_air_yards_per_att,
+		 pam.avg_pass_yds_after_catch AS avg_wkly_pass_yds_after_catch,
+		 pam.avg_pass_yds_after_catch_per_cmp AS avg_wkly_pass_yds_after_catch_per_cmp,
+		 pam.avg_pass_drops AS avg_wkly_pass_drops,
+		 pam.avg_pass_drop_pct AS avg_wkly_pass_drop_pct,
+		 pam.avg_pass_poor_throws AS avg_wkly_pass_poor_throws,
+		 pam.avg_pass_poor_throws_pct AS avg_wkly_pass_poor_throws_pct,
+		 pam.avg_pass_blitzed AS avg_wkly_pass_blitzed,
+		 pam.avg_pass_hurried AS avg_wkly_pass_hurried,
+		 pam.avg_pass_hits AS avg_wkly_pass_hits,
+		 pam.avg_pass_pressured AS avg_wkly_pass_pressured,
+		 pam.avg_pass_pressured_pct AS avg_wkly_pass_pressured_pct,
+		 pam.avg_pass_scrambles AS avg_wkly_pass_scrambles,
+		 pam.avg_pass_yds_per_scramble AS avg_wkly_pass_yds_per_scramble,
+		
+		 pam.avg_rush_first_downs AS avg_wkly_rush_first_downs,
+		 pam.avg_rush_yds_before_contact AS avg_wkly_rush_yds_before_contact,
+		 pam.avg_rush_yds_before_contact_per_att AS avg_wkly_rush_yds_before_contact_per_att,
+		 pam.avg_rush_yds_after_contact AS avg_wkly_rush_yds_after_contact,
+		 pam.avg_rush_yds_after_contact_per_att AS avg_wkly_rush_yds_after_contact_per_att,
+		 pam.avg_rush_broken_tackles AS avg_wkly_rush_broken_tackles,
+		 pam.avg_rush_att_per_broken_tackle AS avg_wkly_rush_att_per_broken_tackle,
+		 pam.avg_rec_first_downs AS avg_wkly_rec_first_downs,
+		 pam.avg_rec_yds_before_catch AS avg_wkly_rec_yds_before_catch,
+		 pam.avg_rec_yds_before_catch_per_rec AS avg_wkly_rec_yds_before_catch_per_rec,
+		 pam.avg_rec_yds_after_catch AS avg_wkly_rec_yds_after_catch,
+		 pam.avg_rec_yds_after_catch_per_rec AS avg_wkly_rec_yds_after_catch_per_rec,
+		 pam.avg_avg_depth_of_target AS avg_wkly_avg_depth_of_target,
+		 pam.avg_rec_broken_tackles AS avg_wkly_rec_broken_tackles,
+		 pam.avg_rec_per_broken_tackle AS avg_wkly_rec_per_broken_tackle,
+		 pam.avg_rec_dropped_passes AS avg_wkly_rec_dropped_passes,
+		 pam.avg_rec_drop_pct AS avg_wkly_rec_drop_pct,
+		 pam.avg_rec_int_when_targeted AS avg_wkly_rec_int_when_targeted,
+		 pam.avg_rec_qbr_when_targeted AS avg_wkly_rec_qbr_when_targeted,
+		
+		 pam.avg_completions AS avg_wkly_completions,
+		 pam.avg_attempts AS avg_wkly_attempts,
+		 pam.avg_pass_yds AS avg_wkly_pass_yds,
+		 pam.avg_pass_tds AS avg_wkly_pass_tds,
+		 pam.avg_interceptions AS avg_wkly_interceptions,
+		 pam.avg_rating AS avg_wkly_rating,
+		 pam.avg_sacked AS avg_wkly_sacked,
+		 pam.avg_rush_attempts AS avg_wkly_rush_attempts,
+		 pam.avg_rush_yds AS avg_wkly_rush_yds,
+		 pam.avg_rush_tds AS avg_wkly_rush_tds,
+		 pam.avg_targets AS avg_wkly_targets,
+		 pam.avg_receptions AS avg_wkly_receptions,
+		 pam.avg_rec_yds AS avg_wkly_rec_yds,
+		 pam.avg_rec_tds AS avg_wkly_rec_tds,
+		 pam.avg_snap_pct AS avg_wkly_snap_pct,
+		 pam.avg_offensive_snaps AS avg_wkly_offensive_snaps,
 		 pam.avg_fantasy_points AS avg_wkly_fantasy_points,
 		 --depth chart position 
 		 pdc.depth_chart_pos AS depth_chart_position,
@@ -1154,7 +1216,7 @@ def fetch_independent_and_dependent_variables():
       FROM
          player_game_log pgl -- player game logs (week to week games)
       JOIN 
-         player_weekly_agg_metrics pam ON pgl.week = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- weekly aggregate metrics for player 
+         player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- weekly aggregate metrics for player 
       JOIN
          player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id -- player depth chart position 
       JOIN 
@@ -1162,11 +1224,13 @@ def fetch_independent_and_dependent_variables():
       JOIN 
          player_teams pt ON p.player_id = pt.player_id AND pgl.week >= pt.strt_wk AND pgl.week <= pt.end_wk AND pt.season = pgl.year -- players 
       JOIN 
-         player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player 
-      JOIN 
          team t ON pt.team_id = t.team_id -- team the player is on
       JOIN 
          team td ON pgl.opp = td.team_id -- team the player is playing against 
+      JOIN 
+	  	 team_game_log tgl ON tgl.team_id = t.team_id AND tgl.week = pgl.week AND tgl.year = pgl.year
+	  LEFT JOIN 
+         player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player  	 
       LEFT JOIN 
          player_seasonal_passing_metrics pssm ON p.player_id = pssm.player_id AND pssm.season = pgl.year AND pssm.team_id = t.team_id -- player seasonal passing metrics for previous year 
       LEFT JOIN 
@@ -1218,7 +1282,6 @@ def fetch_independent_and_dependent_variables():
             OR 
         (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
       ) 
-
    """
 
     df = None
@@ -1464,7 +1527,10 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
         SELECT DISTINCT
             p.player_id,
             p.name,
-            p.position
+            p.position,
+            p.normalized_name,
+            p.hashed_name,
+            p.pfr_available
         FROM 
             player p 
         JOIN 
@@ -1485,13 +1551,111 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
             rows = cur.fetchall()
             
             for row in rows: 
-                players.append({"player_id": row[0], "player_name": row[1], "position": row[2]})
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2], "normalized_name": row[3], "hashed_name": row[4], "pfr_available": row[5]})
                 
 
 
     except Exception as e:
         logging.error(
             f"An error occurred while fetching players on active roster in season {year}: {e}"
+        )
+        raise e
+
+    return players
+
+
+def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int):
+    """
+    Retrieve player IDs of players who have advanced metrics persisted 
+
+    Args:
+        year (int): season to account for 
+    
+    Returns:
+        dict: set of disitinct players ids that are already persisted
+    """
+    
+    sql = """ 
+        SELECT DISTINCT player_id
+        FROM player_advanced_passing
+        WHERE season = %s
+        UNION
+        SELECT DISTINCT player_id
+        FROM player_advanced_rushing_receiving
+        WHERE season = %s;
+    """
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,year))
+            rows = cur.fetchall()
+            
+            player_ids = {row[0] for row in rows}
+            
+            
+            logging.info(f"Successfully fetched {len(player_ids)} player IDs of players in advanced rushing/receiving/passing tables for season {year} .")
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players ID of players in advanced rushing/receiving/passing tables for season {year}"
+        )
+        raise e
+
+    return player_ids
+
+
+def fetch_players_on_a_roster_in_specific_year_with_hashed_name(year: int):
+    """
+    Retrieve players on an active roster in specific year that have a hashed name persisted
+
+    Args:
+        year (int): season to account for 
+    
+    Returns:
+        list: list of disitinct players 
+    """
+    
+    sql = """ 
+        SELECT DISTINCT
+            p.player_id,
+            p.name,
+            p.position,
+            p.normalized_name,
+            p.hashed_name,
+            p.pfr_available
+        FROM 
+            player p 
+        JOIN 
+            player_teams pt 
+        ON
+            p.player_id = pt.player_id 
+        WHERE 
+            pt.season = %s AND hashed_name IS NOT NULL
+    """
+    
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (year,))
+            rows = cur.fetchall()
+            
+            for row in rows: 
+                players.append({"player_id": row[0], "player_name": row[1], "position": row[2], "normalized_name": row[3], "hashed_name": row[4], "pfr_available": row[5]})
+            
+            logging.info(f"Successfully fetched {len(players)} player records active in {year} with a hashed name persisted.")
+                
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching players on active roster with hashed name persisted in season {year}: {e}"
         )
         raise e
 

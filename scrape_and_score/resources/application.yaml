@@ -5,6 +5,7 @@ website:
          home-page: "https://www.pro-football-reference.com/"
          team-metrics: "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
          player-metrics: "https://www.pro-football-reference.com/players/{LAST_NAME_INITAL}/{HASHED_NAME}.htm"
+         advanced-metrics: "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}/advanced/"
    fantasy-pros:
       urls:
          depth-chart: "https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php"
