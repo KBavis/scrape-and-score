@@ -7,7 +7,7 @@ CREATE TABLE player_injuries (
 	player_id INT NOT NULL,
 	week INT NOT NULL,
 	season INT NOT NULL, 
-	injury_loc VARCHAR(20),
+	injury_loc VARCHAR(60),
 	wed_prac_sts practice_status,
 	thurs_prac_sts practice_status,
 	fri_prac_sts practice_status,
