@@ -1,8 +1,9 @@
 import pandas as pd
 from db import fetch_data as fetch
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
 import logging
+import re
 
 # global variable to account for dynamic cateogircal colum nnames
 injury_feature_names = []
@@ -11,6 +12,7 @@ def preprocess():
    df = fetch_data()
 
    parsed_df = parse_player_props(df)
+   parsed_df = encode_player_injuries(parsed_df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
    processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
@@ -116,7 +118,78 @@ def parse_player_props(df: pd.DataFrame):
    
    df = df.drop(columns=["props"])
    return pd.concat([df, parsed_df], axis=1)
-   
+
+
+def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
+   """
+   Encode player injury features by converting statuses / injury locations into numerical values 
+
+   Args:
+       df (pd.DataFrame): data frame to encode player injuries for 
+
+   Returns:
+       pd.DataFrame: data frame with encoded features 
+   """
+   logging.info("Encoding player injuries with relevant numerical values instead of statuses / strings")
+
+   global injury_feature_names
+
+   # apply multi lable binaarizer to encode injury locations 
+   df['injury_locations'] = df['injury_locations'].apply(preprocess_injury_locations)
+
+   mlb = MultiLabelBinarizer() 
+   injury_locations_encoded = mlb.fit_transform(df['injury_locations'])
+   injury_encoded_df = pd.DataFrame(injury_locations_encoded, columns=mlb.classes_)
+
+   # account for injury feature names dynamically 
+   injury_feature_names = list(mlb.classes_)
+
+   df.drop(columns=['injury_locations'], inplace=True)
+   df = pd.concat([df, injury_encoded_df], axis=1)
+
+
+   # encoded practice statuses 
+   practice_status_mapping = {
+      'dnp': 0, 
+      'limited': 1,
+      'full': 2
+   }
+   df['wednesday_practice_status'] = df['wednesday_practice_status'].fillna('full').map(practice_status_mapping)
+   df['thursday_practice_status'] = df['thursday_practice_status'].fillna('full').map(practice_status_mapping)
+   df['friday_practice_status'] = df['friday_practice_status'].fillna('full').map(practice_status_mapping)
+
+   # encode official game statuses
+   official_game_status_mapping = {
+      'out': 0,
+      'doubtful': 1,
+      'questionable': 2, 
+      'healthy': 3
+   }
+   df['official_game_status'] = df['official_game_status'].fillna('healthy').map(official_game_status_mapping)
+
+   return df
+
+
+def preprocess_injury_locations(entry):
+   """
+   Preprocess injury locations entry to normalize and transform into list
+
+   Args:
+       entry (str): injury location to preprocess
+
+   Returns:
+       list : injury locations with white space remove and in list format
+   """
+
+   if not isinstance(entry, str) or not entry.strip():
+      return []
+
+   # lowercase, remove extra spaces, and standardize separators
+   entry = entry.lower()
+   entry = re.sub(r'[,/]', ',', entry)  # convert slashes to commas
+   entry = re.sub(r'\s*,\s*', ',', entry)  # strip around commas
+   entry = re.sub(r'\s+', ' ', entry).strip()  # clean up extra spaces
+   return entry.split(',')
 
 
 def fetch_data(): 
