@@ -1,13 +1,13 @@
 from config import configure_logging
 from scraping import scrape_fantasy_pros
 from scraping import pfr_scraper as pfr
+from scraping import football_db 
 from db import (
     connection,
     insert_teams,
     fetch_all_teams,
     insert_players,
     fetch_all_players,
-    fetch_data
 )
 from config import load_configs, get_config
 from datetime import datetime
@@ -24,7 +24,6 @@ from models.neural_net import NeuralNetwork
 from models import optimization, post_training
 import torch
 import os
-import pandas as pd
 
 
 """
@@ -168,6 +167,8 @@ def main():
             pfr.fetch_teams_and_players_seasonal_metrics(start_year, end_year)
 
             pfr.scrape_player_advanced_metrics(start_year, end_year)
+
+            football_db.scrape_historical(start_year, end_year)
 
         # scrape relevant betting odds based on specified arg
         if cl_args.upcoming:

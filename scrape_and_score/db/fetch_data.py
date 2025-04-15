@@ -610,6 +610,12 @@ def fetch_independent_and_dependent_variables():
          pgl.fantasy_points,
          -- team rest days 
          tgl.rest_days,
+         -- player injuries 
+         pi.injury_loc as injury_locations, 
+         pi.wed_prac_sts as wednesday_practice_status, 
+         pi.thurs_prac_sts as thursday_practice_status, 
+         pi.fri_prac_sts as friday_practice_status, 
+         pi.off_sts as official_game_status,
 		 -- weekly aggregate metrics 
 		 pam.avg_pass_first_downs AS avg_wkly_pass_first_downs,
 		 pam.avg_pass_first_downs_per_pass_play AS avg_wkly_pass_first_downs_per_pass_play,
@@ -1229,6 +1235,8 @@ def fetch_independent_and_dependent_variables():
          team td ON pgl.opp = td.team_id -- team the player is playing against 
       JOIN 
 	  	 team_game_log tgl ON tgl.team_id = t.team_id AND tgl.week = pgl.week AND tgl.year = pgl.year
+      LEFT JOIN
+         player_injuries pi ON p.player_id = pi.player_id AND pi.week = pgl.week AND pi.season = pgl.year
 	  LEFT JOIN 
          player_demographics pd ON p.player_id = pd.player_id AND pgl.year = pd.season -- demographic metrics for player  	 
       LEFT JOIN 
@@ -2018,6 +2026,48 @@ def fetch_teams_home_away_wins_and_losses(season: int, team_id: int):
         raise e
 
     
+def fetch_pks_for_inserted_player_injury_records(season: int, week: int):
+    """
+    Fetch previously inserted PKs for a specific season / week in order to determine which records need to be updated 
+
+    Args:
+        season (int): the season to fetch records for 
+        week (int): the week to fetch records for 
+    """
     
+    sql = """
+        SELECT player_id, week, season 
+        FROM player_injuries 
+        WHERE season = %s AND week = %s
+    """
+
+    pks = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, week))
+            rows = cur.fetchall()
+
+            if rows: 
+                for row in rows: 
+                    if row:
+                        pks.append({
+                            'player_id': row[0],
+                            'week': row[1], 
+                            'season': row[2]
+                        })
+            else:
+                return []
+        
+        return pks
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching PKs for player_injuries for season {season} and week {week}: {e}"
+        )
+        raise e
+
     
 

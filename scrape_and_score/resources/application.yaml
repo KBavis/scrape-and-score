@@ -19,6 +19,10 @@ website:
       urls:
          historical-odds: "https://api.bettingpros.com/v3/offers?sport=NFL&market_id={MARKET_IDS}&player_slug={PLAYER_SLUG}&event_id={EVENT_IDS}&location=NY&limit=5&page={PAGE}"
          events: "https://api.bettingpros.com/v3/events?sport=NFL&week={WEEK}&season={YEAR}"
+   football-db:
+    urls:
+      player-injuries: "https://www.footballdb.com/transactions/injuries.html?yr={}&wk={}&type=reg"
+
 
 # scraping
 scraping:

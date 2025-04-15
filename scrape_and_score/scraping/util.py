@@ -21,8 +21,14 @@ def fetch_page(url: str):
     try:
         logging.info(f"Fetching raw HTML from the following URL: {url}")
 
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36",
+            "Connection": "keep-alive",
+        }
+
         time.sleep(get_config("scraping.delay"))
-        response = session.get(url, proxies=proxy.get_proxy())
+
+        response = session.get(url, proxies=proxy.get_proxy(), headers=headers)
         response.raise_for_status()
         return response.text
     except requests.RequestException as e:
