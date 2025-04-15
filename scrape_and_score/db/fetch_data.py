@@ -2018,6 +2018,48 @@ def fetch_teams_home_away_wins_and_losses(season: int, team_id: int):
         raise e
 
     
+def fetch_pks_for_inserted_player_injury_records(season: int, week: int):
+    """
+    Fetch previously inserted PKs for a specific season / week in order to determine which records need to be updated 
+
+    Args:
+        season (int): the season to fetch records for 
+        week (int): the week to fetch records for 
+    """
     
+    sql = """
+        SELECT player_id, week, season 
+        FROM player_injuries 
+        WHERE season = %s AND week = %s
+    """
+
+    pks = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, week))
+            rows = cur.fetchall()
+
+            if rows: 
+                for row in rows: 
+                    if row:
+                        pks.append({
+                            'player_id': row[0],
+                            'week': row[1], 
+                            'season': row[2]
+                        })
+            else:
+                return []
+        
+        return pks
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching PKs for player_injuries for season {season} and week {week}: {e}"
+        )
+        raise e
+
     
 
