@@ -4,7 +4,8 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 import logging
 
-
+# global variable to account for dynamic cateogircal colum nnames
+injury_feature_names = []
 
 def preprocess(): 
    df = fetch_data()
@@ -30,6 +31,8 @@ def scale_and_transform(df: pd.DataFrame):
       np.array: numpy array containing scaled inputs 
    """
    logging.info("Scaling and transforming DF in order to utilize in Neural Network training & testing")
+
+   global injury_feature_names
    scaler = StandardScaler()
 
    # store independent variables in seperate data frame 
@@ -37,12 +40,20 @@ def scale_and_transform(df: pd.DataFrame):
 
    # independent variables to avoid scaling due to categorical nature
    position_columns = ['position_QB', 'position_RB', 'position_WR', 'position_TE']
-   valid_positions = [] 
-   for position in position_columns: 
-      if position in xs.columns: 
-         valid_positions.append(position)
+   categorical_columns = [
+      'wednesday_practice_status',
+      'thursday_practice_status',
+      'friday_practice_status',
+      'official_game_status'
+   ] + injury_feature_names
+   print('categorical columns')
+
+
+   # extract columns that aren't present in df
+   valid_positions = [col for col in position_columns if col in xs.columns]
+   valid_categoricals = [col for col in categorical_columns if col in xs.columns]
       
-   categorical_df = xs[valid_positions].copy()
+   categorical_df = xs[valid_positions + valid_categoricals].copy()
    categorical_vals = categorical_df.values
 
    # independent variables to account for cyclical nature
@@ -55,7 +66,7 @@ def scale_and_transform(df: pd.DataFrame):
    cyclical_week_vals = cyclical_df.values
 
    # drop un-needed columns in original indep. variables 
-   columns_to_drop = valid_positions + ['week', 'season']
+   columns_to_drop = valid_positions + valid_categoricals + ['week', 'season']
    xs = xs.drop(columns=columns_to_drop)
 
    scaled_x_vals = scaler.fit_transform(xs.values)
