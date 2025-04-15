@@ -137,6 +137,7 @@ def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
    # apply multi lable binaarizer to encode injury locations 
    df['injury_locations'] = df['injury_locations'].apply(preprocess_injury_locations)
 
+   #TODO: The multi label binarizer currently adds a BUNCH of features, but we should remove this logic if doesn't add predictive power (70+ feautres added)
    mlb = MultiLabelBinarizer() 
    injury_locations_encoded = mlb.fit_transform(df['injury_locations'])
    injury_encoded_df = pd.DataFrame(injury_locations_encoded, columns=mlb.classes_)
