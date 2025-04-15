@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
 import logging
 import re
 
-# global variable to account for dynamic cateogircal colum nnames
+# global variable to account for dynamic categorical column names
 injury_feature_names = []
 
 def preprocess(): 
@@ -48,7 +48,6 @@ def scale_and_transform(df: pd.DataFrame):
       'friday_practice_status',
       'official_game_status'
    ] + injury_feature_names
-   print('categorical columns')
 
 
    # extract columns that aren't present in df
