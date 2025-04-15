@@ -2,6 +2,8 @@ import logging
 from bs4 import BeautifulSoup
 from . import util
 from config import props
+from db import fetch_data, insert_data
+from service import player_service
 
 def scrape_historical(start_year: int, end_year: int): 
     """Scrape & persist player injuries for previous seasons throughout each potential week of the NFL season 
@@ -22,12 +24,8 @@ def scrape_historical(start_year: int, end_year: int):
 
             player_injuries = parse_all_player_injuries(soup)
 
-            #TODO: Implement me
-            # generate_and_persist_player_injury_records(player_injuries, season, week, player_name_id_mapping)
-
-
-
-
+            generate_and_persist_player_injury_records(player_injuries, season, week, player_name_id_mapping)
+            
 
 def scrape_upcoming(week: int, season: int): 
     """Scrape & persist current player injuries in the upcoming week of the NFL season for players
@@ -37,7 +35,15 @@ def scrape_upcoming(week: int, season: int):
         season (int): season to retrieve injuries for 
     """
     logging.info(f"Scraping & persisting player_injuries for week {week} for the {season} NFL season")
+
     html = get_html(week, season)
+    soup = BeautifulSoup(html, "html.parser")
+
+    player_injuries = parse_all_player_injuries(soup)
+
+    generate_and_persist_player_injury_records(player_injuries, season, week)
+
+
 
 
 
@@ -94,9 +100,9 @@ def extract_player_statuses_and_injury(player: BeautifulSoup):
 
     # extract practice statuses
     practice_status_divs = player.find_all("div", class_="td center w15 d-none d-md-table-cell")
-    wed_pract_status = practice_status_divs[0].get_text().strip().lower() if len(practice_status_divs) > 0 else None
-    thurs_pract_status = practice_status_divs[1].get_text().strip().lower() if len(practice_status_divs) > 1 else None
-    fri_pract_status = practice_status_divs[2].get_text().strip().lower() if len(practice_status_divs) > 2 else None
+    wed_pract_status = normalize_status(practice_status_divs[0].get_text()) if len(practice_status_divs) > 0 else None
+    thurs_pract_status = normalize_status(practice_status_divs[1].get_text()) if len(practice_status_divs) > 1 else None
+    fri_pract_status = normalize_status(practice_status_divs[2].get_text()) if len(practice_status_divs) > 2 else None
 
     # extract game status (last td.w20 div)
     game_status_divs = player.find_all("div", class_="td w20 d-none d-md-table-cell")
@@ -111,7 +117,20 @@ def extract_player_statuses_and_injury(player: BeautifulSoup):
         "fri_prac_sts": fri_pract_status,
         "off_sts": extract_game_status(game_status)
     }
-    
+
+
+def normalize_status(status): 
+    """Helper function to normalize practice status
+
+    Args:
+        status (str): status to normalize
+
+    Returns:
+        str : normalized status 
+    """
+    status = status.strip().lower() 
+    return None if status == '--' else status
+
 
 def extract_game_status(text: str):
     """Extract the official game status of a player
@@ -138,7 +157,7 @@ def extract_game_status(text: str):
 
 
 
-def generate_and_persist_player_injury_records(player_injuries: list, season: int, week: int, player_name_id_mapping: dict): 
+def generate_and_persist_player_injury_records(player_injuries: list, season: int, week: int, player_name_id_mapping: dict = {}): 
     """Generate and persist player injury records into our datbase 
 
     Args:
@@ -148,14 +167,79 @@ def generate_and_persist_player_injury_records(player_injuries: list, season: in
         player_name_id_mapping (dict): mapping containing already mapped player normalized names & ids 
     """
 
+    # fetch previously persisted records in order to determine which records require updates vs insertion 
+    persisted_player_injuries =  fetch_data.fetch_pks_for_inserted_player_injury_records(season, week)
 
+    persistable_records = []
+    for record in player_injuries: 
+        player_normalized_name = player_service.normalize_name(record["player_name"])
 
-def map_player_names_to_player_ids(player_names: list, player_name_id_mapping: dict): 
-    """Map a player name to their respecitve player_id 
+        # extract player ID by normalized name
+        if player_normalized_name not in player_name_id_mapping:
+            player_id = player_service.get_player_id_by_normalized_name(player_normalized_name)
+            player_name_id_mapping[player_normalized_name] = player_id
+        else:
+            player_id = player_name_id_mapping[player_normalized_name]
+
+        
+        if player_id is None:
+            logging.warn(f"Skipping record {record} for insertion since no player is persisted with normalized name {player_normalized_name}")
+            continue
+        
+        # generate record 
+        persistable_records.append(
+            {
+                "player_id": player_id, 
+                "week": week, 
+                "season": season, 
+                "injury_loc": record['injury_locations'], 
+                "wed_prac_sts": record['wed_prac_sts'], 
+                "thurs_prac_sts": record['thurs_prac_sts'],
+                "fri_prac_sts": record['fri_prac_sts'], 
+                "off_sts": record['off_sts']
+            }
+        )
+    
+    updated_records, insert_records = filter_persisted_records(persistable_records, persisted_player_injuries)
+
+    if updated_records:
+        logging.info(f"Attemtping to update {len(updated_records)} player_injuries records in database.")
+        insert_data.update_player_injuries(updated_records)
+    
+    if insert_records:
+        logging.info(f"Attemtping to insert {len(insert_records)} player_injuries records into database.")
+        insert_data.insert_player_injuries(insert_records)
+        
+
+        
+def filter_persisted_records(records: list, record_pks: list):
+    """
+    Filter records by determining if they are previously persisted or not,
+    ensuring no duplicate primary keys exist in the final update/insert lists.
 
     Args:
-        player_names (list): list of player_names to map to their ID
+        records (list): list of new records we want to persist 
+        record_pks (list): list of record pks that we will use to filter 
     """
+    logging.info("Filtering player_injuries records to determine if they should be updated in database or inserted")
+
+    seen_pks = set()
+    records_to_insert = []
+    records_to_update = []
+
+    for record in records:
+        pk = (record['player_id'], record['week'], record['season'])
+        if pk in seen_pks:
+            continue  # skip duplicate PKs
+        seen_pks.add(pk)
+
+        pk_dict = {"player_id": pk[0], "week": pk[1], "season": pk[2]}
+        if pk_dict in record_pks:
+            records_to_update.append(record)
+        else:
+            records_to_insert.append(record)
+
+    return records_to_update, records_to_insert
 
 
 def get_html(week: int, season: int):
