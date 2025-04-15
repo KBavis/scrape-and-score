@@ -1820,6 +1820,98 @@ def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: i
         raise e
 
 
+def insert_player_injuries(records: list):
+
+    """
+    Insert new records into our player_injuries db table 
+
+    Args:
+        records (list): list of records to insert 
+    """
+
+    sql = """
+    INSERT INTO player_injuries(
+        player_id, week, season, injury_loc, wed_prac_sts, thurs_prac_sts, fri_prac_sts, off_sts
+    )
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+        (
+            int(record.get("player_id")), int(record.get('week')), int(record.get('season')),
+            record.get('injury_loc'),
+            record.get('wed_prac_sts'),
+            record.get('thurs_prac_sts'),
+            record.get('fri_prac_sts'),
+            record.get('off_sts'),
+        )
+        for record in records ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted player_injuries records"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_injuries records into our db: {records}",
+            exc_info=True,
+        )
+        raise e
+
+
+def update_player_injuries(records: list):
+
+    """
+    Update existing records in our player_injuries db table 
+
+    Args:
+        records (list): list of records to insert 
+    """
+
+    sql = """
+    UPDATE player_injuries
+    SET 
+        injury_loc = %s,
+        wed_prac_sts = %s,
+        thurs_prac_sts = %s, 
+        fri_prac_sts = %s,
+        off_sts = %s
+    WHERE 
+        player_id = %s AND week = %s AND season = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+        (
+            record.get('injury_loc'),
+            record.get('wed_prac_sts'),
+            record.get('thurs_prac_sts'),
+            record.get('fri_prac_sts'),
+            record.get('off_sts'),
+            int(record.get("player_id")), int(record.get('week')), int(record.get('season'))
+        )
+        for record in records ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated player_injuries records"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following player_injuries records into our db: {records}",
+            exc_info=True,
+        )
+        raise e
+
 def convert_time_to_seconds(time_str):
     minutes, seconds = map(int, time_str.split(":"))
     return float(minutes * 60 + seconds)
