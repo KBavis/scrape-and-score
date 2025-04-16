@@ -32,7 +32,7 @@ def scrape_all(start_year=None, end_year=None):
     data = df[df["season"] == str(curr_year)] if start_year == None and end_year == None else df[(df["season"] >= str(start_year)) & (df["season"] <= str(end_year))]
 
 
-    team_betting_odds_records = get_team_betting_odds_records(data) T
+    team_betting_odds_records = get_team_betting_odds_records(data) 
     game_conditions = get_game_conditions(data)
 
     # insert into our db
