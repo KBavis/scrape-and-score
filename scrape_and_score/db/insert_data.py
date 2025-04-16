@@ -1911,6 +1911,77 @@ def update_player_injuries(records: list):
             exc_info=True,
         )
         raise e
+    
+
+def insert_game_conditions(records: list):
+    """
+    Insert game condition records into the game_conditions table.
+
+    Args:
+        records (list): List of game condition records (dicts)
+    """
+
+    sql = """
+        INSERT INTO game_conditions (
+            season,
+            week,
+            home_team_id,
+            visit_team_id,
+            game_date,
+            game_time,
+            kickoff,
+            month,
+            start,
+            surface,
+            weather_icon,
+            temperature,
+            precip_probability,
+            precip_type,
+            wind_speed,
+            wind_bearing
+        )
+        VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                int(record.get('season')),
+                int(record.get('week')),
+                int(record.get('home_team_id')),
+                int(record.get('visit_team_id')),
+                record.get('game_date'),
+                int(record.get('game_time')) if record.get('game_time') else None,
+                record.get('kickoff'),
+                record.get('month'),
+                record.get('start'),
+                record.get('surface'),
+                record.get('weather_icon'),
+                float(record.get('temperature')) if record.get('temperature') else None,
+                record.get('precip_probability'),
+                record.get('precip_type'),
+                float(record.get('wind_speed')) if record.get('wind_speed') else None,
+                int(record.get('wind_bearing')) if record.get('wind_bearing') else None
+            )
+            for record in records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info("Successfully inserted game condition records.")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting game condition records: {records}",
+            exc_info=True
+        )
+        raise e
+    
 
 def convert_time_to_seconds(time_str):
     minutes, seconds = map(int, time_str.split(":"))

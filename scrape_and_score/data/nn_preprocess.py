@@ -13,10 +13,12 @@ def preprocess():
 
    parsed_df = parse_player_props(df)
    parsed_df = encode_player_injuries(parsed_df)
+   parsed_df = encode_game_conditions(parsed_df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
    processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
 
+   #TODO: Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
    processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
 
    return processed_df
@@ -40,6 +42,13 @@ def scale_and_transform(df: pd.DataFrame):
    # store independent variables in seperate data frame 
    xs = df.drop(columns=['fantasy_points']).copy()
 
+   # extract game condition hot encoded features
+   columns = df.columns
+   game_condition_features = ['month']
+   for column in columns:
+      if column.startswith('precip_type') or column.startswith('weather_status') or column.startswith('surface'):
+         game_condition_features.append(column)
+
    # independent variables to avoid scaling due to categorical nature
    position_columns = ['position_QB', 'position_RB', 'position_WR', 'position_TE']
    categorical_columns = [
@@ -47,7 +56,7 @@ def scale_and_transform(df: pd.DataFrame):
       'thursday_practice_status',
       'friday_practice_status',
       'official_game_status'
-   ] + injury_feature_names
+   ] + injury_feature_names + game_condition_features
 
 
    # extract columns that aren't present in df
@@ -117,6 +126,42 @@ def parse_player_props(df: pd.DataFrame):
    
    df = df.drop(columns=["props"])
    return pd.concat([df, parsed_df], axis=1)
+
+
+def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
+   """
+   Encode game condition features via ordinal and one-hot encodings 
+
+   Args:
+       df (pd.DataFrame): data frame to encode 
+
+   Returns:
+       pd.DataFrame: data frame with enocded game conditions 
+   """
+
+   # encode months 
+   month_mapping = {
+      "January": 1, "February": 2, "March": 3, "April": 4,
+      "May": 5, "June": 6, "July": 7, "August": 8,
+      "September": 9, "October": 10, "November": 11, "December": 12
+   }
+   df['month'] = df['month'].map(month_mapping)
+
+   # encode categorical features 
+   categorical_features = ['surface', 'weather_status', 'precip_type']
+   df['precip_type'] = df['precip_type'].replace('', None).fillna('Unknown')
+   df['surface'] = df['surface'].replace('', None).fillna('Unknown')
+   df['weather_status'] = df['weather_status'].replace('', None).fillna('Unknown')
+   df = pd.get_dummies(df, columns=categorical_features, dtype=int)
+
+   # fill na values for temperature (since -1 is a valid number for temperature)
+   df['temperature'] = df['temperature'].fillna(-999)
+
+   # remove percent sign from percip probability
+   df['precip_probability'] = df['precip_probability'].replace('', None).fillna(-1)
+   df['precip_probability'] = df['precip_probability'].str.replace('%', '', regex=False).astype(float)
+
+   return df
 
 
 def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:

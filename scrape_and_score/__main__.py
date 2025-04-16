@@ -157,7 +157,7 @@ def main():
                 team_game_logs_service.calculate_all_teams_rankings(curr_year)
 
 
-            # fetch & persist team betting odds for relevant seasons
+            # fetch & persist team betting odds & game conditions for relevant seasons
             rotowire_scraper.scrape_all(start_year, end_year) 
 
             # fetch & persist player betting odds for relevant season
