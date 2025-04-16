@@ -32,11 +32,59 @@ def scrape_all(start_year=None, end_year=None):
     data = df[df["season"] == str(curr_year)] if start_year == None and end_year == None else df[(df["season"] >= str(start_year)) & (df["season"] <= str(end_year))]
 
 
-    team_betting_odds_records = get_team_betting_odds_records(data)
+    team_betting_odds_records = get_team_betting_odds_records(data) T
+    game_conditions = get_game_conditions(data)
 
     # insert into our db
     logging.info("Inserting all teams historical odds into our database")
-    insert_data.insert_teams_odds(team_betting_odds_records)
+    insert_data.insert_teams_odds(team_betting_odds_records) 
+
+    logging.info(f"Inserting game_conditions into our datbase from year {start_year} to year {end_year}")
+    insert_data.insert_game_conditions(game_conditions)
+
+
+
+
+def get_game_conditions(data: pd.DataFrame) -> list:
+    """
+    Extract relevant game condition metrics from the API response and generate insertable records 
+
+    Args:
+        data (pd.DataFrame): data frame containing relevant game conditions 
+    
+    Returns:
+        list : list of insertable game condition records
+    """ 
+
+    mapping = create_team_id_mapping()
+
+
+    game_condition_records = [
+        {
+            "season": row['season'], 
+            "week": row['week'],
+            "home_team_id": mapping[row["home_team_stats_id"]],
+            "visit_team_id": mapping[row["visit_team_stats_id"]],
+            "game_date": row['game_date'], 
+            "game_time": row['game_time'],
+            "kickoff": row['kickoff'],
+            "month": row['month'],
+            "start": row['start'],
+            "surface": row['surface'],
+            "weather_icon": row['weather_icon'],
+            "temperature": row['temperature'],
+            "precip_probability": row['precip_probability'],
+            "precip_type": row['precip_type'],
+            "wind_speed": row['wind_speed'],
+            "wind_bearing": row['wind_bearing']
+        }
+        for _, row in data.iterrows()
+    ]
+
+    return game_condition_records
+
+
+
 
 
 """
