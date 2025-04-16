@@ -616,6 +616,16 @@ def fetch_independent_and_dependent_variables():
          pi.thurs_prac_sts as thursday_practice_status, 
          pi.fri_prac_sts as friday_practice_status, 
          pi.off_sts as official_game_status,
+		 -- game conditions
+		 gc.weather_icon as weather_status,
+		 gc.temperature,
+		 gc.game_time, 
+		 gc.month, 
+		 gc.precip_probability,
+		 gc.precip_type,
+		 gc.wind_speed,
+		 gc.wind_bearing,
+		 gc.surface,
 		 -- weekly aggregate metrics 
 		 pam.avg_pass_first_downs AS avg_wkly_pass_first_downs,
 		 pam.avg_pass_first_downs_per_pass_play AS avg_wkly_pass_first_downs_per_pass_play,
@@ -1235,6 +1245,8 @@ def fetch_independent_and_dependent_variables():
          team td ON pgl.opp = td.team_id -- team the player is playing against 
       JOIN 
 	  	 team_game_log tgl ON tgl.team_id = t.team_id AND tgl.week = pgl.week AND tgl.year = pgl.year
+	  JOIN 
+	  	 game_conditions gc ON gc.season = pgl.year AND gc.week = pgl.week AND (t.team_id = gc.home_team_id OR t.team_id = gc.visit_team_id)
       LEFT JOIN
          player_injuries pi ON p.player_id = pi.player_id AND pi.week = pgl.week AND pi.season = pgl.year
 	  LEFT JOIN 
