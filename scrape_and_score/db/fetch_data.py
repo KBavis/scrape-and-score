@@ -2083,3 +2083,45 @@ def fetch_pks_for_inserted_player_injury_records(season: int, week: int):
 
     
 
+
+def fetch_pks_for_inserted_team_game_logs(season: int):
+    """
+    Fetch previously inserted PKs for a specific season need to be updated 
+
+    Args:
+        season (int): the season to fetch records for 
+    """
+    
+    sql = """
+        SELECT team_id, week, year 
+        FROM team_game_log 
+        WHERE year = %s 
+    """
+
+    pks = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season,))
+            rows = cur.fetchall()
+
+            if rows: 
+                for row in rows: 
+                    if row:
+                        pks.append({
+                            'team_id': row[0],
+                            'week': row[1], 
+                            'year': row[2]
+                        })
+            else:
+                return []
+        
+        return pks
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching PKs for team_game_logs for season {season}: {e}"
+        )
+        raise e
