@@ -8,27 +8,49 @@ from config import props
 Functionality to insert multiple teams game logs 
 
 Args: 
-   team_metrics (list): list of dictionaries containing team's name & game logs 
+   team_game_logs (list): list of dictionaries containing team's name & game logs 
    teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
+   should_update (bool): flag to indicate if we want to update previously persisted game logs or not 
    
 Returns:
    None
 """
 
 
-def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list, year: int = None):
+def insert_multiple_teams_game_logs(team_game_logs: list, teams_and_ids: list, year: int = None, should_update: bool = False):
 
-    curr_year = props.get_config("nfl.current-year")  # fetch current year
+    # extract or remove previously inserted game logs 
+    update_game_logs, insert_game_logs = filter_previously_inserted_game_logs(team_game_logs, teams_and_ids, year, should_update)
+    logging.info(f'Filtering complete; planning on updating {len(update_game_logs)} records and inserting {len(insert_game_logs)} records.')
+    
 
-    remove_previously_inserted_game_logs(team_metrics, curr_year, teams_and_ids, year)
-
-    if len(team_metrics) == 0:
-        logging.info("No new team game logs to persist; skipping insertion")
+    if len(update_game_logs) == 0 and len(insert_game_logs) == 0:
+        logging.info("No new team game logs to persist and no new game logs to update; skipping updates/insertions")
         return
 
-    for team in team_metrics:
+    # update & insert game logs if necessary
+    if update_game_logs:
+        insert_or_update_team_game_logs(update_game_logs, teams_and_ids, year, True)
+    
+    if insert_game_logs:
+        insert_or_update_team_game_logs(insert_game_logs, teams_and_ids, year, False)
+
+
+
+def insert_or_update_team_game_logs(team_game_logs: list, teams_and_ids: list, year: int, is_update: bool):
+    """
+    Insert or update game logs 
+
+    Args:
+        team_game_logs (list): the team game logs to update or insert 
+        teams_and_ids (list): teams and corresponding team ids 
+        year (int) : season game logs correspond to
+        is_update (bool): flag to indicate if we are updating or inserting 
+    """
+    # insert game logs 
+    for team in team_game_logs:
         team_name = team["team_name"]
-        logging.info(f"Attempting to insert game logs for team '{team_name}")
+        logging.info(f"Attempting to {'insert' if not is_update else 'update'} game logs for team '{team_name}")
 
         df = team["team_metrics"]
         if df.empty:
@@ -40,11 +62,15 @@ def insert_multiple_teams_game_logs(team_metrics: list, teams_and_ids: list, yea
         # fetch team ID
         team_id = get_team_id_by_name(team_name, teams_and_ids)
 
-        # fetch team game logs
-        tuples = get_team_log_tuples(df, team_id, year)
-
         # insert team game logs into db
-        insert_data.insert_team_game_logs(tuples)
+        if is_update:
+            tuples = get_team_log_tuples_for_update(df, team_id, year)
+            print(f"Tuples being inserted into our database: {tuples}")
+            insert_data.update_team_game_logs(tuples)
+        else:
+            tuples = get_insert_team_log_tuples(df, team_id, year)
+            insert_data.insert_team_game_logs(tuples)
+
 
 
 """
@@ -58,10 +84,9 @@ Args:
 Returns:
    tuples (list): list of tuples to be directly inserted into our database
 """
-def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
+def get_insert_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
     tuples = []
 
-    # account for differing team names over the years
     opponent_map = {
         "Oakland Raiders": "Las Vegas Raiders",
         "Washington Redskins": "Washington Commanders",
@@ -71,7 +96,6 @@ def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
 
     for _, row in df.iterrows():
         opponent = opponent_map.get(row["opp"], row["opp"])
-
         game_log = (
             team_id,
             row["week"],
@@ -87,10 +111,111 @@ def get_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
             row["tot_yds"],
             row["pass_yds"],
             row["rush_yds"],
-            row["opp_tot_yds"],
-            row["opp_pass_yds"],
-            row["opp_rush_yds"],
+            row["pass_tds"],
+            row["pass_cmp"],
+            row["pass_att"],
+            row["pass_cmp_pct"],
+            row["rush_att"],
+            row["rush_tds"],
+            row["yds_gained_per_pass_att"],
+            row["adj_yds_gained_per_pass_att"],
+            row["pass_rate"],
+            row["sacked"],
+            row["sack_yds_lost"],
+            row["rush_yds_per_att"],
+            row["total_off_plays"],
+            row["yds_per_play"],
+            row["fga"],
+            row["fgm"],
+            row["xpa"],
+            row["xpm"],
+            row["total_punts"],
+            row["punt_yds"],
+            row["pass_fds"],
+            row["rsh_fds"],
+            row["pen_fds"],
+            row["total_fds"],
+            row["thrd_down_conv"],
+            row["thrd_down_att"],
+            row["fourth_down_conv"],
+            row["fourth_down_att"],
+            row["penalties"],
+            row["penalty_yds"],
+            row["fmbl_lost"],
+            row["interceptions"],
+            row["turnovers"],
+            row["time_of_poss"],
         )
+
+        tuples.append(game_log)
+
+    return tuples
+
+
+def get_team_log_tuples_for_update(df: pd.DataFrame, team_id: int, year: int):
+    tuples = []
+
+    opponent_map = {
+        "Oakland Raiders": "Las Vegas Raiders",
+        "Washington Redskins": "Washington Commanders",
+        "Washington Football Team": "Washington Commanders",
+        "San Diego Chargers": "Los Angeles Chargers"
+    }
+
+    for _, row in df.iterrows():
+        opponent = opponent_map.get(row["opp"], row["opp"])
+
+        game_log = (
+            row["day"],
+            row["rest_days"],
+            row["home_team"],
+            row["distance_traveled"],
+            team_service.get_team_id_by_name(opponent),
+            row["result"],
+            row["points_for"],
+            row["points_allowed"],
+            row["tot_yds"],
+            row["pass_yds"],
+            row["rush_yds"],
+            row["pass_tds"],
+            row["pass_cmp"],
+            row["pass_att"],
+            row["pass_cmp_pct"],
+            row["rush_att"],
+            row["rush_tds"],
+            row["yds_gained_per_pass_att"],
+            row["adj_yds_gained_per_pass_att"],
+            row["pass_rate"],
+            row["sacked"],
+            row["sack_yds_lost"],
+            row["rush_yds_per_att"],
+            row["total_off_plays"],
+            row["yds_per_play"],
+            row["fga"],
+            row["fgm"],
+            row["xpa"],
+            row["xpm"],
+            row["total_punts"],
+            row["punt_yds"],
+            row["pass_fds"],
+            row["rsh_fds"],
+            row["pen_fds"],
+            row["total_fds"],
+            row["thrd_down_conv"],
+            row["thrd_down_att"],
+            row["fourth_down_conv"],
+            row["fourth_down_att"],
+            row["penalties"],
+            row["penalty_yds"],
+            row["fmbl_lost"],
+            row["interceptions"],
+            row["turnovers"],
+            row["time_of_poss"],
+            team_id,
+            row["week"],
+            year,
+        )
+
         tuples.append(game_log)
 
     return tuples
@@ -160,46 +285,37 @@ Args:
    team_metrics (list): list of dictionaries containing team's name & game logs 
    teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
    year (int): season pertaining to game log
+   should_update (bool): boolean indicating if we should not remove game logs and instead seperate them
    
 Returns:
    None
 """
 
 
-def remove_previously_inserted_game_logs(team_metrics,teams_and_ids,year):
-    team_metric_pks = []
-
+def filter_previously_inserted_game_logs(team_game_logs: list, teams_and_ids: list, year: int, should_update: bool):
     # generate pks for each team game log
-    for team in team_metrics:
-        df = team["team_metrics"]
-        if len(df) == 1:
-            week = str(df.iloc[0]["week"])
-            team_metric_pks.append(
-                {
-                    "team_id": get_team_id_by_name(team["team_name"], teams_and_ids),
-                    "week": week,
-                    "year": year
-                }
-            )
+    persisted_team_game_log_pks = fetch_data.fetch_pks_for_inserted_team_game_logs(year)
+    
+    update_game_logs = []
+    insert_game_logs = []
 
-    # check if this execution is for recent games or not
-    if len(team_metrics) != len(team_metric_pks):
-        logging.info(
-            "Program execution is not for most recent games; skipping check for previously persisted team game logs"
-        )
-        return
-
-    # remove duplicate entires
     index = 0
-    while index < len(team_metrics):
-        if is_game_log_persisted(team_metric_pks[index]):
-            del team_metrics[index]
-            del team_metric_pks[index]
+    while index < len(team_game_logs):
+        game_log = team_game_logs[index]
+        pk = { 'team_id': get_team_id_by_name(game_log['team_name'], teams_and_ids), 'week': int(game_log['team_metrics'].iloc[0]['week']), 'year': year }
+
+        print(pk)
+
+        if pk in persisted_team_game_log_pks:
+            # only account for previously persisted if planning on updating
+            if should_update:
+                update_game_logs.append(game_log)
         else:
-            logging.debug(
-                f"Team game log corresponding to PK [{team_metric_pks[index]}] not persisted; inserting new game log"
-            )
-            index += 1
+            insert_game_logs.append(game_log)
+        
+        index+=1
+    
+    return update_game_logs, insert_game_logs
 
 
 """
