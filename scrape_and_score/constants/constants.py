@@ -114,6 +114,7 @@ CITIES = {
     "New York Jets": "New York",
     "New England Patriots": "Providence",
     "Las Vegas Raiders": "Las Vegas",
+    "Oakland Raiders": "Oakland",
     "Tennessee Titans": "Nashville",
     "Tennessee Oilers": "Nashville",
     "Phoenix Cardinals": "Phoenix",
