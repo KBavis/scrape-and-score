@@ -65,7 +65,6 @@ def insert_or_update_team_game_logs(team_game_logs: list, teams_and_ids: list, y
         # insert team game logs into db
         if is_update:
             tuples = get_team_log_tuples_for_update(df, team_id, year)
-            print(f"Tuples being inserted into our database: {tuples}")
             insert_data.update_team_game_logs(tuples)
         else:
             tuples = get_insert_team_log_tuples(df, team_id, year)
