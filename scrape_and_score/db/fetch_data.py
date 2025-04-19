@@ -626,7 +626,7 @@ def fetch_independent_and_dependent_variables():
 		 gc.wind_speed,
 		 gc.wind_bearing,
 		 gc.surface,
-		 -- weekly aggregate metrics 
+		 -- player weekly aggregate metrics 
 		 pam.avg_pass_first_downs AS avg_wkly_pass_first_downs,
 		 pam.avg_pass_first_downs_per_pass_play AS avg_wkly_pass_first_downs_per_pass_play,
 		 pam.avg_intended_air_yards AS avg_wkly_intended_air_yards,
@@ -647,6 +647,68 @@ def fetch_independent_and_dependent_variables():
 		 pam.avg_pass_pressured_pct AS avg_wkly_pass_pressured_pct,
 		 pam.avg_pass_scrambles AS avg_wkly_pass_scrambles,
 		 pam.avg_pass_yds_per_scramble AS avg_wkly_pass_yds_per_scramble,
+        
+         -- Teams Weekly General Metrics
+        tam.avg_points_for AS avg_wkly_points_for,
+        tam.avg_points_allowed AS avg_wkly_points_allowed,
+        tam.avg_result_margin AS avg_wkly_result_margin,
+
+        -- Teams Weekly Offensive Metrics
+        tam.avg_tot_yds AS avg_wkly_tot_yds,
+        tam.avg_pass_yds AS avg_wkly_pass_yds,
+        tam.avg_rush_yds AS avg_wkly_rush_yds,
+        tam.avg_pass_tds AS avg_wkly_pass_tds,
+        tam.avg_pass_cmp AS avg_wkly_pass_cmp,
+        tam.avg_pass_att AS avg_wkly_pass_att,
+        tam.avg_pass_cmp_pct AS avg_wkly_pass_cmp_pct,
+        tam.avg_yds_gained_per_pass_att AS avg_wkly_yds_gained_per_pass_att,
+        tam.avg_adj_yds_gained_per_pass_att AS avg_wkly_adj_yds_gained_per_pass_att,
+        tam.avg_pass_rate AS avg_wkly_pass_rate,
+        tam.avg_sacked AS avg_wkly_sacked,
+        tam.avg_sack_yds_lost AS avg_wkly_sack_yds_lost,
+        tam.avg_rush_att AS avg_wkly_rush_att,
+        tam.avg_rush_tds AS avg_wkly_rush_tds,
+        tam.avg_rush_yds_per_att AS avg_wkly_rush_yds_per_att,
+        tam.avg_total_off_plays AS avg_wkly_total_off_plays,
+        tam.avg_yds_per_play AS avg_wkly_yds_per_play,
+
+        -- Teams Weekly Defensive Opponent Metrics (TODO: Update with additonal info)
+        tam.avg_opp_tot_yds AS avg_wkly_opp_tot_yds,
+        tam.avg_opp_pass_yds AS avg_wkly_opp_pass_yds,
+        tam.avg_opp_rush_yds AS avg_wkly_opp_rush_yds,
+
+        -- Teams Weekly Kicking Metrics
+        tam.avg_fga AS avg_wkly_fga,
+        tam.avg_fgm AS avg_wkly_fgm,
+        tam.avg_xpa AS avg_wkly_xpa,
+        tam.avg_xpm AS avg_wkly_xpm,
+
+        -- Team Weekly Punting Metrics
+        tam.avg_total_punts AS avg_wkly_total_punts,
+        tam.avg_punt_yds AS avg_wkly_punt_yds,
+
+        -- Team Weekly First Down Metrics
+        tam.avg_pass_fds AS avg_wkly_pass_fds,
+        tam.avg_rsh_fds AS avg_wkly_rsh_fds,
+        tam.avg_pen_fds AS avg_wkly_pen_fds,
+        tam.avg_total_fds AS avg_wkly_total_fds,
+
+        -- Team Weekly Conversion Metrics
+        tam.avg_thrd_down_conv AS avg_wkly_thrd_down_conv,
+        tam.avg_thrd_down_att AS avg_wkly_thrd_down_att,
+        tam.avg_fourth_down_conv AS avg_wkly_fourth_down_conv,
+        tam.avg_fourth_down_att AS avg_wkly_fourth_down_att,
+
+        -- Team Weekly Penalty & Turnover Metrics
+        tam.avg_penalties AS avg_wkly_penalties,
+        tam.avg_penalty_yds AS avg_wkly_penalty_yds,
+        tam.avg_fmbl_lost AS avg_wkly_fmbl_lost,
+        tam.avg_int AS avg_wkly_int,
+        tam.avg_turnovers AS avg_wkly_turnovers,
+
+        -- Team Weekly Time of Possession
+        tam.avg_time_of_poss AS avg_wkly_time_of_poss,
+
 		
 		 pam.avg_rush_first_downs AS avg_wkly_rush_first_downs,
 		 pam.avg_rush_yds_before_contact AS avg_wkly_rush_yds_before_contact,
@@ -1232,7 +1294,7 @@ def fetch_independent_and_dependent_variables():
       FROM
          player_game_log pgl -- player game logs (week to week games)
       JOIN 
-         player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- weekly aggregate metrics for player 
+         player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- player weekly aggregate metrics  
       JOIN
          player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id -- player depth chart position 
       JOIN 
@@ -1247,6 +1309,8 @@ def fetch_independent_and_dependent_variables():
 	  	 team_game_log tgl ON tgl.team_id = t.team_id AND tgl.week = pgl.week AND tgl.year = pgl.year
 	  JOIN 
 	  	 game_conditions gc ON gc.season = pgl.year AND gc.week = pgl.week AND (t.team_id = gc.home_team_id OR t.team_id = gc.visit_team_id)
+      LEFT JOIN 
+         team_weekly_agg_metrics tam ON tgl.week - 1 = tam.week AND tgl.year = tam.season AND tgl.team_id = tam.team_id -- team weekly agg metrics
       LEFT JOIN
          player_injuries pi ON p.player_id = pi.player_id AND pi.week = pgl.week AND pi.season = pgl.year
 	  LEFT JOIN 
