@@ -17,7 +17,6 @@ CREATE TABLE team_game_log (
     opp_tot_yds INT,
     opp_pass_yds INT,
     opp_rush_yds INT,
-    fantasy_points FLOAT,
     pass_tds INT,
     pass_cmp INT,
     pass_att INT,
