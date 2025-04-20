@@ -710,47 +710,48 @@ def fetch_independent_and_dependent_variables():
         tam.avg_total_off_plays AS avg_wkly_total_off_plays,
         tam.avg_yds_per_play AS avg_wkly_yds_per_play,
 
-        -- Players Team Weekly Defensive Opponent Metrics
-        tam.avg_opp_tot_yds AS avg_wkly_opp_tot_yds,
-        tam.avg_opp_pass_yds AS avg_wkly_opp_pass_yds,
-        tam.avg_opp_rush_yds AS avg_wkly_opp_rush_yds,
-        tam.avg_opp_tot_yds AS avg_wkly_opp_tot_yds,
-        tam.avg_opp_pass_yds AS avg_wkly_opp_pass_yds,
-        tam.avg_opp_rush_yds AS avg_wkly_opp_rush_yds,
-        tam.avg_opp_pass_tds AS avg_wkly_opp_pass_tds,
-        tam.avg_opp_pass_cmp AS avg_wkly_opp_pass_cmp,
-        tam.avg_opp_pass_att AS avg_wkly_opp_pass_att,
-        tam.avg_opp_pass_cmp_pct AS avg_wkly_opp_pass_cmp_pct,
-        tam.avg_opp_yds_gained_per_pass_att AS avg_wkly_opp_yds_gained_per_pass_att,
-        tam.avg_opp_adj_yds_gained_per_pass_att AS avg_wkly_opp_adj_yds_gained_per_pass_att,
-        tam.avg_opp_pass_rate AS avg_wkly_opp_pass_rate,
-        tam.avg_opp_sacked AS avg_wkly_opp_sacked,
-        tam.avg_opp_sack_yds_lost AS avg_wkly_opp_sack_yds_lost,
-        tam.avg_opp_rush_att AS avg_wkly_opp_rush_att,
-        tam.avg_opp_rush_tds AS avg_wkly_opp_rush_tds,
-        tam.avg_opp_rush_yds_per_att AS avg_wkly_opp_rush_yds_per_att,
-        tam.avg_opp_tot_off_plays AS avg_wkly_opp_tot_off_plays,
-        tam.avg_opp_yds_per_play AS avg_wkly_opp_yds_per_play,
-        tam.avg_opp_fga AS avg_wkly_opp_fga,
-        tam.avg_opp_fgm AS avg_wkly_opp_fgm,
-        tam.avg_opp_xpa AS avg_wkly_opp_xpa,
-        tam.avg_opp_xpm AS avg_wkly_opp_xpm,
-        tam.avg_opp_total_punts AS avg_wkly_opp_total_punts,
-        tam.avg_opp_punt_yds AS avg_wkly_opp_punt_yds,
-        tam.avg_opp_pass_fds AS avg_wkly_opp_pass_fds,
-        tam.avg_opp_rsh_fds AS avg_wkly_opp_rsh_fds,
-        tam.avg_opp_pen_fds AS avg_wkly_opp_pen_fds,
-        tam.avg_opp_total_fds AS avg_wkly_opp_total_fds,
-        tam.avg_opp_thrd_down_conv AS avg_wkly_opp_thrd_down_conv,
-        tam.avg_opp_thrd_down_att AS avg_wkly_opp_thrd_down_att,
-        tam.avg_opp_foruth_down_conv AS avg_wkly_opp_fourth_down_conv,
-        tam.avg_opp_foruth_down_att AS avg_wkly_opp_fourth_down_att,
-        tam.avg_opp_penalties AS avg_wkly_opp_penalties,
-        tam.avg_opp_pentalty_yds AS avg_wkly_opp_penalty_yds,
-        tam.avg_opp_fmbl_lost AS avg_wkly_opp_fmbl_lost,
-        tam.avg_opp_int AS avg_wkly_opp_int,
-        tam.avg_opp_turnovers AS avg_wkly_opp_turnovers,
-        tam.avg_opp_time_of_possession AS avg_wkly_opp_time_of_possession,
+        -- Players Team Weekly Defensive Metrics
+        tam.avg_opp_tot_yds AS avg_wkly_def_tot_yds,
+        tam.avg_opp_pass_yds AS avg_wkly_def_pass_yds,
+        tam.avg_opp_rush_yds AS avg_wkly_def_rush_yds,
+        tam.avg_opp_tot_yds AS avg_wkly_def_tot_yds,
+        tam.avg_opp_pass_yds AS avg_wkly_def_pass_yds,
+        tam.avg_opp_rush_yds AS avg_wkly_def_rush_yds,
+        tam.avg_opp_pass_tds AS avg_wkly_def_pass_tds,
+        tam.avg_opp_pass_cmp AS avg_wkly_def_pass_cmp,
+        tam.avg_opp_pass_att AS avg_wkly_def_pass_att,
+        tam.avg_opp_pass_cmp_pct AS avg_wkly_def_pass_cmp_pct,
+        tam.avg_opp_yds_gained_per_pass_att AS avg_wkly_def_yds_gained_per_pass_att,
+        tam.avg_opp_adj_yds_gained_per_pass_att AS avg_wkly_def_adj_yds_gained_per_pass_att,
+        tam.avg_opp_pass_rate AS avg_wkly_def_pass_rate,
+        tam.avg_opp_sacked AS avg_wkly_def_sacked,
+        tam.avg_opp_sack_yds_lost AS avg_wkly_def_sack_yds_lost,
+        tam.avg_opp_rush_att AS avg_wkly_def_rush_att,
+        tam.avg_opp_rush_tds AS avg_wkly_def_rush_tds,
+        tam.avg_opp_rush_yds_per_att AS avg_wkly_def_rush_yds_per_att,
+        tam.avg_opp_tot_off_plays AS avg_wkly_def_tot_off_plays,
+        tam.avg_opp_yds_per_play AS avg_wkly_def_yds_per_play,
+        tam.avg_opp_fga AS avg_wkly_def_fga,
+        tam.avg_opp_fgm AS avg_wkly_def_fgm,
+        tam.avg_opp_xpa AS avg_wkly_def_xpa,
+        tam.avg_opp_xpm AS avg_wkly_def_xpm,
+        tam.avg_opp_total_punts AS avg_wkly_def_total_punts,
+        tam.avg_opp_punt_yds AS avg_wkly_def_punt_yds,
+        tam.avg_opp_pass_fds AS avg_wkly_def_pass_fds,
+        tam.avg_opp_rsh_fds AS avg_wkly_def_rsh_fds,
+        tam.avg_opp_pen_fds AS avg_wkly_def_pen_fds,
+        tam.avg_opp_total_fds AS avg_wkly_def_total_fds,
+        tam.avg_opp_thrd_down_conv AS avg_wkly_def_thrd_down_conv,
+        tam.avg_opp_thrd_down_att AS avg_wkly_def_thrd_down_att,
+        tam.avg_opp_foruth_down_conv AS avg_wkly_def_fourth_down_conv,
+        tam.avg_opp_foruth_down_att AS avg_wkly_def_fourth_down_att,
+        tam.avg_opp_penalties AS avg_wkly_def_penalties,
+        tam.avg_opp_pentalty_yds AS avg_wkly_def_penalty_yds,
+        tam.avg_opp_fmbl_lost AS avg_wkly_def_fmbl_lost,
+        tam.avg_opp_int AS avg_wkly_def_int,
+        tam.avg_opp_turnovers AS avg_wkly_def_turnovers,
+        tam.avg_opp_time_of_possession AS avg_wkly_def_time_of_possession,
+
 
 
         -- Players Team Weekly Kicking Metrics
@@ -784,6 +785,102 @@ def fetch_independent_and_dependent_variables():
 
         -- Players Team Weekly Time of Possession
         tam.avg_time_of_poss AS avg_wkly_time_of_poss,
+
+        -- Opposing Teams Weekly General Metrics
+        otam.avg_points_for AS avg_opp_wkly_points_for,
+        otam.avg_points_allowed AS avg_opp_wkly_points_allowed,
+        otam.avg_result_margin AS avg_opp_wkly_result_margin,
+
+        -- Opposing Teams Weekly Offensive Metrics
+        otam.avg_tot_yds AS avg_opp_wkly_tot_yds,
+        otam.avg_pass_yds AS avg_opp_wkly_pass_yds,
+        otam.avg_rush_yds AS avg_opp_wkly_rush_yds,
+        otam.avg_pass_tds AS avg_opp_wkly_pass_tds,
+        otam.avg_pass_cmp AS avg_opp_wkly_pass_cmp,
+        otam.avg_pass_att AS avg_opp_wkly_pass_att,
+        otam.avg_pass_cmp_pct AS avg_opp_wkly_pass_cmp_pct,
+        otam.avg_yds_gained_per_pass_att AS avg_opp_wkly_yds_gained_per_pass_att,
+        otam.avg_adj_yds_gained_per_pass_att AS avg_opp_wkly_adj_yds_gained_per_pass_att,
+        otam.avg_pass_rate AS avg_opp_wkly_pass_rate,
+        otam.avg_sacked AS avg_opp_wkly_sacked,
+        otam.avg_sack_yds_lost AS avg_opp_wkly_sack_yds_lost,
+        otam.avg_rush_att AS avg_opp_wkly_rush_att,
+        otam.avg_rush_tds AS avg_opp_wkly_rush_tds,
+        otam.avg_rush_yds_per_att AS avg_opp_wkly_rush_yds_per_att,
+        otam.avg_total_off_plays AS avg_opp_wkly_total_off_plays,
+        otam.avg_yds_per_play AS avg_opp_wkly_yds_per_play,
+
+        -- Opposing Teams Weekly Defensive Metrics
+        otam.avg_opp_tot_yds AS avg_opp_wkly_def_tot_yds,
+        otam.avg_opp_pass_yds AS avg_opp_wkly_def_pass_yds,
+        otam.avg_opp_rush_yds AS avg_opp_wkly_def_rush_yds,
+        otam.avg_opp_pass_tds AS avg_opp_wkly_def_pass_tds,
+        otam.avg_opp_pass_cmp AS avg_opp_wkly_def_pass_cmp,
+        otam.avg_opp_pass_att AS avg_opp_wkly_def_pass_att,
+        otam.avg_opp_pass_cmp_pct AS avg_opp_wkly_def_pass_cmp_pct,
+        otam.avg_opp_yds_gained_per_pass_att AS avg_opp_wkly_def_yds_gained_per_pass_att,
+        otam.avg_opp_adj_yds_gained_per_pass_att AS avg_opp_wkly_def_adj_yds_gained_per_pass_att,
+        otam.avg_opp_pass_rate AS avg_opp_wkly_def_pass_rate,
+        otam.avg_opp_sacked AS avg_opp_wkly_def_sacked,
+        otam.avg_opp_sack_yds_lost AS avg_opp_wkly_def_sack_yds_lost,
+        otam.avg_opp_rush_att AS avg_opp_wkly_def_rush_att,
+        otam.avg_opp_rush_tds AS avg_opp_wkly_def_rush_tds,
+        otam.avg_opp_rush_yds_per_att AS avg_opp_wkly_def_rush_yds_per_att,
+        otam.avg_opp_tot_off_plays AS avg_opp_wkly_def_tot_off_plays,
+        otam.avg_opp_yds_per_play AS avg_opp_wkly_def_yds_per_play,
+        otam.avg_opp_fga AS avg_opp_wkly_def_fga,
+        otam.avg_opp_fgm AS avg_opp_wkly_def_fgm,
+        otam.avg_opp_xpa AS avg_opp_wkly_def_xpa,
+        otam.avg_opp_xpm AS avg_opp_wkly_def_xpm,
+        otam.avg_opp_total_punts AS avg_opp_wkly_def_total_punts,
+        otam.avg_opp_punt_yds AS avg_opp_wkly_def_punt_yds,
+        otam.avg_opp_pass_fds AS avg_opp_wkly_def_pass_fds,
+        otam.avg_opp_rsh_fds AS avg_opp_wkly_def_rsh_fds,
+        otam.avg_opp_pen_fds AS avg_opp_wkly_def_pen_fds,
+        otam.avg_opp_total_fds AS avg_opp_wkly_def_total_fds,
+        otam.avg_opp_thrd_down_conv AS avg_opp_wkly_def_thrd_down_conv,
+        otam.avg_opp_thrd_down_att AS avg_opp_wkly_def_thrd_down_att,
+        otam.avg_opp_foruth_down_conv AS avg_opp_wkly_def_fourth_down_conv,
+        otam.avg_opp_foruth_down_att AS avg_opp_wkly_def_fourth_down_att,
+        otam.avg_opp_penalties AS avg_opp_wkly_def_penalties,
+        otam.avg_opp_pentalty_yds AS avg_opp_wkly_def_penalty_yds,
+        otam.avg_opp_fmbl_lost AS avg_opp_wkly_def_fmbl_lost,
+        otam.avg_opp_int AS avg_opp_wkly_def_int,
+        otam.avg_opp_turnovers AS avg_opp_wkly_def_turnovers,
+        otam.avg_opp_time_of_possession AS avg_opp_wkly_def_time_of_possession,
+
+        -- Opposing Teams Weekly Kicking Metrics
+        otam.avg_fga AS avg_opp_wkly_fga,
+        otam.avg_fgm AS avg_opp_wkly_fgm,
+        otam.avg_xpa AS avg_opp_wkly_xpa,
+        otam.avg_xpm AS avg_opp_wkly_xpm,
+
+        -- Opposing Teams Weekly Punting Metrics
+        otam.avg_total_punts AS avg_opp_wkly_total_punts,
+        otam.avg_punt_yds AS avg_opp_wkly_punt_yds,
+
+        -- Opposing Teams Weekly First Down Metrics
+        otam.avg_pass_fds AS avg_opp_wkly_pass_fds,
+        otam.avg_rsh_fds AS avg_opp_wkly_rsh_fds,
+        otam.avg_pen_fds AS avg_opp_wkly_pen_fds,
+        otam.avg_total_fds AS avg_opp_wkly_total_fds,
+
+        -- Opposing Teams Weekly Conversion Metrics
+        otam.avg_thrd_down_conv AS avg_opp_wkly_thrd_down_conv,
+        otam.avg_thrd_down_att AS avg_opp_wkly_thrd_down_att,
+        otam.avg_fourth_down_conv AS avg_opp_wkly_fourth_down_conv,
+        otam.avg_fourth_down_att AS avg_opp_wkly_fourth_down_att,
+
+        -- Opposing Teams Weekly Penalty & Turnover Metrics
+        otam.avg_penalties AS avg_opp_wkly_penalties,
+        otam.avg_penalty_yds AS avg_opp_wkly_penalty_yds,
+        otam.avg_fmbl_lost AS avg_opp_wkly_fmbl_lost,
+        otam.avg_int AS avg_opp_wkly_int,
+        otam.avg_turnovers AS avg_opp_wkly_turnovers,
+
+        -- Opposing Teams Weekly Time of Possession
+        otam.avg_time_of_poss AS avg_opp_wkly_time_of_poss,
+
 
 		 -- Depth Chart Position 
 		 pdc.depth_chart_pos AS depth_chart_position,
@@ -1143,7 +1240,7 @@ def fetch_independent_and_dependent_variables():
          tsr.def_third_down_pct as prev_year_team_def_third_down_pct,
          tsr.def_fourth_down_pct as prev_year_team_def_fourth_down_pct,
 
-		 -- Opposing Teams Previous Year Seasonal Defensive Rankings
+		 -- Players Team Previous Year Seasonal Defensive Rankings
          opp_tsr.def_points as prev_year_def_points,
          opp_tsr.def_total_yards as prev_year_def_total_yards,
          opp_tsr.def_turnovers as prev_year_def_turnovers,
@@ -1372,7 +1469,9 @@ def fetch_independent_and_dependent_variables():
       LEFT JOIN 
          player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- player weekly aggregate metrics  
       LEFT JOIN 
-         team_weekly_agg_metrics tam ON tgl.week - 1 = tam.week AND tgl.year = tam.season AND tgl.team_id = tam.team_id -- team weekly agg metrics
+         team_weekly_agg_metrics tam ON tgl.week - 1 = tam.week AND tgl.year = tam.season AND tgl.team_id = tam.team_id -- players team weekly agg metrics
+      LEFT JOIN 
+         team_weekly_agg_metrics otam ON tgl.week - 1 = otam.week AND tgl.year = otam.season AND tgl.opp = otam.team_id -- opposing teams weekly agg metrics
       LEFT JOIN
          player_injuries pi ON p.player_id = pi.player_id AND pi.week = pgl.week AND pi.season = pgl.year
 	  LEFT JOIN 
