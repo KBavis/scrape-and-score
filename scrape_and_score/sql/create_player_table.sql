@@ -5,5 +5,6 @@ CREATE TABLE player (
     position VARCHAR(50) NOT NULL,
     normalized_name VARCHAR(100), 
     hashed_name VARCHAR(100), 
-    pfr_available INT -- column used to determine if pro-football-reference HREF was found for player or not
+    pfr_available INT, -- column used to determine if pro-football-reference HREF was found for player or not
+    dob VARCHAR(30)
 );
