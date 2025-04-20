@@ -1293,8 +1293,6 @@ def fetch_independent_and_dependent_variables():
 		 pp.props
       FROM
          player_game_log pgl -- player game logs (week to week games)
-      JOIN 
-         player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- player weekly aggregate metrics  
       JOIN
          player_depth_chart pdc ON pdc.week = pgl.week AND pgl.year = pdc.season AND pgl.player_id = pdc.player_id -- player depth chart position 
       JOIN 
@@ -1309,6 +1307,8 @@ def fetch_independent_and_dependent_variables():
 	  	 team_game_log tgl ON tgl.team_id = t.team_id AND tgl.week = pgl.week AND tgl.year = pgl.year
 	  JOIN 
 	  	 game_conditions gc ON gc.season = pgl.year AND gc.week = pgl.week AND (t.team_id = gc.home_team_id OR t.team_id = gc.visit_team_id)
+      LEFT JOIN 
+         player_weekly_agg_metrics pam ON pgl.week - 1 = pam.week AND pgl.year = pam.season AND pgl.player_id = pam.player_id -- player weekly aggregate metrics  
       LEFT JOIN 
          team_weekly_agg_metrics tam ON tgl.week - 1 = tam.week AND tgl.year = tam.season AND tgl.team_id = tam.team_id -- team weekly agg metrics
       LEFT JOIN
