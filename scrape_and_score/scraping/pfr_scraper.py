@@ -186,7 +186,7 @@ def log_disregarded_players(players: list):
 
     disregarded_players = [player['player_name'] for player in players if player['pfr_available'] == 0]
     if disregarded_players is not None and len(disregarded_players) != 0:
-        logging.warn(f'The following players will be disregarded due to being unavailable in Pro-Football-Reference: \n\n{disregarded_players}\n\n')
+        logging.warning(f'The following players will be disregarded due to being unavailable in Pro-Football-Reference: \n\n{disregarded_players}\n\n')
 
 
 def get_player_urls_with_hash(players: list, year: int): 
