@@ -3,7 +3,7 @@
 CREATE TABLE player_demographics (
 	player_id INT NOT NULL, 
 	season INT NOT NULL, 
-	age INT, 
+	age FLOAT, 
 	height FLOAT,
 	weight FLOAT,
 	PRIMARY KEY (player_id, season),
