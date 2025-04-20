@@ -212,19 +212,36 @@ Returns:
    None
 """
 
-
 def insert_team_game_logs(game_logs: list):
     sql = """
-      INSERT INTO team_game_log (team_id, week, day, year, rest_days, home_team, distance_traveled, opp, result, points_for, points_allowed, tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds)
-      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-   """
+    INSERT INTO team_game_log (
+        team_id, week, day, year, rest_days, home_team, distance_traveled, opp, result,
+        points_for, points_allowed, tot_yds, pass_yds, rush_yds, pass_tds, pass_cmp,
+        pass_att, pass_cmp_pct, rush_att, rush_tds, yds_gained_per_pass_att,
+        adj_yds_gained_per_pass_att, pass_rate, sacked, sack_yds_lost, rush_yds_per_att,
+        total_off_plays, yds_per_play, fga, fgm, xpa, xpm, total_punts,
+        punt_yds, pass_fds, rsh_fds, pen_fds, total_fds, thrd_down_conv, thrd_down_att,
+        fourth_down_conv, fourth_down_att, penalties, penalty_yds, fmbl_lost,
+        int, turnovers, time_of_poss
+    )
+    VALUES (
+        %s, %s, %s, %s, %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s,
+        %s, %s, %s
+    )
+
+    """
 
     try:
         connection = get_connection()
 
         with connection.cursor() as cur:
             cur.executemany(sql, game_logs)
-
             connection.commit()
             logging.info(
                 f"Successfully inserted {len(game_logs)} team game logs into the database"
@@ -236,6 +253,85 @@ def insert_team_game_logs(game_logs: list):
             exc_info=True,
         )
         raise e
+
+
+"""
+Functionality to update multiple team game logs.
+
+Args:
+   game_logs (list): list of tuples where each tuple contains all updatable fields followed by team_id, week, and year.
+   
+Returns:
+   None
+"""
+
+def update_team_game_logs(game_logs: list):
+    sql = """
+    UPDATE team_game_log
+    SET
+        day = %s,
+        rest_days = %s,
+        home_team = %s,
+        distance_traveled = %s,
+        opp = %s,
+        result = %s,
+        points_for = %s,
+        points_allowed = %s,
+        tot_yds = %s,
+        pass_yds = %s,
+        rush_yds = %s,
+        pass_tds = %s,
+        pass_cmp = %s,
+        pass_att = %s,
+        pass_cmp_pct = %s,
+        rush_att = %s,
+        rush_tds = %s,
+        yds_gained_per_pass_att = %s,
+        adj_yds_gained_per_pass_att = %s,
+        pass_rate = %s,
+        sacked = %s,
+        sack_yds_lost = %s,
+        rush_yds_per_att = %s,
+        total_off_plays = %s,
+        yds_per_play = %s,
+        fga = %s,
+        fgm = %s,
+        xpa = %s,
+        xpm = %s,
+        total_punts = %s,
+        punt_yds = %s,
+        pass_fds = %s,
+        rsh_fds = %s,
+        pen_fds = %s,
+        total_fds = %s,
+        thrd_down_conv = %s,
+        thrd_down_att = %s,
+        fourth_down_conv = %s,
+        fourth_down_att = %s,
+        penalties = %s,
+        penalty_yds = %s,
+        fmbl_lost = %s,
+        int = %s,
+        turnovers = %s,
+        time_of_poss = %s
+    WHERE team_id = %s AND week = %s AND year = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, game_logs)
+            connection.commit()
+            logging.info(f"Successfully updated {len(game_logs)} team game logs in the database")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the team game logs: {game_logs}",
+            exc_info=True,
+        )
+        raise e
+
 
 
 """

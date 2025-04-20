@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES
-from service import team_service, player_service, player_game_logs_service, team_game_logs_service
+from service import team_service, player_service, player_game_logs_service, team_game_logs_service, service_util
 from config import props
 from .util import fetch_page
 from datetime import date, datetime
@@ -34,7 +34,7 @@ def scrape_all(team_and_player_data: list, teams: list):
     year = props.get_config("nfl.current-year")
 
     # fetch relevant team metrics
-    team_metrics = fetch_team_metrics(teams, team_template_url, year)
+    team_metrics = fetch_team_game_logs(teams, team_template_url, year)
 
     # fetch relevant player metrics
     player_metrics = fetch_player_metrics(team_and_player_data, year)
@@ -62,8 +62,8 @@ def scrape_historical(start_year: int, end_year: int):
         logging.info(f"Scraping team and player game logs for the {year} season\n\n")
 
         # # fetch team metrics for given season 
-        season_team_metrics = fetch_team_metrics(team_names, team_template_url, year)
-        team_game_logs_service.insert_multiple_teams_game_logs(season_team_metrics, teams, year)
+        season_team_metrics = fetch_team_game_logs(team_names, team_template_url, year)
+        team_game_logs_service.insert_multiple_teams_game_logs(season_team_metrics, teams, year, True)
 
         # fetch players relevant to current season 
         players = fetch_data.fetch_players_on_a_roster_in_specific_year(year)
@@ -100,7 +100,7 @@ def scrape_recent():
     team_names = [team["name"] for team in teams]
 
     # fetch recent game logs for each team
-    team_metrics = fetch_team_metrics(
+    team_metrics = fetch_team_game_logs(
         team_names, team_template_url, year, recent_games=True
     )
 
@@ -224,7 +224,7 @@ def get_last_name_first_initial(player_name: str):
     
 
 """
-Functionality to fetch the metrics for each NFL team 
+Functionality to fetch team game logs for each NFL team 
 
 Args:
    teams (list) - list of team names to fetch metrics for 
@@ -236,8 +236,7 @@ Returns:
     team_metrics (list) - list of df's containing team metrics
 """
 
-#TODO: Rename me to fetch game logs 
-def fetch_team_metrics(teams: list, url_template: str, year: int, recent_games=False):
+def fetch_team_game_logs(teams: list, url_template: str, year: int, recent_games=False):
     logging.info(f"Attempting to scrape team metrics for the following teams [{teams}]")
 
     team_metrics = []
@@ -784,7 +783,9 @@ def parse_advanced_rushing_receiving_table(table: BeautifulSoup):
 """
 Functionality to fetch relevant metrics corresponding to a specific NFL team
 
-Some subtle modifications were made to fix the repositories bug and to fit our use case.      
+Some subtle modifications were made to fix the repositories bug and to fit our use case.    
+
+TODO: REFACTOR THIS::: pro-football-reference made a UI update, breaking a lot of this code and now theres a bunch of conditionals and ugly code that we should fix in the future 
    
 Args: 
     team (str) - NFL team full name
@@ -813,10 +814,42 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
         "tot_yds": [],
         "pass_yds": [],
         "rush_yds": [],
-        "opp_tot_yds": [],
-        "opp_pass_yds": [],
-        "opp_rush_yds": [],
+        "pass_tds": [],
+        "pass_cmp": [],
+        "pass_att": [],
+        "pass_cmp_pct": [],
+        "rush_att": [],
+        "rush_tds": [],
+        "yds_gained_per_pass_att": [],
+        "adj_yds_gained_per_pass_att": [],
+        "pass_rate": [],
+        "sacked": [],
+        "sack_yds_lost": [],
+        "rush_yds_per_att": [],
+        "total_off_plays": [],
+        "yds_per_play": [],
+        "fga": [],
+        "fgm": [],
+        "xpa": [],
+        "xpm": [],
+        "total_punts": [],
+        "punt_yds": [],
+        "pass_fds": [],
+        "rsh_fds": [],
+        "pen_fds": [],
+        "total_fds": [],
+        "thrd_down_conv": [],
+        "thrd_down_att": [],
+        "fourth_down_conv": [],
+        "fourth_down_att": [],
+        "penalties": [],
+        "penalty_yds": [],
+        "fmbl_lost": [],
+        "interceptions": [],
+        "turnovers": [],
+        "time_of_poss": []
     }
+
     df = pd.DataFrame(data)
 
     # create BeautifulSoup instance
@@ -835,12 +868,23 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
 
     # gathering data for each game
     for i in game_range:
-        week = int(games[i].find("th", {"data-stat": "week_num"}).text)
-        day = games[i].find("td", {"data-stat": "game_day_of_week"}).text
+        week_element = games[i].find("th", {"data-stat": "week_num"})
+        if not week_element:
+            week = extract_int(games[i], 'week_num')
+        else:
+            week = int(week_element.text)
+
+        day = extract_str(games[i], 'game_day_of_week')
 
         rest_days = calculate_rest_days(games, i, year)
 
-        opp = games[i].find("td", {"data-stat": "opp"}).text
+        opp_element = games[i].find("td", {"data-stat": "opp"})
+        if not opp_element:
+            opp_element = games[i].find("td", {"data-stat": "opp_name_abbr"})
+            opp_text = opp_element.find_next('a').text
+            opp = service_util.get_team_name_by_pfr_acronym(opp_text)
+        else:
+            opp = opp_element.text
 
         if games[i].find("td", {"data-stat": "game_location"}).text == "@":
             home_team = False
@@ -851,13 +895,36 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
             home_team = True
             distance_travelled = 0
 
-        result = games[i].find("td", {"data-stat": "game_outcome"}).text
-        points_for = extract_int(games[i], "pts_off")
-        points_allowed = extract_int(games[i], "pts_def")
+        result_element = games[i].find("td", {"data-stat": "game_outcome"})
+        if result_element:
+            result = result_element.text
+        else:
+            result_element = games[i].find("td", {"data-stat": "team_game_result"})
+            result = result_element.text
 
-        tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds = (
+
+
+        points_for = extract_int(games[i], "points")
+        points_allowed = extract_int(games[i], "points_opp")
+
+        tot_yds, pass_yds, rush_yds = (
             calculate_yardage_totals(games, i)
         )
+
+
+        # extract advanced metrics 
+        (
+            pass_tds, pass_cmp, pass_att, pass_cmp_pct,
+            rush_att, rush_tds, yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att, pass_rate, sacked,
+            sack_yds_lost, rush_yds_per_att, total_off_plays,
+            yds_per_play, fga, fgm, xpa, xpm,
+            total_punts, punt_yds, pass_fds, rsh_fds, pen_fds,
+            total_fds, thrd_down_conv, thrd_down_att, fourth_down_conv,
+            fourth_down_att, penalties, penalty_yds, fmbl_lost,
+            interceptions, turnovers, time_of_poss
+        ) = extract_advanced_metrics(games, i)
+
 
         # add row to data frame
         df.loc[len(df.index)] = [
@@ -873,12 +940,119 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
             tot_yds,
             pass_yds,
             rush_yds,
-            opp_tot_yds,
-            opp_pass_yds,
-            opp_rush_yds,
+            pass_tds,
+            pass_cmp,
+            pass_att,
+            pass_cmp_pct,
+            rush_att,
+            rush_tds,
+            yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att,
+            pass_rate,
+            sacked,
+            sack_yds_lost,
+            rush_yds_per_att,
+            total_off_plays,
+            yds_per_play,
+            fga,
+            fgm,
+            xpa,
+            xpm,
+            total_punts,
+            punt_yds,
+            pass_fds,
+            rsh_fds,
+            pen_fds,
+            total_fds,
+            thrd_down_conv,
+            thrd_down_att,
+            fourth_down_conv,
+            fourth_down_att,
+            penalties,
+            penalty_yds,
+            fmbl_lost,
+            interceptions,
+            turnovers,
+            time_of_poss
         ]
 
+
+
     return df
+
+
+def extract_advanced_metrics(games: BeautifulSoup, index: int):
+    """
+    Helper functon to extract 'advanced' metrics (i.e metrics we originally didn't consider :P)
+
+    Args:
+        games (BeautifulSoup): parsed HTML containing game data 
+        index (int): index pertaining to current game 
+    
+    Returns: 
+        tuple: all advanced metrics 
+    """
+
+    pass_tds = extract_int(games[index], "pass_td")
+    pass_cmp = extract_int(games[index], "pass_cmp")
+    pass_att = extract_int(games[index], "pass_att")
+    pass_cmp_pct = extract_float(games[index], "pass_cmp_pct")
+    rush_att = extract_int(games[index], "rush_att")
+    rush_tds = extract_int(games[index], "rush_td")
+    yds_gained_per_pass_att = extract_float(games[index], "pass_yds_per_att")
+    adj_yds_gained_per_pass_att = extract_float(games[index], "pass_adj_yds_per_att")
+    pass_rate = extract_float(games[index], "pass_rating")
+    sacked = extract_int(games[index], "pass_sacked")
+    sack_yds_lost = extract_int(games[index], "pass_sacked_yds")
+    rush_yds_per_att = extract_float(games[index], "rush_yds_per_att")
+    total_off_plays = extract_int(games[index], "plays_offense")
+    yds_per_play = extract_float(games[index], "yds_per_play_offense")
+    fga = extract_int(games[index], "fga")
+    fgm = extract_int(games[index], "fgm")
+    xpa = extract_int(games[index], "xpa")
+    xpm = extract_int(games[index], "xpm")
+    total_punts = extract_int(games[index], "punt")
+    punt_yds = extract_int(games[index], "punt_yds")
+    pass_fds = extract_int(games[index], "first_down_pass")
+    rsh_fds = extract_int(games[index], "first_down_rush")
+    pen_fds = extract_int(games[index], "first_down_penalty")
+    total_fds = extract_int(games[index], "first_down")
+    thrd_down_conv = extract_int(games[index], "third_down_success")
+    thrd_down_att = extract_int(games[index], "third_down_att")
+    fourth_down_conv = extract_int(games[index], "fourth_down_success")
+    fourth_down_att = extract_int(games[index], "fourth_down_att")
+    penalties = extract_int(games[index], "penalties")
+    penalty_yds = extract_int(games[index], "penalties_yds")
+    fmbl_lost = extract_int(games[index], "fumbles_lost")
+    int = extract_int(games[index], "pass_int")
+    turnovers = extract_int(games[index], "turnovers")
+    time_of_poss = convert_time_to_float(extract_str(games[index], "time_of_poss"))
+
+    return (
+        pass_tds, pass_cmp, pass_att, pass_cmp_pct, rush_att, rush_tds,
+        yds_gained_per_pass_att, adj_yds_gained_per_pass_att, pass_rate, sacked,
+        sack_yds_lost, rush_yds_per_att, total_off_plays, yds_per_play,
+        fga, fgm, xpa, xpm, total_punts, punt_yds, pass_fds, rsh_fds, pen_fds, total_fds,
+        thrd_down_conv, thrd_down_att, fourth_down_conv, fourth_down_att, penalties,
+        penalty_yds, fmbl_lost, int, turnovers, time_of_poss
+    )
+
+
+
+def convert_time_to_float(time_str: str) -> float:
+    """
+    Helper function to convert time to float 
+
+    Args:
+        time_str (str): string containing time to convert to float 
+    
+    Returns:
+        int: converted value 
+    """
+    minutes, seconds = map(int, time_str.split(":"))
+    return minutes + seconds / 60
+
+
 
 
 """
@@ -889,19 +1063,16 @@ Args:
     index (int): index pertaining to current game 
 
 Returns:
-    tot_yds,pass_yds,rush_yds,opp_tot_yds,opp_pass_yds,opp_rush_yds (tuple): yardage totals of particular game 
+    tot_yds,pass_yds,rush_yds (tuple): yardage totals of particular game 
 """
 
 
 def calculate_yardage_totals(games: BeautifulSoup, index: int):
-    tot_yds = extract_int(games[index], "yards_off")
-    pass_yds = extract_int(games[index], "pass_yds_off")
-    rush_yds = extract_int(games[index], "rush_yds_off")
-    opp_tot_yds = extract_int(games[index], "yards_def")
-    opp_pass_yds = extract_int(games[index], "pass_yds_def")
-    opp_rush_yds = extract_int(games[index], "rush_yds_def")
+    tot_yds = extract_int(games[index], "tot_yds")
+    pass_yds = extract_int(games[index], "pass_yds")
+    rush_yds = extract_int(games[index], "rush_yds")
 
-    return tot_yds, pass_yds, rush_yds, opp_tot_yds, opp_pass_yds, opp_rush_yds
+    return tot_yds, pass_yds, rush_yds
 
 
 """
@@ -918,35 +1089,19 @@ Returns:
 """
 
 
-def calculate_rest_days(games: BeautifulSoup, index: int, year: int):
+def calculate_rest_days(games: list, index: int, year: int):
     if index == 0:
         return 10  # set rest days to be 10 if first game of year
 
-    # fetch previous game and current game date
-    previous_game_date = (
-        games[index - 1].find("td", {"data-stat": "game_date"}).text.split(" ")
-    )
-    current_game_date = (
-        games[index].find("td", {"data-stat": "game_date"}).text.split(" ")
-    )
+    previous_game_str = games[index - 1].find("td", {"data-stat": "date"}).a.text
+    current_game_str = games[index].find("td", {"data-stat": "date"}).a.text
 
-    # account for new year
-    if current_game_date[0] == "January" and previous_game_date[0] != "January":
-        rest_days = date(
-            year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])
-        ) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
-    # both games in new year
-    elif current_game_date[0] == "January" and previous_game_date[0] == "January":
-        rest_days = date(
-            year + 1, MONTHS[current_game_date[0]], int(current_game_date[1])
-        ) - date(year + 1, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
-    # both games not in new year
-    else:
-        rest_days = date(
-            year, MONTHS[current_game_date[0]], int(current_game_date[1])
-        ) - date(year, MONTHS[previous_game_date[0]], int(previous_game_date[1]))
+    previous_game_date = datetime.strptime(previous_game_str, "%Y-%m-%d").date()
+    current_game_date = datetime.strptime(current_game_str, "%Y-%m-%d").date()
 
-    return rest_days.days  # return as integer
+    rest_days = (current_game_date - previous_game_date).days
+
+    return rest_days
 
 
 """
@@ -962,33 +1117,44 @@ Args:
 def remove_uneeded_games(games: BeautifulSoup, year: int):
     # remove playoff games
     j = 0
-    while (
-        j < len(games)
-        and games[j].find("td", {"data-stat": "game_date"}).text != "Playoffs"
-    ):
+    while j < len(games):
+        game_date_td = games[j].find("td", {"data-stat": "game_date"})
+
+        if game_date_td is None:
+            j += 1
+            continue
+
+        if game_date_td.text == "Playoffs":
+            break
+
         j += 1
-    for k in range(j, len(games)):
-        games.pop()
+
+    # Only remove games from the Playoffs onward (if Playoffs was found)
+    games[j:] = []
+
 
     # remove bye weeks
     bye_weeks = []
     for j in range(len(games)):
-        if games[j].find("td", {"data-stat": "opp"}).text == "Bye Week":
+        opp_td = games[j].find("td", {"data-stat": "opp"})
+        if opp_td is not None and opp_td.text == "Bye Week":
             bye_weeks.append(j)
 
     if len(bye_weeks) > 1:
         games.pop(bye_weeks[0])
         games.pop(bye_weeks[1] - 1)
-
     elif len(bye_weeks) == 1:
         games.pop(bye_weeks[0])
 
     # remove canceled games
     to_delete = []
     for j in range(len(games)):
-        if games[j].find("td", {"data-stat": "boxscore_word"}).text == "canceled":
+        boxscore_td = games[j].find("td", {"data-stat": "boxscore_word"})
+        if boxscore_td is not None and boxscore_td.text == "canceled":
             to_delete.append(j)
-    for k in to_delete:
+
+    # Reverse delete to avoid index shifting
+    for k in reversed(to_delete):
         games.pop(k)
 
     # remove games that have yet to be played
@@ -1564,6 +1730,28 @@ def extract_int(tr, stat):
         return 0
     else:
         return int(text.text)
+
+
+def extract_str(tr, stat):
+    """
+    Helper function to extract string from HTML 
+
+    Args:
+        tr (BeautifulSoup): soup containing stats 
+        stat (str): data stat to extract 
+    
+    Returns:
+        str (extracted string)
+    """
+
+    text = tr.find("td", {"data-stat": stat})
+
+    if text == None:
+        return ""  
+    elif text.text == "":
+        return ""  
+    else:
+        return text.text.strip()  
 
 
 """
