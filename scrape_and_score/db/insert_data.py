@@ -2077,7 +2077,71 @@ def insert_game_conditions(records: list):
             exc_info=True
         )
         raise e
-    
+
+
+def insert_player_dob(player_id: int, dob: str):
+    """
+    Insert players date of birth 
+
+    Args:
+        player_id (int): the player id corresponding to player being inserted 
+        dob (str): the players date of birth 
+    """
+
+    sql = """
+        UPDATE player
+        SET dob = %s 
+        WHERE player_id = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (dob, player_id))
+            connection.commit()
+            logging.info(f"Successfully updated player with ID {player_id} with the following date of birth: {dob}")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating 'player' record with ID {player_id} with the following DOB {dob}",
+            exc_info=True
+        )
+        raise e  
+
+
+def insert_player_demographics(player_id: int, season: int, age: int, height: float, weight: float):
+    """
+    Insert a new record into the player_demographics table.
+
+    Args:
+        player_id (int): The unique ID of the player.
+        season (int): The season year for which the demographic data is recorded.
+        age (int): The age of the player during the specified season.
+        height (float): The height of the player (in inches or cm based on your schema).
+        weight (float): The weight of the player (in pounds or kg based on your schema).
+    """
+
+    sql = """
+        INSERT INTO player_demographics (player_id, season, age, height, weight)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, season, age, height, weight))
+            connection.commit()
+            logging.info(f"Successfully inserted player_demographics record for player_id={player_id}, season={season}")
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while inserting into player_demographics for player_id={player_id}, season={season}",
+            exc_info=True
+        )
+        raise e
+
 
 def convert_time_to_seconds(time_str):
     minutes, seconds = map(int, time_str.split(":"))
