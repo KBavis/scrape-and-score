@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from db import fetch_data, insert_data
+from datetime import datetime
 
 
 """
@@ -166,6 +167,9 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
             logging.warn(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
             continue # skip players with no metrics 
 
+        # logic to account for player demographics 
+        parse_and_insert_player_demographics(soup, player_url['player'], year)
+
         player_metrics.append(
             {
                 "player": player_name,
@@ -175,6 +179,65 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
         )
     return player_metrics
 
+
+def parse_and_insert_player_demographics(soup: BeautifulSoup, player_name: str, year: int):
+    """
+    Check if player demographics record from pro-football-reference are persisted, if not, persist
+
+    Args:
+        soup (BeautifulSoup): parsed HTML of players page
+        player_name (str): players name that we want to check/insert record for 
+        year (int): relevant season
+    """
+
+    logging.info(f"Checking if player '{player_name}' in the {year} season has a pro-football-reference player_demographics record inserted")
+
+    # retreive player ID by players normalized name 
+    normalized_name = player_service.normalize_name(player_name)
+    player_id = player_service.get_player_id_by_normalized_name(normalized_name)
+
+    # retrieve player demographics record
+    player_demographics_record = fetch_data.fetch_player_demographic_record(player_id, year)
+
+    if not player_demographics_record:
+        logging.info(f'No previously inserted player_demographic record exists for player {player_name} for the {year} NFL season; parsing & inserting record.')
+
+        player_dob = fetch_data.fetch_player_date_of_birth(player_id)
+
+        # parse & insert players date of birth if not already persisted
+        if player_dob is None:
+            logging.info('No player date of birth persisted; updating player record with players date of birth')
+            player_meta_data_div = soup.find('div', {'id': 'info'})
+            player_dob_el = player_meta_data_div.find(id='necro-birth')
+            player_dob = player_dob_el.get("data-birth")
+            insert_data.insert_player_dob(player_id, player_dob)
+        
+        # calculate age of player for when season starts (9/1/{year})
+        season_start = datetime.strptime(f"{year}-09-01", '%Y-%m-%d').date()
+        players_birth = datetime.strptime(player_dob, '%Y-%m-%d').date()
+        age = int((season_start - players_birth).days / 365)
+
+        # extract height & weight from HTML 
+        meta_data_div = soup.find('div', {'id': 'meta'})
+        paragraph_elements = meta_data_div.find_all('p')
+
+        height_weight_p = paragraph_elements[2]
+        height_weight_spans = height_weight_p.find_all('span')
+
+        height = height_weight_spans[0].text
+        weight = height_weight_spans[1].text
+
+        ft_and_inches = height.split('-')
+        player_height = int(ft_and_inches[0]) * 12 + int(ft_and_inches[1])
+
+        player_weight = int(weight.replace('lb', ''))
+
+        logging.info(f'Attempting to insert player demographics record for player {player_name} for the {year} season --> Age: {age}, Height: {height}, Weight: {weight}')
+        insert_data.insert_player_demographics(player_id, year, age, player_height, player_weight)
+
+    else: # skip insertion if record already exists
+        logging.info(f"Player_demographics record exists for player '{player_name}' in the {year} NFL season; skipping insertion")
+        return
 
 def log_disregarded_players(players: list):
     """
@@ -186,7 +249,7 @@ def log_disregarded_players(players: list):
 
     disregarded_players = [player['player_name'] for player in players if player['pfr_available'] == 0]
     if disregarded_players is not None and len(disregarded_players) != 0:
-        logging.warn(f'The following players will be disregarded due to being unavailable in Pro-Football-Reference: \n\n{disregarded_players}\n\n')
+        logging.warning(f'The following players will be disregarded due to being unavailable in Pro-Football-Reference: \n\n{disregarded_players}\n\n')
 
 
 def get_player_urls_with_hash(players: list, year: int): 
