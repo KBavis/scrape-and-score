@@ -202,42 +202,67 @@ def main():
             # test regressions 
             linear_regressions.test_regressions()
         elif cl_args.nn:
-            
-            # Check if Neural Network model already exists and that we don't want to re-tain model
-            if os.path.exists('model.pth') and cl_args.train == False:
-                nn = torch.load('model.pth', weights_only=False)
+
+            positions = ['RB', 'QB', 'TE', 'WR']
+            required_models = [
+                'rb_model.pth',
+                'qb_model.pth',
+                'te_model.pth',
+                'wr_model.pth'
+            ] 
+
+            # check if models exists or if we want to retrain 
+            if all(os.path.exists(model) for model in required_models):
+                rb_nn = torch.load('rb_model.pth', weights_only=False)
+                qb_nn = torch.load('qb_model.pth', weights_only=False)
+                wr_nn = torch.load('wr_model.pth', weights_only=False)
+                te_nn = torch.load('te_model.pth', weights_only=False)
             else:
+
+                # pre-process training & testing data
                 df = nn_preprocess.preprocess()
                 
-                # split into training & testing dataframes 
-                num_rows = len(df)
-                training_length = int(num_rows * 0.8)
-                
-                training_df = df.iloc[: training_length]
-                
-                testing_df = df.iloc[training_length : num_rows]
-                
-                training_data_set = FantasyDataset(training_df)
-                testing_data_set = FantasyDataset(testing_df)
-                
-                test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
-                train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
-                
-                # print(f"Accelator Available: {torch.accelerator.is_available()}")
-                
-                number_inputs = df.shape[1] - 1
-                columns = list(df.columns)
-                inputs = [col for col in columns if col != "fantasy_points"]
-                nn = NeuralNetwork(input_dim = number_inputs)  
-                print(f"Attempting to train Neural Network:\n\nNumber of Inputs: {number_inputs}\n\nModel: {nn}\n\nList of Inputs: {inputs}")
+                # data set up & training loop for each position
+                for position in positions:
+                    logging.info(f'Extracting {position} pre-processed data into training/testing data sets')
 
-                # start optimization loop
-                optimization.optimization_loop(train_data_loader, test_data_loader, nn)
+                    # extract records relevant to particular position 
+                    position_feature = f'position_{position}'
+                    print(df[position_feature])
+                    position_specific_df = df[df[position_feature] == 1]
+                    print(position_specific_df)
 
-                torch.save(nn, 'model.pth')
+                    # split into training & testing data frames 
+                    num_records = len(position_specific_df)
+                    training_length = int(num_records* 0.8)
+                    training_df = position_specific_df.iloc[: training_length]
+                    testing_df = position_specific_df.iloc[training_length : num_records]
+                    print(training_df)
+                    print(testing_df)
 
-                # determine feautre importance 
-                post_training.feature_importance(nn, training_data_set)
+                    # create datasets & data loaders 
+                    training_data_set = FantasyDataset(training_df)
+                    testing_data_set = FantasyDataset(testing_df)
+                    test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
+                    train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
+
+                    #TODO: Enable CUDA Accelerator for faster training times 
+
+                    # extract model specific features being utilzied
+                    number_inputs = df.shape[1] - 1
+                    columns = list(df.columns)
+                    inputs = [col for col in columns if col != "fantasy_points"]
+
+                    nn = NeuralNetwork(input_dim = number_inputs)  
+                    print(f"Attempting to train {position} Specific Neural Network:\n\nNumber of Inputs: {number_inputs}\n\nModel: {nn}\n\nList of Inputs: {inputs}")
+
+                    # start optimization loop
+                    optimization.optimization_loop(train_data_loader, test_data_loader, nn)
+
+                    torch.save(nn, f'{position.lower()}_model.pth')
+
+                    # determine feature importance 
+                    post_training.feature_importance(nn, training_data_set, position)
 
                 
             
