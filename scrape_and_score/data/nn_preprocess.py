@@ -9,6 +9,7 @@ import re
 injury_feature_names = []
 
 def preprocess(): 
+   logging.info('Attempting to fetch & pre-process our training/testing data for our Neural Networks...')
    df = fetch_data()
 
    parsed_df = parse_player_props(df)
