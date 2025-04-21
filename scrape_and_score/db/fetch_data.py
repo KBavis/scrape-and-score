@@ -2350,3 +2350,73 @@ def fetch_pks_for_inserted_team_game_logs(season: int):
             f"An error occurred while fetching PKs for team_game_logs for season {season}: {e}"
         )
         raise e
+    
+
+
+def fetch_player_demographic_record(player_id: int, season: int):
+    """
+    Fetch player_demographics record from db
+
+    Args:
+        player_id (int): the player we want to retreive the record for 
+    """
+    
+    sql = """
+        SELECT player_id, season, age, height, weight
+        FROM player_demographics
+        WHERE player_id = %s AND season = %s
+    """
+
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, season))
+            row = cur.fetchone()
+
+            if row:
+                return {'player_id': row[0], 'season': row[1], 'age': row[2], 'height': row[3], 'weight': row[4]}
+            else:
+                return None
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching player_demographic records for player {player_id} of the {season} NFL season: {e}"
+        )
+        raise e
+
+
+def fetch_player_date_of_birth(player_id: int):
+    """
+    Fetch players date of birth
+
+    Args:
+        player_id (int): the player we want to retrieve date of birth for
+    """
+    
+    sql = """
+        SELECT dob
+        FROM player
+        WHERE player_id = %s
+    """
+
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id,))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching player date of birth corresponding to player ID {player_id}: {e}"
+        )
+        raise e
