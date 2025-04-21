@@ -211,8 +211,8 @@ def main():
                 'wr_model.pth'
             ] 
 
-            # check if models exists or if we want to retrain 
-            if all(os.path.exists(model) for model in required_models):
+            # check if models exists and  that we do not want to retrain models
+            if all(os.path.exists(model) for model in required_models) and cl_args.train == False:
                 rb_nn = torch.load('rb_model.pth', weights_only=False)
                 qb_nn = torch.load('qb_model.pth', weights_only=False)
                 wr_nn = torch.load('wr_model.pth', weights_only=False)
@@ -221,6 +221,7 @@ def main():
 
                 # pre-process training & testing data
                 df = nn_preprocess.preprocess()
+                position_features = [f'position_{position}' for position in positions]
                 
                 # data set up & training loop for each position
                 for position in positions:
@@ -228,17 +229,16 @@ def main():
 
                     # extract records relevant to particular position 
                     position_feature = f'position_{position}'
-                    print(df[position_feature])
                     position_specific_df = df[df[position_feature] == 1]
-                    print(position_specific_df)
+
+                    # drop position features 
+                    position_specific_df.drop(columns=position_features, inplace=True)
 
                     # split into training & testing data frames 
                     num_records = len(position_specific_df)
                     training_length = int(num_records* 0.8)
                     training_df = position_specific_df.iloc[: training_length]
                     testing_df = position_specific_df.iloc[training_length : num_records]
-                    print(training_df)
-                    print(testing_df)
 
                     # create datasets & data loaders 
                     training_data_set = FantasyDataset(training_df)
@@ -249,8 +249,8 @@ def main():
                     #TODO: Enable CUDA Accelerator for faster training times 
 
                     # extract model specific features being utilzied
-                    number_inputs = df.shape[1] - 1
-                    columns = list(df.columns)
+                    number_inputs = position_specific_df.shape[1] - 1
+                    columns = list(position_specific_df.columns)
                     inputs = [col for col in columns if col != "fantasy_points"]
 
                     nn = NeuralNetwork(input_dim = number_inputs)  
