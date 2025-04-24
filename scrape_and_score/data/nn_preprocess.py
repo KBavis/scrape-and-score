@@ -47,13 +47,14 @@ def feature_selection(df: pd.DataFrame, position: str):
       df (pd.DataFrame): data frame to perform feature selection for 
       position (str): the position relating to the data we are performing feature selection on 
    """
+   logging.info(f"Attempting to determine relevant features for our {position} Neural Network Model")
 
    # extract our inputs/outputs
    Xs, inputs = scale_and_transform(df, True)
    y = df['fantasy_points']
 
    # utilize LassoCV to determine relevant features
-   lasso = LassoCV(cv=5, max_iter=10000).fit(Xs, y)
+   lasso = LassoCV(cv=5, max_iter=100000).fit(Xs, y)
    selector = SelectFromModel(lasso, prefit=True)
    selector.transform(Xs)
 
