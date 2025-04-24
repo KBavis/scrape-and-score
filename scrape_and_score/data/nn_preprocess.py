@@ -2,6 +2,8 @@ import pandas as pd
 from db import fetch_data as fetch
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
+from sklearn.linear_model import LassoCV
+from sklearn.feature_selection import SelectFromModel
 import logging
 import re
 
