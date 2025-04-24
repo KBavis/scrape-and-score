@@ -123,8 +123,19 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    cyclical_week_vals = cyclical_df.values
 
    # drop un-needed columns in original indep. variables 
-   columns_to_drop = valid_positions + valid_categoricals + ['week', 'season']
-   xs = xs.drop(columns=columns_to_drop)
+   columns_to_drop = valid_positions + valid_categoricals + ['week', 'season', 'week_cos', 'week_sin']
+   valid_cols_to_drop = [col for col in columns_to_drop if col in columns]
+   xs = xs.drop(columns=valid_cols_to_drop)
+
+
+   # log out situations where there are any duplicate feautres  
+   cols = list(xs.columns) + list(categorical_df.columns) + list(cyclical_df.columns)
+   seen_cols = set()
+   for col in cols:
+      if col not in seen_cols:
+         seen_cols.add(col)
+      else:
+         logging.warning(f"The following column has already been added: {col}")
 
    scaled_x_vals = scaler.fit_transform(xs.values)
    
