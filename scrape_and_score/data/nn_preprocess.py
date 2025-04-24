@@ -19,11 +19,21 @@ def preprocess():
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
    processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
 
+   # independent variables to account for cyclical nature
+   cyclical_df = processed_df[['week', 'season']].copy()
+   cyclical_df['max_week'] = cyclical_df['season'].apply(lambda season: 17 if season < 2021 else 18)
+   cyclical_df['week_cos'] = np.cos(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
+   cyclical_df['week_sin'] = np.sin(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
+   cyclical_df = cyclical_df[['week_cos', 'week_sin']] # only keep transformed features
+   
+   # add cyclical features to preprocessed data frame
+   processed_df[['week_cos', 'week_sin']] = cyclical_df
+
    #TODO: Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
    processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
 
    return processed_df
-   
+
 
 def feature_selection(df: pd.DataFrame, position: str):
    """
@@ -105,12 +115,7 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    categorical_vals = categorical_df.values
 
    # independent variables to account for cyclical nature
-   cyclical_df = xs[['week', 'season']].copy()
-
-   cyclical_df['max_week'] = cyclical_df['season'].apply(lambda season: 17 if season < 2021 else 18)
-   cyclical_df['week_cos'] = np.cos(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
-   cyclical_df['week_sin'] = np.sin(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
-   cyclical_df = cyclical_df[['week_cos', 'week_sin']] # only keep transformed features
+   cyclical_df = xs[['week_cos', 'week_sin']]
    cyclical_week_vals = cyclical_df.values
 
    # drop un-needed columns in original indep. variables 
