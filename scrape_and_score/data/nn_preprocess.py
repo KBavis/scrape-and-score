@@ -78,6 +78,7 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
 
    Args:
       df (pd.DataFrame): data frame containing X's & Y's 
+      return_inputs (bool): flag to determine if we should return inputs corresponding to scaled values
    
    Returns:
       np.array: numpy array containing scaled inputs 
@@ -126,7 +127,15 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    
    Xs = np.concatenate((scaled_x_vals, categorical_vals, cyclical_week_vals), axis=1)
    logging.info(f"Xs shape: {Xs.shape}")
-   return Xs
+
+   # determine if we should return inputs 
+   if return_inputs is False:
+      logging.info('return_inputs flag is false: Only returning scaled values')
+      return Xs
+   else:
+      inputs = list(xs.columns) + categorical_columns + list(cyclical_df.columns)
+      logging.info('return_inputs flag is true: Returning scaled values & transformed inputs')
+      return Xs, inputs
    
 
 
