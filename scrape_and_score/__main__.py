@@ -212,7 +212,8 @@ def main():
             ] 
 
             # check if models exists and  that we do not want to retrain models
-            if all(os.path.exists(model) for model in required_models) and cl_args.train == False:
+            directory = "models/nn/{}"
+            if all(os.path.exists(directory.format(model)) for model in required_models) and cl_args.train == False:
                 rb_nn = torch.load('rb_model.pth', weights_only=False)
                 qb_nn = torch.load('qb_model.pth', weights_only=False)
                 wr_nn = torch.load('wr_model.pth', weights_only=False)
@@ -257,7 +258,7 @@ def main():
                     # start optimization loop
                     optimization.optimization_loop(train_data_loader, test_data_loader, nn)
 
-                    torch.save(nn, f'{position.lower()}_model.pth')
+                    torch.save(nn, f'models/nn/{position.lower()}_model.pth')
 
                     # determine feature importance 
                     post_training.feature_importance(nn, training_data_set, position)
