@@ -53,7 +53,7 @@ def save_model_feature_significance_table(df: pd.DataFrame, position: str):
     """
     # Generate a unique filename with a timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_name = f"{position}_feature_summary_table_{timestamp}.csv"
+    file_name = f"data/shap_analysis/{position}_feature_summary_table_{timestamp}.csv"
 
     # Save DataFrame as CSV
     df.to_csv(file_name, index=False)
