@@ -113,7 +113,8 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    # extract columns that aren't present in df
    valid_positions = [col for col in position_columns if col in xs.columns]
    valid_categoricals = [col for col in categorical_columns if col in xs.columns]
-      
+
+   # independent variables accounting for categorical values
    categorical_df = xs[valid_positions + valid_categoricals].copy()
    categorical_vals = categorical_df.values
 
