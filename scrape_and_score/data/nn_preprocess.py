@@ -6,6 +6,8 @@ from sklearn.linear_model import LassoCV
 from sklearn.feature_selection import SelectFromModel
 import logging
 import re
+from constants import QB_FEATURES, RB_FEATURES, WR_FEATURES, TE_FEATURES
+import time
 
 # global variable to account for dynamic categorical column names
 injury_feature_names = []
@@ -63,11 +65,12 @@ def feature_selection(df: pd.DataFrame, position: str):
       # append relevant features to include 
       features.append(row['feature'])
 
-   # ensure cyclical columns included 
-   if 'week_cos' not in features:
-      features.append('week_cos')
-   if 'week_sin' not in features:
-      features.append('week_sin') 
+   # manual selection of features 
+   feature_mapping = {"QB": QB_FEATURES, "RB": RB_FEATURES, "TE": TE_FEATURES, "WR": WR_FEATURES}
+   for feature in feature_mapping.get(position) : 
+      if feature not in features:
+         logging.info(f'Manually adding the following feature to our {position} Neural Network Model: {feature}')
+         features.append(feature)
 
    logging.info(f'Selected Features via LassoCV: \n\n\t{features}') 
    return features
