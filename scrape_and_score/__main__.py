@@ -231,7 +231,7 @@ def main():
                     position_feature = f'position_{position}'
                     position_specific_df = df[df[position_feature] == 1]
 
-                    # drop position features 
+                    # drop cateogorical features for determining positions
                     position_specific_df.drop(columns=position_features, inplace=True)
 
                     # split into training & testing data frames 
@@ -240,21 +240,19 @@ def main():
                     training_df = position_specific_df.iloc[: training_length]
                     testing_df = position_specific_df.iloc[training_length : num_records]
 
+                    # perform feature selection on model 
+                    selected_features = nn_preprocess.feature_selection(position_specific_df, position)
+                    
                     # create datasets & data loaders 
-                    training_data_set = FantasyDataset(training_df)
-                    testing_data_set = FantasyDataset(testing_df)
+                    training_data_set = FantasyDataset(training_df[selected_features + ["fantasy_points"]])
+                    testing_data_set = FantasyDataset(testing_df[selected_features + ["fantasy_points"]])
                     test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
                     train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
 
                     #TODO: Enable CUDA Accelerator for faster training times 
 
-                    # extract model specific features being utilzied
-                    number_inputs = position_specific_df.shape[1] - 1
-                    columns = list(position_specific_df.columns)
-                    inputs = [col for col in columns if col != "fantasy_points"]
-
-                    nn = NeuralNetwork(input_dim = number_inputs)  
-                    print(f"Attempting to train {position} Specific Neural Network:\n\nNumber of Inputs: {number_inputs}\n\nModel: {nn}\n\nList of Inputs: {inputs}")
+                    nn = NeuralNetwork(input_dim = len(selected_features))  
+                    print(f"Attempting to train {position} Specific Neural Network:\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
 
                     # start optimization loop
                     optimization.optimization_loop(train_data_loader, test_data_loader, nn)
@@ -263,8 +261,6 @@ def main():
 
                     # determine feature importance 
                     post_training.feature_importance(nn, training_data_set, position)
-
-                
             
 
 
