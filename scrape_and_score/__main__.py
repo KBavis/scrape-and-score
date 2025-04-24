@@ -230,7 +230,7 @@ def main():
 
                     # extract records relevant to particular position 
                     position_feature = f'position_{position}'
-                    position_specific_df = df[df[position_feature] == 1]
+                    position_specific_df = df[df[position_feature] == 1].copy()
 
                     # drop cateogorical features for determining positions
                     position_specific_df.drop(columns=position_features, inplace=True)
