@@ -138,3 +138,39 @@ CITIES = {
     "St. Louis Cardinals": "St. Louis",
     "Boston Patriots": "Boston",
 }
+
+
+# Ensure that relevant features are included by our model via manual selection 
+
+COMMON_FEATURES = [
+    # team game logs 
+    'rest_days',
+    # weekly features
+    'avg_wkly_offensive_snaps', 
+    # cyclical features
+    'week_sin', 
+    'week_cos',
+    # player betting odds
+    'anytime_touchdown_scorer_cost',
+    # player injuries 
+    'official_game_status'
+]
+
+QB_FEATURES = COMMON_FEATURES + [
+    # weekly features 
+    'avg_wkly_rush_yds',
+    'avg_wkly_rush_tds',
+]
+
+
+RB_FEATURES = COMMON_FEATURES + [
+    'week_sin', 'week_cos'
+]
+
+TE_FEATURES = COMMON_FEATURES + [
+    'week_sin', 'week_cos'
+]
+
+WR_FEATURES = COMMON_FEATURES + [
+    'week_sin', 'week_cos'
+]
