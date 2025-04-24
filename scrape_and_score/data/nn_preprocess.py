@@ -25,7 +25,44 @@ def preprocess():
    return processed_df
    
 
-def scale_and_transform(df: pd.DataFrame):
+def feature_selection(df: pd.DataFrame, position: str):
+   """
+   Helper function to select relevant features for training & testing 
+
+   Args:
+      df (pd.DataFrame): data frame to perform feature selection for 
+      position (str): the position relating to the data we are performing feature selection on 
+   """
+
+   # extract our inputs/outputs
+   Xs, inputs = scale_and_transform(df, True)
+   y = df['fantasy_points']
+
+   # utilize LassoCV to determine relevant features
+   lasso = LassoCV(cv=5, max_iter=10000).fit(Xs, y)
+   selector = SelectFromModel(lasso, prefit=True)
+   selector.transform(Xs)
+
+   inputs_df = pd.DataFrame(data=inputs, columns=['feature'])
+   selected_features = inputs_df[selector.get_support()]
+
+   features = []
+   for _,row in selected_features.iterrows():
+      # append relevant features to include 
+      features.append(row['feature'])
+
+   # ensure cyclical columns included 
+   if 'week_cos' not in features:
+      features.append('week_cos')
+   if 'week_sin' not in features:
+      features.append('week_sin') 
+
+   logging.info(f'Selected Features via LassoCV: \n\n\t{features}') 
+   return features
+
+   
+
+def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    """
    Functionality to scale and transform data frame and return respective inputs / ouputs 
 
