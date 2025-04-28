@@ -219,9 +219,9 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
 
    # encode categorical features 
    categorical_features = ['surface', 'weather_status', 'precip_type']
-   df['precip_type'] = df['precip_type'].replace('', None).fillna('Unknown')
-   df['surface'] = df['surface'].replace('', None).fillna('Unknown')
-   df['weather_status'] = df['weather_status'].replace('', None).fillna('Unknown')
+   df['precip_type'] = df['precip_type'].replace('', None).fillna('unknown').map(normalize_game_condition)
+   df['surface'] = df['surface'].replace('', None).fillna('unknown').map(normalize_game_condition)
+   df['weather_status'] = df['weather_status'].replace('', None).fillna('unknown').map(normalize_game_condition)
    df = pd.get_dummies(df, columns=categorical_features, dtype=int)
 
    # fill na values for temperature (since -1 is a valid number for temperature)
@@ -232,6 +232,14 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
    df['precip_probability'] = df['precip_probability'].str.replace('%', '', regex=False).astype(float)
 
    return df
+
+
+def normalize_game_condition(entry: str):
+   if not isinstance(entry, str) or not entry.strip():
+      raise Exception(f'Unable to normalize game condition: {entry}')
+   
+   return entry.strip().lower().replace(' ', '_')
+   
 
 
 def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
