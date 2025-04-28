@@ -243,6 +243,12 @@ def main():
 
                     # perform feature selection on model 
                     selected_features = nn_preprocess.feature_selection(position_specific_df, position)
+
+                    # cache selected features 
+                    timestamp = start_time.strftime('%Y%m%d_%H%M%S')
+                    with open(f'data/inputs/{position}_inputs_{timestamp}.txt', 'w') as f: 
+                        for col in selected_features: 
+                            f.write(col + '\n')
                     
                     # create datasets & data loaders 
                     training_data_set = FantasyDataset(training_df[selected_features + ["fantasy_points"]])
