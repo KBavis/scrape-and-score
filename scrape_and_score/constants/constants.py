@@ -164,13 +164,10 @@ QB_FEATURES = COMMON_FEATURES + [
 
 
 RB_FEATURES = COMMON_FEATURES + [
-    'week_sin', 'week_cos'
 ]
 
 TE_FEATURES = COMMON_FEATURES + [
-    'week_sin', 'week_cos'
 ]
 
 WR_FEATURES = COMMON_FEATURES + [
-    'week_sin', 'week_cos'
 ]
