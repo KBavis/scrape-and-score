@@ -10,3 +10,4 @@ proxies.json
 logs/
 scrape_and_score/models/nn
 scrape_and_score/data/shap_analysis
+scrape_and_score/data/inputs
