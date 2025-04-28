@@ -307,14 +307,79 @@ def preprocess_injury_locations(entry):
    """
 
    if not isinstance(entry, str) or not entry.strip():
-      return []
+      return ['na']
 
    # lowercase, remove extra spaces, and standardize separators
    entry = entry.lower()
    entry = re.sub(r'[,/]', ',', entry)  # convert slashes to commas
    entry = re.sub(r'\s*,\s*', ',', entry)  # strip around commas
    entry = re.sub(r'\s+', ' ', entry).strip()  # clean up extra spaces
-   return entry.split(',')
+
+   injuries = entry.split(',')
+
+   return normalize_injury_locations(injuries)
+
+
+def normalize_injury_locations(injuries: list):
+   """
+   Normalize injury locations in order to reduce the number of potential options and correlate related locations 
+
+   Args:
+      injuries (list): list of injury locations corresponding to a player 
+   """
+
+   # manual mappings of synonomous injury locations
+   manual_mapping = {
+      'hips': 'hip',
+      'ribs': 'rib',
+      'feet': 'foot',
+      'ankles': 'ankle',
+      'quadricep': 'quadriceps',
+      'concussion_protocol': 'concussion',
+   }
+
+   normalized_injuries = []
+   for injury in injuries:
+      injury = injury.lower()
+
+      # remove spaces & replace with underscore
+      injury = injury.replace(' ', '_')
+
+   
+      # account for plurla/singular 
+      if injury in manual_mapping:
+         normalized_injuries.append(manual_mapping[injury])
+         continue
+      
+      # account for non injury related injuries
+      if 'not_injury_related' in injury or 'resting_vet' in injury:
+         normalized_injuries.append('not_injury_related')
+         continue
+
+      # account for 'illness' related injuries 
+      if 'ill' in injury or 'covid' in injury:
+         normalized_injuries.append('illness')
+         continue
+
+      # account for niche scenarios that we have seen 
+      if '_(rt.' in injury:
+         normalized_injuries.append(injury.replace('_(rt.', ''))
+         continue
+      
+      if ':' in injury:
+         injury = injury.split(':')[-1]
+         normalized_injuries.append(injury.strip('_'))
+         continue
+
+
+      # append normal injury if no specific updates required 
+      normalized_injuries.append(injury)
+   
+   return normalized_injuries
+
+
+
+
 
 
 def fetch_data(): 
