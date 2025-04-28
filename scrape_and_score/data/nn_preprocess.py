@@ -73,7 +73,7 @@ def feature_selection(df: pd.DataFrame, position: str):
          logging.info(f'Manually adding the following feature to our {position} Neural Network Model: {feature}')
          features.append(feature)
 
-   logging.info(f'Selected Features via LassoCV: \n\n\t{features}') 
+   logging.info(f'Selected Features via LassoCV and Manual Feature Selection: \n\n\t{features}') 
    return features
 
    
