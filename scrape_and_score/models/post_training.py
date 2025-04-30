@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import logging
 from datetime import datetime
-
+import os
 
 def feature_importance(model: torch.nn.Module, training_data_set: torch.utils.data.Dataset, position: str): 
     """
@@ -53,7 +53,10 @@ def save_model_feature_significance_table(df: pd.DataFrame, position: str):
     """
     # Generate a unique filename with a timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_name = f"data/shap_analysis/{position}_feature_summary_table_{timestamp}.csv"
+
+    directory = 'data/shap_analysis'
+    os.makedirs(directory, exist_ok=True)
+    file_name = f"{directory}/{position}_feature_summary_table_{timestamp}.csv"
 
     # Save DataFrame as CSV
     df.to_csv(file_name, index=False)
