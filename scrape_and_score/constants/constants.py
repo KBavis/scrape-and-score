@@ -147,27 +147,81 @@ COMMON_FEATURES = [
     'rest_days',
     # weekly features
     'avg_wkly_offensive_snaps', 
+    'avg_wkly_fantasy_points',
     # cyclical features
     'week_sin', 
     'week_cos',
     # player betting odds
     'anytime_touchdown_scorer_cost',
     # player injuries 
-    'official_game_status'
+    'official_game_status',
+    'wednesday_practice_status',
+    'thursday_practice_status', 
+    'friday_practice_status', 
+    # weather 
+    'precip_probability',
+    'temperature',
+    # depth chart position,
+    'depth_chart_position',
+    # player demographics 
+    'age',
+    'height',
+    'weight',
+    # betting odds
+    'anytime_touchdown_scorer_cost',
+    'is_favorited',
+    'game_over_under',
+    'spread'
+      
 ]
 
 QB_FEATURES = COMMON_FEATURES + [
     # weekly features 
     'avg_wkly_rush_yds',
     'avg_wkly_rush_tds',
+    # betting odds
+    'passing_yards_over_under_cost',
+    'passing_yards_over_under_line',
+    'passing_touchdowns_over_under_cost',
+    'passing_touchdowns_over_under_line',
+    'passing_completions_over_under_cost',
+    'passing_completions_over_under_line',
+    'rushing_yards_over_under_cost',
+    'rushing_yards_over_under_line',
+    'rushing_attempts_over_under_cost',
+    'rushing_attempts_over_under_line',
+    'most_rushing_yards_cost'
 ]
 
 
 RB_FEATURES = COMMON_FEATURES + [
+    # weekly features
+    "avg_wkly_rec_yds",
+    # betting odds 
+    "receiving_yards_over_under_cost",
+    "receiving_yards_over_under_line",
+    "receptions_over_under_cost",
+    "receptions_over_under_line",
+    'most_receiving_yards_cost',
+    'rushing_yards_over_under_cost',
+    'rushing_yards_over_under_line',
+    'rushing_attempts_over_under_cost',
+    'rushing_attempts_over_under_line',
+    'most_rushing_yards_cost',
 ]
 
 TE_FEATURES = COMMON_FEATURES + [
+    "receiving_yards_over_under_cost",
+    "receiving_yards_over_under_line",
+    "receptions_over_under_cost",
+    "receptions_over_under_line",
+    'most_receiving_yards_cost',
 ]
 
 WR_FEATURES = COMMON_FEATURES + [
+    "receiving_yards_over_under_cost",
+    "receiving_yards_over_under_line",
+    "receptions_over_under_cost",
+    "receptions_over_under_line",
+    'most_receiving_yards_cost',
 ]
