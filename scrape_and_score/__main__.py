@@ -24,6 +24,7 @@ from models.neural_net import NeuralNetwork
 from models import optimization, post_training
 import torch
 import os
+import time
 
 
 """
@@ -259,7 +260,8 @@ def main():
                     #TODO: Enable CUDA Accelerator for faster training times 
 
                     nn = NeuralNetwork(input_dim = len(selected_features))  
-                    print(f"Attempting to train {position} Specific Neural Network:\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
+                    print(f"Attempting to train {position} Specific Neural Network:\n\nLength of Training Data: {len(training_data_set)}\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
+                    time.sleep(3)
 
                     # start optimization loop
                     optimization.optimization_loop(train_data_loader, test_data_loader, nn)
