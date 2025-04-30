@@ -246,8 +246,11 @@ def main():
                     selected_features = nn_preprocess.feature_selection(position_specific_df, position)
 
                     # cache selected features 
+                    directory = "data/inputs"
                     timestamp = start_time.strftime('%Y%m%d_%H%M%S')
-                    with open(f'data/inputs/{position}_inputs_{timestamp}.txt', 'w') as f: 
+
+                    os.makedirs(directory, exist_ok=True)
+                    with open(f'{directory}/{position}_inputs_{timestamp}.txt', 'w') as f: 
                         for col in selected_features: 
                             f.write(col + '\n')
                     
@@ -266,7 +269,9 @@ def main():
                     # start optimization loop
                     optimization.optimization_loop(train_data_loader, test_data_loader, nn)
 
-                    torch.save(nn, f'models/nn/{position.lower()}_model.pth')
+                    directory = "models/nn"
+                    os.makedirs(directory, exist_ok=True)
+                    torch.save(nn, f'{directory}/{position.lower()}_model.pth')
 
                     # determine feature importance 
                     post_training.feature_importance(nn, training_data_set, position)
