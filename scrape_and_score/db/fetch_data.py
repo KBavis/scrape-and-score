@@ -609,6 +609,7 @@ def fetch_independent_and_dependent_variables():
 
          -- Team Rest Days 
          tgl.rest_days,
+         tgl.home_team,
 
          -- Player Injuries 
          pi.injury_loc as injury_locations, 

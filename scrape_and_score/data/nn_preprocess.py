@@ -20,8 +20,10 @@ def preprocess():
    parsed_df = encode_player_injuries(parsed_df)
    parsed_df = encode_game_conditions(parsed_df)
 
+   parsed_df['is_home_team'] = parsed_df['home_team'].apply(lambda x: 1 if x == True else 0) 
+
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
-   processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
+   processed_df.drop(columns=['player_id', 'home_team'], inplace=True) # drop un-needed values 
 
    # independent variables to account for cyclical nature
    cyclical_df = processed_df[['week', 'season']].copy()
@@ -110,7 +112,8 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
       'wednesday_practice_status',
       'thursday_practice_status',
       'friday_practice_status',
-      'official_game_status'
+      'official_game_status',
+      'is_home_team'
    ] + injury_feature_names + game_condition_features
 
 
