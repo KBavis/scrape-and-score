@@ -224,7 +224,7 @@ QB_FEATURES = COMMON_FEATURES + [
     'rushing_attempts_over_under_line',
     'most_rushing_yards_cost',
     # weekly stats
-    'avg_wkly_pass_rating'
+    'avg_wkly_pass_rating',
     'avg_opp_wkly_def_pass_yds',
     'avg_opp_wkly_def_sacked',
     'avg_wkly_pass_yds_per_att',
