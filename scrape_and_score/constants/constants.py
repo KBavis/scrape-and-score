@@ -145,9 +145,27 @@ CITIES = {
 COMMON_FEATURES = [
     # team game logs 
     'rest_days',
-    # weekly features
+    # player weekly features
     'avg_wkly_offensive_snaps', 
     'avg_wkly_fantasy_points',
+    # players team offensive weekly features
+    'avg_wkly_points_for',
+    'avg_wkly_points_allowed',
+    'avg_wkly_off_tot_yds',
+    'avg_wkly_off_pass_rate',
+    'avg_wkly_off_total_off_plays',
+    'avg_wkly_off_yds_per_play',
+    'avg_wkly_time_of_poss',
+    'avg_wkly_def_time_of_possession',
+    # player team defensive weekly features
+    'avg_wkly_def_tot_yds',
+    'avg_wkly_def_tot_off_plays',
+    'avg_wkly_def_yds_per_play',
+    'avg_wkly_def_thrd_down_conv',
+    'avg_wkly_def_time_of_possession',
+    # opposing team offensive stats 
+    'avg_opp_wkly_points_for',
+    'avg_opp_wkly_points_allowed',
     # cyclical features
     'week_sin', 
     'week_cos',
@@ -161,6 +179,16 @@ COMMON_FEATURES = [
     # weather 
     'precip_probability',
     'temperature',
+    'weather_status_clear_day',
+    'weather_status_clear_night',
+    'weather_status_cloudy',
+    'weather_status_fog',
+    'weather_status_partly_cloudy_day',
+    'weather_status_partly_cloudy_night',
+    'weather_status_rain',
+    'weather_status_snow',
+    'weather_status_unknown',
+    'weather_status_wind',
     # depth chart position,
     'depth_chart_position',
     # player demographics 
@@ -171,8 +199,12 @@ COMMON_FEATURES = [
     'anytime_touchdown_scorer_cost',
     'is_favorited',
     'game_over_under',
-    'spread'
-      
+    'spread',
+    # surface
+    'surface_turf',
+    'surface_grass',
+    'prev_year_player_fumbles',
+    'is_home_team'
 ]
 
 QB_FEATURES = COMMON_FEATURES + [
@@ -190,7 +222,14 @@ QB_FEATURES = COMMON_FEATURES + [
     'rushing_yards_over_under_line',
     'rushing_attempts_over_under_cost',
     'rushing_attempts_over_under_line',
-    'most_rushing_yards_cost'
+    'most_rushing_yards_cost',
+    # weekly stats
+    'avg_wkly_pass_rating'
+    'avg_opp_wkly_def_pass_yds',
+    'avg_opp_wkly_def_sacked',
+    'avg_wkly_pass_yds_per_att',
+    'avg_wkly_completed_air_yards',
+    'avg_wkly_off_red_zone_pct'
 ]
 
 
@@ -208,6 +247,9 @@ RB_FEATURES = COMMON_FEATURES + [
     'rushing_attempts_over_under_cost',
     'rushing_attempts_over_under_line',
     'most_rushing_yards_cost',
+    'avg_opp_wkly_def_rush_yds',
+    'avg_opp_wkly_def_rush_tds',
+    'avg_wkly_rush_attempts'
 ]
 
 TE_FEATURES = COMMON_FEATURES + [
@@ -216,12 +258,19 @@ TE_FEATURES = COMMON_FEATURES + [
     "receptions_over_under_cost",
     "receptions_over_under_line",
     'most_receiving_yards_cost',
+    'avg_wkly_targets',
+    'avg_opp_wkly_def_pass_tds',
+    'avg_wkly_rec_yds_per_re',
+    'avg_wkly_off_red_zone_pc'
 ]
 
 WR_FEATURES = COMMON_FEATURES + [
     "receiving_yards_over_under_cost",
     "receiving_yards_over_under_line",
     "receptions_over_under_cost",
-    "receptions_over_under_line",
+    'receptions_over_under_line',
     'most_receiving_yards_cost',
+    'avg_wkly_intended_air_yards',
+    'avg_opp_wkly_def_pass_yds',
+    'avg_wkly_rec_yds_after_catch_per_rec',
 ]
