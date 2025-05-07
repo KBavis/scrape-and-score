@@ -262,7 +262,7 @@ def main():
 
                     #TODO: Enable CUDA Accelerator for faster training times 
 
-                    nn = NeuralNetwork(input_dim = len(selected_features))  
+                    nn = NeuralNetwork(input_dim = len(selected_features), position=position)  
                     print(f"Attempting to train {position} Specific Neural Network:\n\nLength of Training Data: {len(training_data_set)}\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
                     time.sleep(3)
 
