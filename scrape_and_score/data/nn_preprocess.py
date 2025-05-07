@@ -92,16 +92,15 @@ def manual_feature_engineering(df: pd.DataFrame):
    df['is_home_team'] = df['home_team'].apply(lambda x: 1 if x == True else 0) 
 
    # weekly pass yds per att 
-   weekly_pass_yds_per_att = df['avg_wkly_pass_yds'] / df['avg_wkly_off_pass_att']
-   df['avg_wkly_pass_yds_per_att'] = weekly_pass_yds_per_att.mean()
+   df['avg_wkly_pass_yds_per_att']= df['avg_wkly_pass_yds'] / df['avg_wkly_off_pass_att'].replace(0, pd.NA)
    
    # target share 
-   tgt_share = df['avg_wkly_targets'] / df['avg_wkly_off_pass_att']
-   df['avg_wkly_tgt_share'] = tgt_share.mean() 
+   df['avg_wkly_tgt_share'] = df['avg_wkly_targets'] / df['avg_wkly_off_pass_att']
 
    # yds per touch 
-   yds_per_touch = (df['avg_wkly_rush_yds'] + df['avg_wkly_rec_yds']) / (df['avg_wkly_rush_attempts'] + df['avg_wkly_receptions'])
-   df['avg_wkly_yds_per_touch'] = yds_per_touch.mean()
+   total_touches = df['avg_wkly_rush_attempts'] + df['avg_wkly_receptions']
+   total_yards = df['avg_wkly_rush_yds'] + df['avg_wkly_rec_yds']
+   df['avg_wkly_yds_per_touch']= total_yards / total_touches.replace(0, pd.NA)
    
    
 
