@@ -148,6 +148,7 @@ COMMON_FEATURES = [
     # player weekly features
     'avg_wkly_offensive_snaps', 
     'avg_wkly_fantasy_points',
+    'avg_wkly_snap_pct',
     # players team offensive weekly features
     'avg_wkly_points_for',
     'avg_wkly_points_allowed',
@@ -157,6 +158,7 @@ COMMON_FEATURES = [
     'avg_wkly_off_yds_per_play',
     'avg_wkly_time_of_poss',
     'avg_wkly_def_time_of_possession',
+    'avg_wkly_off_tot_yds',
     # player team defensive weekly features
     'avg_wkly_def_tot_yds',
     'avg_wkly_def_tot_off_plays',
@@ -204,13 +206,14 @@ COMMON_FEATURES = [
     'surface_turf',
     'surface_grass',
     'prev_year_player_fumbles',
-    'is_home_team'
+    'is_home_team',
+    # injuries
+    'injury_hamstring', 'injury_ankle', 'injury_concussion',
+    # turnovers 
+    'avg_wkly_turnovers'
 ]
 
 QB_FEATURES = COMMON_FEATURES + [
-    # weekly features 
-    'avg_wkly_rush_yds',
-    'avg_wkly_rush_tds',
     # betting odds
     'passing_yards_over_under_cost',
     'passing_yards_over_under_line',
@@ -223,19 +226,37 @@ QB_FEATURES = COMMON_FEATURES + [
     'rushing_attempts_over_under_cost',
     'rushing_attempts_over_under_line',
     'most_rushing_yards_cost',
+    'interception_over_under_cost',
+    'interception_over_under_line',
     # weekly stats
-    'avg_wkly_pass_rating',
+    'avg_wkly_rush_yds',
+    'avg_wkly_rush_tds',
+    'avg_wkly_rush_broken_tackles',
+    'avg_wkly_rush_yds_before_contact_per_att',
+    'avg_wkly_rush_yds_after_contact_per_att',
+    'avg_wkly_rating',
     'avg_opp_wkly_def_pass_yds',
     'avg_opp_wkly_def_sacked',
     'avg_wkly_pass_yds_per_att',
     'avg_wkly_completed_air_yards',
-    'avg_wkly_off_red_zone_pct'
+    'avg_wkly_completions', 
+    'avg_wkly_pass_tds',
+    'avg_opp_wkly_def_int',
+    'avg_wkly_pass_pressured_pct',
+    'avg_wkly_pass_yds_per_scramble',
+    'avg_wkly_pass_poor_throws_pct',
+    'avg_wkly_attempts',
+    'avg_wkly_interceptions',
+    'avg_wkly_pass_yds_per_att',
+    'avg_wkly_completed_air_yards_per_cmp',
+    'avg_wkly_completed_air_yards_per_att',
+    'avg_wkly_intended_air_yards_per_pass_attempt',
+    'avg_wkly_completed_air_yards_per_cmp',
+    'avg_wkly_off_yds_gained_per_pass_att'
 ]
 
 
 RB_FEATURES = COMMON_FEATURES + [
-    # weekly features
-    "avg_wkly_rec_yds",
     # betting odds 
     "receiving_yards_over_under_cost",
     "receiving_yards_over_under_line",
@@ -247,30 +268,61 @@ RB_FEATURES = COMMON_FEATURES + [
     'rushing_attempts_over_under_cost',
     'rushing_attempts_over_under_line',
     'most_rushing_yards_cost',
+    # weekly features
+    "avg_wkly_rec_yds",
+    'avg_wkly_rush_broken_tackles',
     'avg_opp_wkly_def_rush_yds',
     'avg_opp_wkly_def_rush_tds',
-    'avg_wkly_rush_attempts'
+    'avg_wkly_rush_attempts',
+    'avg_wkly_rush_yds_before_contact_per_att',
+    'avg_wkly_rush_yds_after_contact_per_att',
+    'avg_wkly_rec_yds_after_catch_per_rec',
+    'avg_wkly_rec_yds_before_catch_per_rec',
+    'avg_wkly_avg_depth_of_target',
+    'avg_wkly_off_rush_tds',
+    'avg_wkly_tgt_share', 
+    'avg_wkly_yds_per_touch'
 ]
 
 TE_FEATURES = COMMON_FEATURES + [
+    # bettings odds
     "receiving_yards_over_under_cost",
     "receiving_yards_over_under_line",
     "receptions_over_under_cost",
     "receptions_over_under_line",
     'most_receiving_yards_cost',
+    # weekly stats
     'avg_wkly_targets',
     'avg_opp_wkly_def_pass_tds',
-    'avg_wkly_rec_yds_per_re',
-    'avg_wkly_off_red_zone_pc'
+    'avg_wkly_rec_yds',
+    'avg_wkly_rec_yds_after_catch_per_rec',
+    'avg_wkly_rec_yds_before_catch_per_rec',
+    'avg_wkly_rec_first_downs',
+    'avg_wkly_rec_tds',
+    'avg_opp_wkly_def_pass_tds',
+    'avg_wkly_tgt_share', 
+    'avg_wkly_yds_per_touch',
+    'avg_wkly_rec_qbr_when_targeted',
+    'avg_wkly_rec_drop_pct',
+    'avg_wkly_avg_depth_of_target',
 ]
 
 WR_FEATURES = COMMON_FEATURES + [
+    # betting odds
     "receiving_yards_over_under_cost",
     "receiving_yards_over_under_line",
     "receptions_over_under_cost",
     'receptions_over_under_line',
     'most_receiving_yards_cost',
+    # weekly stats
     'avg_wkly_intended_air_yards',
     'avg_opp_wkly_def_pass_yds',
     'avg_wkly_rec_yds_after_catch_per_rec',
+    'avg_wkly_targets',
+    'avg_wkly_rec_drop_pct',
+    'avg_opp_wkly_def_pass_yds',
+    'avg_wkly_tgt_share', 
+    'avg_wkly_yds_per_touch',
+    'avg_wkly_rec_qbr_when_targeted',
+    'avg_wkly_avg_depth_of_target',
 ]
