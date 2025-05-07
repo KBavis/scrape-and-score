@@ -20,7 +20,7 @@ def preprocess():
    parsed_df = encode_player_injuries(parsed_df)
    parsed_df = encode_game_conditions(parsed_df)
 
-   parsed_df['is_home_team'] = parsed_df['home_team'].apply(lambda x: 1 if x == True else 0) 
+   manual_feature_engineering(parsed_df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
    processed_df.drop(columns=['player_id', 'home_team'], inplace=True) # drop un-needed values 
@@ -78,6 +78,31 @@ def feature_selection(df: pd.DataFrame, position: str):
    logging.info(f'Selected Features via LassoCV and Manual Feature Selection: \n\n\t{features}') 
    return features
 
+
+def manual_feature_engineering(df: pd.DataFrame):
+   """
+   Manually engineer specific features that are signifcant in predictive power 
+
+   Args:
+       df (pd.DataFrame): data frame to apply updates to
+   """
+   logging.info('Attempting to manually engineer additional relevant features')
+
+   # home team
+   df['is_home_team'] = df['home_team'].apply(lambda x: 1 if x == True else 0) 
+
+   # weekly pass yds per att 
+   weekly_pass_yds_per_att = df['avg_wkly_pass_yds'] / df['avg_wkly_off_pass_att']
+   df['avg_wkly_pass_yds_per_att'] = weekly_pass_yds_per_att.mean()
+   
+   # target share 
+   tgt_share = df['avg_wkly_targets'] / df['avg_wkly_off_pass_att']
+   df['avg_wkly_tgt_share'] = tgt_share.mean() 
+
+   # yds per touch 
+   yds_per_touch = (df['avg_wkly_rush_yds'] + df['avg_wkly_rec_yds']) / (df['avg_wkly_rush_attempts'] + df['avg_wkly_receptions'])
+   df['avg_wkly_yds_per_touch'] = yds_per_touch.mean()
+   
    
 
 def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
