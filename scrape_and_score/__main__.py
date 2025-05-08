@@ -261,20 +261,22 @@ def main():
                     train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
 
                     #TODO: Enable CUDA Accelerator for faster training times 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                    print(f"Using the following device to train: {device}")            
 
-                    nn = NeuralNetwork(input_dim = len(selected_features), position=position)  
+                    nn = NeuralNetwork(input_dim = len(selected_features), position=position).to(device)
                     print(f"Attempting to train {position} Specific Neural Network:\n\nLength of Training Data: {len(training_data_set)}\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
                     time.sleep(3)
 
                     # start optimization loop
-                    optimization.optimization_loop(train_data_loader, test_data_loader, nn)
+                    optimization.optimization_loop(train_data_loader, test_data_loader, nn, device)
 
                     directory = "models/nn"
                     os.makedirs(directory, exist_ok=True)
                     torch.save(nn, f'{directory}/{position.lower()}_model.pth')
 
                     # determine feature importance 
-                    post_training.feature_importance(nn, training_data_set, position)
+                    post_training.feature_importance(nn, training_data_set, position, device)
             
 
 

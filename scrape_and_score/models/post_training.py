@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 import os
 
-def feature_importance(model: torch.nn.Module, training_data_set: torch.utils.data.Dataset, position: str): 
+def feature_importance(model: torch.nn.Module, training_data_set: torch.utils.data.Dataset, position: str, device: str): 
     """
     Determine which features are most signficant in terms of the predictive value of i
 
@@ -14,12 +14,13 @@ def feature_importance(model: torch.nn.Module, training_data_set: torch.utils.da
         model (torch.nn.Module): neural network model
         training_data_set (torch.utils.data.Dataset): the data set utilized for training
         position (str): the specific position this model corresponds to 
+        device (str): the device to move tensors to
     """
     logging.info(f'Post Training: Determining feature signficance of our {position} model')
 
 
-    background = training_data_set.X[:100]
-    samples_to_explain = training_data_set.X[:200] 
+    background = training_data_set.X[:100].to(device)
+    samples_to_explain = training_data_set.X[:200].to(device)
 
     explainer = shap.DeepExplainer(model, background)
 
