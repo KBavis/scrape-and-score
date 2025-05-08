@@ -21,6 +21,7 @@ from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
 from models.neural_net import NeuralNetwork
 from models import optimization, post_training
+from constants import TRAINING_CONFIGS
 import torch
 import os
 
@@ -255,8 +256,8 @@ def main():
                     # create datasets & data loaders 
                     training_data_set = FantasyDataset(training_df[selected_features + ["fantasy_points"]])
                     testing_data_set = FantasyDataset(testing_df[selected_features + ["fantasy_points"]])
-                    test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
-                    train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
+                    test_data_loader = DataLoader(testing_data_set, batch_size=TRAINING_CONFIGS[position]['Batch Size'], shuffle=False) 
+                    train_data_loader = DataLoader(training_data_set, batch_size=TRAINING_CONFIGS[position]['Batch Size'], shuffle=True) 
 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                     print(f"Using the following device to train: {device}")            
@@ -265,7 +266,8 @@ def main():
                     print(f"Attempting to train {position} Specific Neural Network:\n\nLength of Training Data: {len(training_data_set)}\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
 
                     # start optimization loop
-                    optimization.optimization_loop(train_data_loader, test_data_loader, nn, device)
+                    learning_rate = TRAINING_CONFIGS[position]['Learning Rate']
+                    optimization.optimization_loop(train_data_loader, test_data_loader, nn, device, learning_rate)
 
                     directory = "models/nn"
                     os.makedirs(directory, exist_ok=True)
