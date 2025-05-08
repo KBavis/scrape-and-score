@@ -139,6 +139,24 @@ CITIES = {
     "Boston Patriots": "Boston",
 }
 
+TRAINING_CONFIGS = {
+    "RB": {
+        "Batch Size": 256,
+        "Learning Rate": 2e-4
+    }, 
+    "WR": {
+        "Batch Size": 512,
+        "Learning Rate": 3e-4
+    },
+    "TE": {
+        "Batch Size": 150,
+        "Learning Rate": 2e-4
+    },
+    "QB": {
+        "Batch Size": 64,
+        "Learning Rate": 1e-4
+    }
+}
 
 # Ensure that relevant features are included by our model via manual selection 
 
