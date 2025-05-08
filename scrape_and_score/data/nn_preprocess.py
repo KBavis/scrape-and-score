@@ -37,6 +37,7 @@ def preprocess():
 
    #TODO: Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
    processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
+   processed_df.infer_objects(copy=False)
 
    return processed_df
 
