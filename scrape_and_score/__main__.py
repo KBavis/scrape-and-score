@@ -16,7 +16,6 @@ from data import linreg_preprocess, nn_preprocess
 from models.lin_reg import LinReg
 from util import args
 import logging
-from predictions import prediction
 from scraping import rotowire_scraper, our_lads, betting_pros
 from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
@@ -202,44 +201,78 @@ def main():
             # test regressions 
             linear_regressions.test_regressions()
         elif cl_args.nn:
-            
-            # Check if Neural Network model already exists and that we don't want to re-tain model
-            if os.path.exists('model.pth') and cl_args.train == False:
-                nn = torch.load('model.pth', weights_only=False)
+
+            positions = ['RB', 'QB', 'TE', 'WR']
+            required_models = [
+                'rb_model.pth',
+                'qb_model.pth',
+                'te_model.pth',
+                'wr_model.pth'
+            ] 
+
+            # check if models exists and  that we do not want to retrain models
+            directory = "models/nn/{}"
+            if all(os.path.exists(directory.format(model)) for model in required_models) and cl_args.train == False:
+                rb_nn = torch.load('rb_model.pth', weights_only=False)
+                qb_nn = torch.load('qb_model.pth', weights_only=False)
+                wr_nn = torch.load('wr_model.pth', weights_only=False)
+                te_nn = torch.load('te_model.pth', weights_only=False)
             else:
+
+                # pre-process training & testing data
                 df = nn_preprocess.preprocess()
+                position_features = [f'position_{position}' for position in positions]
                 
-                # split into training & testing dataframes 
-                num_rows = len(df)
-                training_length = int(num_rows * 0.8)
-                
-                training_df = df.iloc[: training_length]
-                
-                testing_df = df.iloc[training_length : num_rows]
-                
-                training_data_set = FantasyDataset(training_df)
-                testing_data_set = FantasyDataset(testing_df)
-                
-                test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
-                train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
-                
-                # print(f"Accelator Available: {torch.accelerator.is_available()}")
-                
-                number_inputs = df.shape[1] - 1
-                columns = list(df.columns)
-                inputs = [col for col in columns if col != "fantasy_points"]
-                nn = NeuralNetwork(input_dim = number_inputs)  
-                print(f"Attempting to train Neural Network:\n\nNumber of Inputs: {number_inputs}\n\nModel: {nn}\n\nList of Inputs: {inputs}")
+                # data set up & training loop for each position
+                for position in positions:
+                    logging.info(f'Extracting {position} pre-processed data into training/testing data sets')
 
-                # start optimization loop
-                optimization.optimization_loop(train_data_loader, test_data_loader, nn)
+                    # extract records relevant to particular position 
+                    position_feature = f'position_{position}'
+                    position_specific_df = df[df[position_feature] == 1].copy()
 
-                torch.save(nn, 'model.pth')
+                    # drop cateogorical features for determining positions
+                    position_specific_df.drop(columns=position_features, inplace=True)
 
-                # determine feautre importance 
-                post_training.feature_importance(nn, training_data_set)
+                    # split into training & testing data frames 
+                    num_records = len(position_specific_df)
+                    training_length = int(num_records* 0.8)
+                    training_df = position_specific_df.iloc[: training_length]
+                    testing_df = position_specific_df.iloc[training_length : num_records]
 
-                
+                    # perform feature selection on model 
+                    selected_features = nn_preprocess.feature_selection(position_specific_df, position)
+
+                    # cache selected features 
+                    directory = "data/inputs"
+                    timestamp = start_time.strftime('%Y%m%d_%H%M%S')
+
+                    os.makedirs(directory, exist_ok=True)
+                    with open(f'{directory}/{position}_inputs_{timestamp}.txt', 'w') as f: 
+                        for col in selected_features: 
+                            f.write(col + '\n')
+                    
+                    # create datasets & data loaders 
+                    training_data_set = FantasyDataset(training_df[selected_features + ["fantasy_points"]])
+                    testing_data_set = FantasyDataset(testing_df[selected_features + ["fantasy_points"]])
+                    test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
+                    train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
+
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                    print(f"Using the following device to train: {device}")            
+
+                    nn = NeuralNetwork(input_dim = len(selected_features), position=position).to(device)
+                    print(f"Attempting to train {position} Specific Neural Network:\n\nLength of Training Data: {len(training_data_set)}\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
+
+                    # start optimization loop
+                    optimization.optimization_loop(train_data_loader, test_data_loader, nn, device)
+
+                    directory = "models/nn"
+                    os.makedirs(directory, exist_ok=True)
+                    torch.save(nn, f'{directory}/{position.lower()}_model.pth')
+
+                    # determine feature importance 
+                    post_training.feature_importance(nn, training_data_set, position, device)
             
 
 

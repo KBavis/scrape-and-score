@@ -2,34 +2,116 @@ import pandas as pd
 from db import fetch_data as fetch
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
+from sklearn.linear_model import LassoCV
+from sklearn.feature_selection import SelectFromModel
 import logging
 import re
+from constants import QB_FEATURES, RB_FEATURES, WR_FEATURES, TE_FEATURES
+import time
 
 # global variable to account for dynamic categorical column names
 injury_feature_names = []
 
 def preprocess(): 
+   logging.info('Attempting to fetch & pre-process our training/testing data for our Neural Networks...')
    df = fetch_data()
 
    parsed_df = parse_player_props(df)
    parsed_df = encode_player_injuries(parsed_df)
    parsed_df = encode_game_conditions(parsed_df)
 
+   manual_feature_engineering(parsed_df)
+
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
-   processed_df.drop(columns=['player_id'], inplace=True) # drop un-needed values 
+   processed_df.drop(columns=['player_id', 'home_team'], inplace=True) # drop un-needed values 
+
+   # independent variables to account for cyclical nature
+   cyclical_df = processed_df[['week', 'season']].copy()
+   cyclical_df['max_week'] = cyclical_df['season'].apply(lambda season: 17 if season < 2021 else 18)
+   cyclical_df['week_cos'] = np.cos(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
+   cyclical_df['week_sin'] = np.sin(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
+   cyclical_df = cyclical_df[['week_cos', 'week_sin']] # only keep transformed features
+   
+   # add cyclical features to preprocessed data frame
+   processed_df[['week_cos', 'week_sin']] = cyclical_df
 
    #TODO: Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
    processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
+   processed_df.infer_objects(copy=False)
 
    return processed_df
+
+
+def feature_selection(df: pd.DataFrame, position: str):
+   """
+   Helper function to select relevant features for training & testing 
+
+   Args:
+      df (pd.DataFrame): data frame to perform feature selection for 
+      position (str): the position relating to the data we are performing feature selection on 
+   """
+   logging.info(f"Attempting to determine relevant features for our {position} Neural Network Model")
+
+   # extract our inputs/outputs
+   Xs, inputs = scale_and_transform(df, True)
+   y = df['fantasy_points']
+
+   # utilize LassoCV to determine relevant features
+   lasso = LassoCV(cv=5, max_iter=100000).fit(Xs, y)
+   selector = SelectFromModel(lasso, prefit=True)
+   selector.transform(Xs)
+
+   inputs_df = pd.DataFrame(data=inputs, columns=['feature'])
+   selected_features = inputs_df[selector.get_support()]
+
+   features = []
+   for _,row in selected_features.iterrows():
+      # append relevant features to include 
+      features.append(row['feature'])
+
+   # manual selection of features 
+   feature_mapping = {"QB": QB_FEATURES, "RB": RB_FEATURES, "TE": TE_FEATURES, "WR": WR_FEATURES}
+   for feature in feature_mapping.get(position) : 
+      if feature not in features:
+         logging.info(f'Manually adding the following feature to our {position} Neural Network Model: {feature}')
+         features.append(feature)
+
+   logging.info(f'Selected Features via LassoCV and Manual Feature Selection: \n\n\t{features}') 
+   return features
+
+
+def manual_feature_engineering(df: pd.DataFrame):
+   """
+   Manually engineer specific features that are signifcant in predictive power 
+
+   Args:
+       df (pd.DataFrame): data frame to apply updates to
+   """
+   logging.info('Attempting to manually engineer additional relevant features')
+
+   # home team
+   df['is_home_team'] = df['home_team'].apply(lambda x: 1 if x == True else 0) 
+
+   # weekly pass yds per att 
+   df['avg_wkly_pass_yds_per_att']= df['avg_wkly_pass_yds'] / df['avg_wkly_off_pass_att'].replace(0, pd.NA)
+   
+   # target share 
+   df['avg_wkly_tgt_share'] = df['avg_wkly_targets'] / df['avg_wkly_off_pass_att']
+
+   # yds per touch 
+   total_touches = df['avg_wkly_rush_attempts'] + df['avg_wkly_receptions']
+   total_yards = df['avg_wkly_rush_yds'] + df['avg_wkly_rec_yds']
+   df['avg_wkly_yds_per_touch']= total_yards / total_touches.replace(0, pd.NA)
+   
    
 
-def scale_and_transform(df: pd.DataFrame):
+def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    """
    Functionality to scale and transform data frame and return respective inputs / ouputs 
 
    Args:
       df (pd.DataFrame): data frame containing X's & Y's 
+      return_inputs (bool): flag to determine if we should return inputs corresponding to scaled values
    
    Returns:
       np.array: numpy array containing scaled inputs 
@@ -55,35 +137,51 @@ def scale_and_transform(df: pd.DataFrame):
       'wednesday_practice_status',
       'thursday_practice_status',
       'friday_practice_status',
-      'official_game_status'
+      'official_game_status',
+      'is_home_team'
    ] + injury_feature_names + game_condition_features
 
 
    # extract columns that aren't present in df
    valid_positions = [col for col in position_columns if col in xs.columns]
    valid_categoricals = [col for col in categorical_columns if col in xs.columns]
-      
+
+   # independent variables accounting for categorical values
    categorical_df = xs[valid_positions + valid_categoricals].copy()
    categorical_vals = categorical_df.values
 
    # independent variables to account for cyclical nature
-   cyclical_df = xs[['week', 'season']].copy()
-
-   cyclical_df['max_week'] = cyclical_df['season'].apply(lambda season: 17 if season < 2021 else 18)
-   cyclical_df['week_cos'] = np.cos(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
-   cyclical_df['week_sin'] = np.sin(2 * np.pi * cyclical_df['week'] / cyclical_df['max_week'])
-   cyclical_df = cyclical_df[['week_cos', 'week_sin']] # only keep transformed features
+   cyclical_df = xs[['week_cos', 'week_sin']]
    cyclical_week_vals = cyclical_df.values
 
    # drop un-needed columns in original indep. variables 
-   columns_to_drop = valid_positions + valid_categoricals + ['week', 'season']
-   xs = xs.drop(columns=columns_to_drop)
+   columns_to_drop = valid_positions + valid_categoricals + ['week', 'season', 'week_cos', 'week_sin']
+   valid_cols_to_drop = [col for col in columns_to_drop if col in columns]
+   xs = xs.drop(columns=valid_cols_to_drop)
+
+
+   # log out situations where there are any duplicate feautres  
+   cols = list(xs.columns) + list(categorical_df.columns) + list(cyclical_df.columns)
+   seen_cols = set()
+   for col in cols:
+      if col not in seen_cols:
+         seen_cols.add(col)
+      else:
+         logging.warning(f"The following column has already been added: {col}")
 
    scaled_x_vals = scaler.fit_transform(xs.values)
    
    Xs = np.concatenate((scaled_x_vals, categorical_vals, cyclical_week_vals), axis=1)
    logging.info(f"Xs shape: {Xs.shape}")
-   return Xs
+
+   # determine if we should return inputs 
+   if return_inputs is False:
+      logging.info('return_inputs flag is false: Only returning scaled values')
+      return Xs
+   else:
+      inputs = list(xs.columns) + categorical_columns + list(cyclical_df.columns)
+      logging.info('return_inputs flag is true: Returning scaled values & transformed inputs')
+      return Xs, inputs
    
 
 
@@ -149,9 +247,9 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
 
    # encode categorical features 
    categorical_features = ['surface', 'weather_status', 'precip_type']
-   df['precip_type'] = df['precip_type'].replace('', None).fillna('Unknown')
-   df['surface'] = df['surface'].replace('', None).fillna('Unknown')
-   df['weather_status'] = df['weather_status'].replace('', None).fillna('Unknown')
+   df['precip_type'] = df['precip_type'].replace('', None).fillna('unknown').map(normalize_game_condition)
+   df['surface'] = df['surface'].replace('', None).fillna('unknown').map(normalize_game_condition)
+   df['weather_status'] = df['weather_status'].replace('', None).fillna('unknown').map(normalize_game_condition)
    df = pd.get_dummies(df, columns=categorical_features, dtype=int)
 
    # fill na values for temperature (since -1 is a valid number for temperature)
@@ -162,6 +260,14 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
    df['precip_probability'] = df['precip_probability'].str.replace('%', '', regex=False).astype(float)
 
    return df
+
+
+def normalize_game_condition(entry: str):
+   if not isinstance(entry, str) or not entry.strip():
+      raise Exception(f'Unable to normalize game condition: {entry}')
+   
+   return entry.strip().lower().replace(' ', '_')
+   
 
 
 def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
@@ -184,10 +290,12 @@ def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
    #TODO: The multi label binarizer currently adds a BUNCH of features, but we should remove this logic if doesn't add predictive power (70+ feautres added)
    mlb = MultiLabelBinarizer() 
    injury_locations_encoded = mlb.fit_transform(df['injury_locations'])
-   injury_encoded_df = pd.DataFrame(injury_locations_encoded, columns=mlb.classes_)
+
+   new_cols = [ 'injury_' + col for col in mlb.classes_ ]
+   injury_encoded_df = pd.DataFrame(injury_locations_encoded, columns=new_cols)
 
    # account for injury feature names dynamically 
-   injury_feature_names = list(mlb.classes_)
+   injury_feature_names = list(new_cols)
 
    df.drop(columns=['injury_locations'], inplace=True)
    df = pd.concat([df, injury_encoded_df], axis=1)
@@ -227,14 +335,79 @@ def preprocess_injury_locations(entry):
    """
 
    if not isinstance(entry, str) or not entry.strip():
-      return []
+      return ['na']
 
    # lowercase, remove extra spaces, and standardize separators
    entry = entry.lower()
    entry = re.sub(r'[,/]', ',', entry)  # convert slashes to commas
    entry = re.sub(r'\s*,\s*', ',', entry)  # strip around commas
    entry = re.sub(r'\s+', ' ', entry).strip()  # clean up extra spaces
-   return entry.split(',')
+
+   injuries = entry.split(',')
+
+   return normalize_injury_locations(injuries)
+
+
+def normalize_injury_locations(injuries: list):
+   """
+   Normalize injury locations in order to reduce the number of potential options and correlate related locations 
+
+   Args:
+      injuries (list): list of injury locations corresponding to a player 
+   """
+
+   # manual mappings of synonomous injury locations
+   manual_mapping = {
+      'hips': 'hip',
+      'ribs': 'rib',
+      'feet': 'foot',
+      'ankles': 'ankle',
+      'quadricep': 'quadriceps',
+      'concussion_protocol': 'concussion',
+   }
+
+   normalized_injuries = []
+   for injury in injuries:
+      injury = injury.lower()
+
+      # remove spaces & replace with underscore
+      injury = injury.replace(' ', '_')
+
+   
+      # account for plurla/singular 
+      if injury in manual_mapping:
+         normalized_injuries.append(manual_mapping[injury])
+         continue
+      
+      # account for non injury related injuries
+      if 'not_injury_related' in injury or 'resting_vet' in injury:
+         normalized_injuries.append('not_injury_related')
+         continue
+
+      # account for 'illness' related injuries 
+      if 'ill' in injury or 'covid' in injury:
+         normalized_injuries.append('illness')
+         continue
+
+      # account for niche scenarios that we have seen 
+      if '_(rt.' in injury:
+         normalized_injuries.append(injury.replace('_(rt.', ''))
+         continue
+      
+      if ':' in injury:
+         injury = injury.split(':')[-1]
+         normalized_injuries.append(injury.strip('_'))
+         continue
+
+
+      # append normal injury if no specific updates required 
+      normalized_injuries.append(injury)
+   
+   return normalized_injuries
+
+
+
+
 
 
 def fetch_data(): 
