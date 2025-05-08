@@ -16,7 +16,6 @@ from data import linreg_preprocess, nn_preprocess
 from models.lin_reg import LinReg
 from util import args
 import logging
-from predictions import prediction
 from scraping import rotowire_scraper, our_lads, betting_pros
 from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
@@ -24,7 +23,6 @@ from models.neural_net import NeuralNetwork
 from models import optimization, post_training
 import torch
 import os
-import time
 
 
 """
@@ -265,7 +263,6 @@ def main():
 
                     nn = NeuralNetwork(input_dim = len(selected_features), position=position).to(device)
                     print(f"Attempting to train {position} Specific Neural Network:\n\nLength of Training Data: {len(training_data_set)}\n\nNumber of Inputs: {len(selected_features)}\n\nModel: {nn}\n\nList of Inputs: {selected_features}")
-                    time.sleep(3)
 
                     # start optimization loop
                     optimization.optimization_loop(train_data_loader, test_data_loader, nn, device)
