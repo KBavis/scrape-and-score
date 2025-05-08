@@ -260,7 +260,6 @@ def main():
                     test_data_loader = DataLoader(testing_data_set, batch_size=256, shuffle=False) # TODO: determine appropiate batchsize 
                     train_data_loader = DataLoader(training_data_set, batch_size=256, shuffle=True) # TODO: determine appropiate batchsize 
 
-                    #TODO: Enable CUDA Accelerator for faster training times 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                     print(f"Using the following device to train: {device}")            
 
