@@ -20,7 +20,7 @@ def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_
    epochs = 250
    best_test_loss = float('inf')
    counter = 0
-   patience = 20
+   patience = 5
    
    for training_iteration in range(epochs):
       print(f"Starting Epoch {training_iteration + 1}\n--------------------------")
