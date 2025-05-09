@@ -159,22 +159,18 @@ def create_team_id_mapping():
 Update persisted betting records with relevant information (under/over hit, coverd, total score, etc)
 
 Args:
-   None
+    week (int): the week to update records for 
+    season (int): the season to update records for 
+
 
 Returns:
    None
 """
 
 
-def update_recent_betting_records():
+def update_recent_betting_records(week: int, season: int):
     # load configs
     url = props.get_config("website.rotowire.urls.historical-odds")
-    curr_year = props.get_config("nfl.current-year")
-
-    # determine recent week
-    recent_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(
-        curr_year
-    )
 
     # retrieve historical odds
     jsonData = requests.get(url).json()
@@ -183,17 +179,16 @@ def update_recent_betting_records():
 
     # create ID mapping
     mapping = create_team_id_mapping(
-        df[(df["week"] == "1") & (df["season"] == str(curr_year))]
+        df[(df["week"] == "1") & (df["season"] == str(season))]
     )
-    print(mapping)
 
     # filter out records based on year & recent week
     recent_data = df[
-        (df["season"] == str(curr_year)) & (df["week"] == str(recent_week))
+        (df["season"] == str(season)) & (df["week"] == str(week))
     ]
 
     # insert updates
-    records = generate_update_records(recent_data, mapping, curr_year, recent_week)
+    records = generate_update_records(recent_data, mapping, season, week)
     insert_data.update_team_betting_odds_records_with_outcomes(records)
 
 
@@ -237,6 +232,8 @@ def generate_update_records(
 """
 Fetch odds for upcoming game that is to be played so we can make predicitions 
 
+TODO: Add resilience & check if these upcoming odds are already persisted
+
 Args:
    None 
 
@@ -245,17 +242,12 @@ Returns:
 """
 
 
-def scrape_upcoming():
+def scrape_upcoming(week: int, season: int):
     # extract configs
     url = props.get_config("website.rotowire.urls.upcoming-odds")
-    curr_year = props.get_config("nfl.current-year")
-
-    # extract latest week that we have bet data persisted
-    week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(curr_year)
-    week_to_fetch = week + 1  # fetch data for next week
 
     # fetch upcoming odds
-    params = {"week": week_to_fetch}
+    params = {"week": week}
     jsonData = requests.get(url, params=params).json()
     df = pd.DataFrame(jsonData)
 
@@ -281,7 +273,7 @@ def scrape_upcoming():
 
     # create persistable record s
     upcoming_betting_odds = get_upcoming_betting_odds_records(
-        df, game_ids, week_to_fetch, curr_year
+        df, game_ids, week, season
     )
 
     insert_data.insert_teams_odds(upcoming_betting_odds, True)
