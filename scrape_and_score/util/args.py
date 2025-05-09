@@ -15,10 +15,8 @@ def parse():
     parser = argparse.ArgumentParser(prog="Scrape and Score")
 
     # define groups for validation
-    scraping_group = parser.add_mutually_exclusive_group()
-    input_group = parser.add_mutually_exclusive_group()
-    betting_group = parser.add_mutually_exclusive_group()
     model_group = parser.add_mutually_exclusive_group()
+    data_collection_group = parser.add_mutually_exclusive_group()
 
     # establish independent args 
     parser.add_argument(
@@ -27,63 +25,31 @@ def parse():
         default=False,
         help="Re-train our neural network model."
     )
-    parser.add_argument(
-        "--collect_data",
+
+    # data collction args
+    data_collection_group.add_argument(
+        "--historical",
         nargs=2, 
         metavar=("START_YEAR", "END_YEAR"),
         type=int,
-        help="Retrieve historical data for players & teams from START_YEAR to END_YEAR."
+        help="Scrape & persist historical data for players & teams from START_YEAR to END_YEAR."
     )
-
-    # establish args to determine what information is required to be scraped
-    scraping_group.add_argument(
-        "--recent",
-        action="store_true",
-        default=False,
-        help="Scrape most recent game logs for teams and players.",
-    )
-    scraping_group.add_argument(
-        "--new",
-        action="store_true",
-        default=False,
-        help="Scrape all available NFL players, teams, and game logs.",
-    )
-
-    # establish args for determining method of generating predictions
-    input_group.add_argument(
-        "--single_player",
-        action="store_true",
-        default=False,
-        help="Prompt for a single player's name and matchup for fantasy point prediction.",
-    )
-    input_group.add_argument(
-        "--all_players",
-        action="store_true",
-        default=False,
-        help="Fetch all upcoming matchups for relevant players and generate predictions.",
-    )
-
-    # establish args for methods of accounting for betting 
-    betting_group.add_argument(
+    data_collection_group.add_argument(
         "--upcoming",
-        action="store_true",
-        default=False,
-        help="Scrape and persist upcoming NFL games betting odds.",
+        nargs=2,
+        metavar=("WEEK", "SEASON"),
+        type=int,
+        help="Scrape & persist upcoming data for players & teams for the specified week & season"
     )
-    betting_group.add_argument(
-        "--update_odds",
-        action="store_true",
-        default=False,
-        help="Update previously persisted betting odds with game outcomes.",
-    )
-    betting_group.add_argument(
-        "--historical",
-        action="store_true",
-        default=False,
-        help="Scrape and persist all previous betting odds for a particular season.",
+    data_collection_group.add_argument(
+        "--update",
+        nargs=2,
+        metavar=("WEEK", "SEASON"),
+        type=int,
+        help="Scrape & persist finalized outcomes for teams/players for the specified week & season"
     )
 
-    # establihs argumenets for determine which model to utilize 
+    # model selection args
     model_group.add_argument(
         "--nn",
         action="store_true",
@@ -99,52 +65,5 @@ def parse():
 
     # parse args
     args = parser.parse_args()
-
-    # provide feedback on which flags are set
-    if args.recent:
-        print(
-            "--recent flag passed: Scraping and persisting game logs for the most recent week."
-        )
-    if args.new:
-        print(
-            "--new flag passed: Scraping and persisting all game logs for the season."
-        )
-    if args.single_player:
-        print(
-            "--single_player flag passed: Predicting for a single player and matchup."
-        )
-    if args.all_players:
-        print(
-            "--all_players flag passed: Predicting for all relevant players and matchups."
-        )
-    if args.upcoming:
-        print(
-            "--upcoming flag passed: Scraping and persisting upcoming NFL games betting odds."
-        )
-    if args.update_odds:
-        print(
-            "--update_odds flag passed: Updating all previously persisted betting odds with game outcomes."
-        )
-    if args.historical:
-        print(
-            "--historical flag passed: Scraping and persisting all previous betting odds for a given season."
-        )
-    if args.nn:
-        print(
-            '--nn flag passed: Utilizing our neural network model in order to make predictions'
-        )
-    if args.lin_reg:
-        print(
-            "--lin_reg flag passed: Using our linear regression model to make predictions"
-        )
-    if args.train:
-        print(
-            "--train flag passed: Re-training our neural network model."
-        )
-    if args.collect_data:
-        start_year, end_year = args.collect_data
-        print(
-            f"--collect_data flag passed: Collecting data from {start_year} to {end_year}"
-        )
 
     return args
