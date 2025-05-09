@@ -36,6 +36,7 @@ def preprocess():
    processed_df[['week_cos', 'week_sin']] = cyclical_df
 
    #TODO: Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
+   pd.set_option('future.no_silent_downcasting', True) 
    processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
    processed_df.infer_objects(copy=False)
 

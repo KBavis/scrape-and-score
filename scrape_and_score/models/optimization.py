@@ -1,8 +1,7 @@
 import torch
 from torch import nn
-from torch.utils.data import DataLoader
 
-def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_loader: torch.utils.data.DataLoader, model: nn.Module, device: str):
+def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_loader: torch.utils.data.DataLoader, model: nn.Module, device: str, learning_rate: float):
    """Generate optimization loop used to train and test our neural netwokr 
 
    Args:
@@ -10,17 +9,17 @@ def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_
       test_data_loader (torch.utils.data.DataLoader): testing data loader 
       model (nn.Model): neural network model
       device (str): the device to have inputs on 
+      learning_rate (float): the learning rate to utilize
    """
 
    loss_fn = nn.MSELoss() 
-   learning_rate = 3e-4
    
    # optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate)
    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
    epochs = 250
    best_test_loss = float('inf')
    counter = 0
-   patience = 20
+   patience = 5
    
    for training_iteration in range(epochs):
       print(f"Starting Epoch {training_iteration + 1}\n--------------------------")
