@@ -47,9 +47,9 @@ def main():
             start_year, end_year = cl_args.historical
             logging.info(f"---------------'Historical' Wofklow Invoked: Scraping & persisting player & team data for [Start Year: {start_year}, End Year: {end_year}]---------------")
             workflows.historical(start_year, end_year)
-        elif cl_args.update: 
-            week, season = cl_args.update
-            logging.info(f"---------------'Update' Wofklow Invoked: Updating player & team data for [Week: {week}, Season: {season}]---------------")
+        elif cl_args.results: 
+            week, season = cl_args.results
+            logging.info(f"---------------'Results' Wofklow Invoked: Updating player & team data based on game outcomes for [Week: {week}, Season: {season}]---------------")
             workflows.historical(start_year, end_year)
 
 

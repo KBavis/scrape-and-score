@@ -42,11 +42,11 @@ def parse():
         help="Scrape & persist upcoming data for players & teams for the specified week & season"
     )
     data_collection_group.add_argument(
-        "--update",
+        "--results",
         nargs=2,
         metavar=("WEEK", "SEASON"),
         type=int,
-        help="Scrape & persist finalized outcomes for teams/players for the specified week & season"
+        help="Scrape & persist data following finalized outcomes of games for teams/players for the specified week & season"
     )
 
     # model selection args
