@@ -62,6 +62,7 @@ def main():
             logging.info(f"---------------'Neural Network' Wofklow Invoked: Generating Neural Network for predicitng players fantasy points---------------")
             workflows.neural_network(cl_args.train, start_time)
 
+        # TODO: Implement prediction workflows utilizing choosen model above 
 
     except Exception as e:
         logging.error(f"An exception occured while executing the main script: {e}")
