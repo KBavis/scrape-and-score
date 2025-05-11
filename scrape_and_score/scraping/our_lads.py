@@ -42,6 +42,91 @@ def scrape_and_persist(start_year: int, end_year: int):
 
     generate_player_and_player_teams_records(teams, start_year, end_year, archive_dates)
 
+
+def scrape_and_persist_upcoming(season: int, week: int, is_update: bool = False): 
+    """
+    Scrape and persist player depth chart information (player_teams, players, & depth_chart_position) for each team for a specific season
+
+    Args:
+        season (int): the season to scrape & persist data for 
+        week (int): the week this program execution is occuring for 
+        is_update (bool): determines if this invocation should account for updating existing records or not 
+
+    """
+    # extract relevant teams 
+    teams = [ 
+        {
+            "team": team["name"], 
+            "acronym": team.get("our_lads_acronym", team["pfr_acronym"]) 
+        } 
+        for team in props.get_config("nfl.teams")
+    ]
+    logging.info(f"\nScraping & persisting depth charts for the {season} NFL season for the following teams: {teams}")
+    
+    generate_and_persist_depth_chart_records(teams, season, week, is_update)
+
+
+
+def generate_and_persist_depth_chart_records(teams: list, season: int, week: int, is_update: bool):
+    """"
+    Loop through each team and gneerate/persist player_teams / players / depth_chart_position records 
+
+    Args:
+        teams (list): list of relevant team names & acronyms 
+        season (int): the season to fetch this data for 
+        week (int): the week this program execution is for 
+    """
+
+    if is_update is False:
+        logging.info(f"Inital seasonal player depth chart insertion flow invoked; Scraping & persisting first player, player_teams, depth_chart_position records for {season} season")
+    else:
+        logging.info(f"Update Flow Invoked; Account for potential updates to depth_chart_position & player teams records")
+
+    
+    player_name_id_mapping = {}
+
+
+    for team in teams:
+        team_id = team_service.get_team_id_by_name(team["team"])
+        
+        player_depth_chart_position_records = []
+        unique_player_records = []
+        relevant_players = set() 
+        
+        html = util.fetch_page(f"https://www.ourlads.com/nfldepthcharts/depthchart/{team['acronym']}")
+        soup = BeautifulSoup(html, "html.parser")
+
+        # extract depth chart
+        depth_chart_table = soup.find("table")
+        depth_chart = depth_chart_table.find("tbody")
+
+        # extract fantasy relevant players 
+        players = extract_fantasy_relevant_players(depth_chart)
+        relevant_players.update([player["name"] for player in players])
+
+        generate_player_depth_chart_positions(players, None, None, player_depth_chart_position_records, season, week)
+        add_unique_player_records(unique_player_records, players)
+
+
+        insert_player_records(unique_player_records, team, player_name_id_mapping, season)
+
+        # update player name to id mapping 
+        for player_name in relevant_players:
+            if player_name not in player_name_id_mapping:
+                normalized_name = player_service.normalize_name(player_name)
+                player = fetch_data.fetch_player_by_normalized_name(normalized_name)
+                player_name_id_mapping[player_name] = player['player_id']
+
+        # update / insert based on flag 
+        if is_update:
+            upsert_player_teams_records(relevant_players, team_id, season, team, player_name_id_mapping, week)
+            #TODO: Implement and invoke me : upsert_player_depth_chart_position_records()
+        else:
+            insert_player_teams_records(relevant_players, None, None, team_id, season, team, player_name_id_mapping, week)
+            insert_player_depth_chart_position_records(player_name_id_mapping, player_depth_chart_position_records, season)
+        
+        break #TODO: Remove me!
+
                  
 
 def generate_player_and_player_teams_records(teams: list, start_year: int, end_year: int, archive_dates: list): 
@@ -157,10 +242,11 @@ def insert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     if not filtered_depth_chart_records:
         logging.info(f"No new player depth chart records in the {season} season; skipping insertion")
     else:
-        insert_data.insert_player_depth_charts(filtered_depth_chart_records)
+        print(f"\n\nPlayer Depth Chart Position Records About to Get Inserted:\n\t{filtered_depth_chart_records}")
+        # insert_data.insert_player_depth_charts(filtered_depth_chart_records) TODO: Uncomment me
 
 
-def generate_player_depth_chart_positions(players: list, date: str, date_week_mapping: dict, player_depth_chart_position_records: list, season: int):
+def generate_player_depth_chart_positions(players: list, date: str, date_week_mapping: dict, player_depth_chart_position_records: list, season: int, week: int = None):
     """
     Functionality to generate relevant player depth chart records 
 
@@ -170,13 +256,18 @@ def generate_player_depth_chart_positions(players: list, date: str, date_week_ma
         date_week_mapping (dict): mapping of a date to a particular start and end date
         player_depth_chart_position_records: list of player depth chart positions 
         season (int): relevant season this depth chart corresponds to 
+        week (int): the week this execution is for 
     
     Returns:    
         None
     """
-    weeks = date_week_mapping.get(date)
-    start_week = weeks["strt_wk"]
-    end_week = weeks["end_wk"]
+    if date_week_mapping is not None:
+        weeks = date_week_mapping.get(date)
+        start_week = weeks["strt_wk"]
+        end_week = weeks["end_wk"]
+    else:
+        start_week = week
+        end_week = week
 
     for player in players:
         player_name = player["name"]
@@ -188,10 +279,59 @@ def generate_player_depth_chart_positions(players: list, date: str, date_week_ma
 
 
 
+def upsert_player_teams_records(relevant_players: list, team_id: int, season: int, team: dict, player_name_id_mapping: dict, week: int):
+
+    player_teams_records_to_insert = []
+    player_teams_records_to_update = []
+    for player_name in relevant_players:
+
+        # extract players existing player_teams records 
+        player_team_records = fetch_data.fetch_player_teams_records_by_player_and_season(player_name_id_mapping[player_name], season)
+
+        if not player_team_records:
+            player_teams_records_to_insert.append({"player_id": player_name_id_mapping[player_name], "team_id": team_id, "season": season, "strt_wk": week, "end_wk": 18})
+            continue
+
+        # iterate through persisted records
+        found_valid_record = False
+        for record in player_team_records: 
+            persisted_team_id = record["team_id"]
+            start_week = record["strt_wk"]
+            end_week = record["end_wk"]
+
+            # check for valid record
+            if week >= start_week and week <= end_week and team_id == persisted_team_id: 
+                found_valid_record = True
+        
+        # no insert/update needed to valid record found
+        if found_valid_record:
+            continue
+
+
+        # no record found, we must 1) end date relevant record 2) insert new record 
+        record_to_update = next((record for record in player_team_records if record["end_wk"] == 18), None)
+        if record_to_update is None:
+            raise Exception('No player_teams record with end_wk = 18 exists for player {player_name} for the {season} NFL Season; Unable to end date record and create new player_team record')
+
+        # set end week of existing record to previous week  
+        record_to_update["end_wk"] = week - 1
+        player_teams_records_to_update.append(record_to_update)
+
+ 
+        # create new record for players new team 
+        player_teams_records_to_insert.append({"player_id": player_name_id_mapping[player_name], "team_id": team_id, "season": season, "strt_wk": week, "end_wk": 18})
+    
+    #TODO: Call relevant functions to actually insert / update thse records in the DB after double checking our logic 
 
 
 
-def insert_player_teams_records(relevant_players: list, start_date_mapping: dict, end_date_mapping: dict, team_id: int, season: int, team: dict, player_name_id_mapping: dict):
+
+def upsert_player_depth_chart_position_records(): 
+    #TODO: Implement me 
+    return None
+
+
+def insert_player_teams_records(relevant_players: list, start_date_mapping: dict, end_date_mapping: dict, team_id: int, season: int, team: dict, player_name_id_mapping: dict, week: int = None):
     """
     Functionality to generate 'player_teams' records and persist into our database 
     based on determined start and end dates of players and corresponding teams 
@@ -212,8 +352,8 @@ def insert_player_teams_records(relevant_players: list, start_date_mapping: dict
     for player_name in relevant_players: 
             
             # extract start & end weeks
-            week_strt = start_date_mapping[player_name]
-            week_end = end_date_mapping[player_name]
+            week_strt = start_date_mapping[player_name] if start_date_mapping else week
+            week_end = end_date_mapping[player_name] if end_date_mapping else 18
 
             player_teams_records.append({"player_id": player_name_id_mapping[player_name], "team_id": team_id, "season": season, "strt_wk": week_strt, "end_wk": week_end})
     
@@ -222,7 +362,8 @@ def insert_player_teams_records(relevant_players: list, start_date_mapping: dict
     if not filtered_player_teams_records:
         logging.info(f"No new player teams records to insert for the team {team['team']} in the {season} season; skipping insertion")
     else:
-        insert_data.insert_player_teams_records(filtered_player_teams_records)
+        print(f"\n\nPlayer Teams Records About To Get Inserted:\n\t{filtered_player_teams_records}")
+        # insert_data.insert_player_teams_records(filtered_player_teams_records) TODO: Uncomment me
     
 
 
@@ -242,7 +383,7 @@ def insert_player_records(unique_player_records: list, team: dict, player_name_i
     if not filtered_player_records:
         logging.info(f"No new player records to insert for the team {team['team']} in the {season} season; skipping insertion")
     else:
-        insert_data.insert_players(filtered_player_records) 
+        insert_data.insert_players(filtered_player_records)
 
 
 
