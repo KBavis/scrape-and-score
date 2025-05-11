@@ -2158,7 +2158,66 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
             f"An error occurred while retrieving player depth chart: {e}"
         )
         raise e
+    
 
+
+def get_count_player_demographics_records_for_season(season: int): 
+
+    """Functionality to retrieve the count of player_demographcis records for a particular season
+
+    Args:
+        season (int): the season pertaining to the record 
+    
+    Returns:
+        int: number of player demographic records for season
+    """
+
+    sql = "SELECT * FROM player_demographics WHERE season = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, ))
+            rows = cur.fetchall()
+
+            return len(rows)
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving the count of player_demographic records pertaining to season {season}", exc_info=True
+        )
+        raise e
+
+def get_count_player_teams_records_for_season(season: int): 
+
+    """Functionality to retrieve the count of player_teams records for a particular season
+
+    Args:
+        season (int): the season pertaining to the record 
+    
+    Returns:
+        int: number of player_teams records for season
+    """
+
+    sql = "SELECT * FROM player_teams WHERE season = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, ))
+            rows = cur.fetchall()
+
+            return len(rows)
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving the count of player_teams records pertaining to season {season}", exc_info=True
+        )
+        raise e
 
 def retrieve_player_demographics_record_by_pk(season: int, player_id: int): 
     """Functionality to retrieve a player demographic record by its PK
