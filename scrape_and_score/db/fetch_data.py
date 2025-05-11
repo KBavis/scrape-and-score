@@ -2089,6 +2089,41 @@ def fetch_player_teams_record_by_pk(record: dict):
         raise e
 
 
+def fetch_player_teams_records_by_player_and_season(player_id: int, season: int): 
+    """
+    Retrieve player_teams records by player ID / season
+
+    Args:
+        player_id (int): the players ID 
+        season (int): relevant season
+    
+    Returns:
+        record (dict): record in DB 
+    """
+
+    sql = "SELECT player_id, team_id, season, strt_wk, end_wk FROM player_teams WHERE player_id = %s AND season = %s"
+    records = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, season))
+            rows = cur.fetchall()
+
+            for row in rows:
+                records.append({"player_id": row[0], "team_id": row[1], "season": row[2], "strt_wk": row[3], "end_wk": row[4]})
+
+        return records
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving player_teams record for player_id {player_id} and season {season}: {e}"
+        )
+        raise e
+
+
+
 def fetch_player_fantasy_points(player_id: int, season: int, end_week: int): 
     """
     Functionality to retrieve players fantasy points from beginning of season to specific week
