@@ -395,7 +395,7 @@ def extract_fantasy_relevant_players(depth_chart: BeautifulSoup):
             content = td.get_text()
 
             # skip empty content
-            if not content:
+            if not content or content == "" or not content.strip():
                 continue
 
             # ensure cell isn't the players #
