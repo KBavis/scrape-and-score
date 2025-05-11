@@ -11,6 +11,7 @@ from datetime import datetime
 from constants import TRAINING_CONFIGS
 from models.neural_net import NeuralNetwork
 from models import optimization, post_training
+from . import utils
 
 
 def upcoming(week: int, season: int):
@@ -23,6 +24,18 @@ def upcoming(week: int, season: int):
         week (int): upcoming week to extract functionality for 
         season (int): the season this data corresponds to 
     """
+
+    # scrape & persist inital seasonal records (i.e new players, etc)
+    if utils.is_first_execution_of_season(season):
+
+         # scrape & persist player_teams, players, and player_depth_chart records 
+         our_lads.scrape_and_persist_upcoming(season, week)
+
+   #TODO: Finish other flows of invoking this function (i.e daily scraping, etc) 
+
+    # account for updates/new player, player_teams, and depth_chart_postion records
+
+    # daily scraping
 
     # scrape & persist upcoming team betting odds
     rotowire_scraper.scrape_upcoming(week, season)
