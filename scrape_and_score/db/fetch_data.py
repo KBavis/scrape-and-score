@@ -2163,7 +2163,7 @@ def fetch_player_fantasy_points(player_id: int, season: int, end_week: int):
         raise e
 
 
-def fetch_player_depth_chart_record_by_pk(record: dict): 
+def fetch_player_depth_chart_position_by_pk(record: dict): 
     """
     Retrieve player_depth_chart record by PK 
 
@@ -2171,10 +2171,10 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
         record (dict): mapping of PK's 
     
     Returns:
-        record (dict): record in DB 
+        int: depth chart position
     """
 
-    sql = "SELECT * FROM player_depth_chart WHERE player_id = %s AND season = %s AND week = %s"
+    sql = "SELECT depth_chart_pos FROM player_depth_chart WHERE player_id = %s AND season = %s AND week = %s"
 
     try:
         connection = get_connection()
@@ -2184,7 +2184,7 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
             row = cur.fetchone()
 
             if row:
-                return row[0]
+                return int(row[0])
             else:
                 return None
 
