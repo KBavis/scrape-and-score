@@ -25,11 +25,15 @@ def upcoming(week: int, season: int):
         season (int): the season this data corresponds to 
     """
 
-    # scrape & persist inital seasonal records (i.e new players, etc)
+    # acount for first execution of a particular season (i.e new players, players being traded, etc)
     if utils.is_first_execution_of_season(season):
+         our_lads.scrape_and_persist_upcoming(season, week) 
+         #TODO: Insert player demographic records 
+    else:
+        our_lads.scrape_and_persist_upcoming(season, week, True)
+    
+    # invoke daily scraping functionality (player betting odds, team betting odds, weather status, player injuries, & player teams / depth chart position statuses)
 
-         # scrape & persist player_teams, players, and player_depth_chart records 
-         our_lads.scrape_and_persist_upcoming(season, week)
 
    #TODO: Finish other flows of invoking this function (i.e daily scraping, etc) 
 
@@ -38,7 +42,7 @@ def upcoming(week: int, season: int):
     # daily scraping
 
     # scrape & persist upcoming team betting odds
-    rotowire_scraper.scrape_upcoming(week, season)
+    # rotowire_scraper.scrape_upcoming(week, season) TODO: Uncomment me
 
 
 def historical(start_year: int, end_year: int):
