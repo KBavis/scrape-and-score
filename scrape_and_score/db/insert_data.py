@@ -744,6 +744,45 @@ def insert_bye_week_rankings(team_bye_weeks: list, season: int, ):
         raise e
 
 
+def update_player_teams_records_end_dates(player_teams_records: list): 
+    """
+    Functionality to end date 'player_teams' records in our database 
+
+    Args:
+        player_teams_records (list): records requiring updates
+    
+    """
+    sql = f"""
+            UPDATE player_teams 
+            SET end_wk = %s
+            WHERE player_id = %s AND team_id = %s AND season = %s
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["end_wk"],
+                record["player_id"],
+                record["team_id"],
+                record["season"]
+            )
+            for record in player_teams_records 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(player_teams_records)} player_teams records in the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following player_teams records in our database: {player_teams_records}",
+            exc_info=True,
+        )
+        raise e
 
 def insert_player_teams_records(player_teams_records: list): 
     sql = f"""
@@ -811,6 +850,45 @@ def insert_player_weekly_aggregate_metrics(player_agg_metrics: list):
         )
         raise e
 
+
+def update_player_depth_chart_postion(player_depth_chart: list): 
+    """
+    Functionality to update player depth chart record positions in our DB 
+
+    ArgsL
+        player_depth_chart (list): players depth charts to update
+    """
+    sql = """
+            UPDATE player_depth_chart 
+            SET depth_chart_pos = %s 
+            WHERE player_id = %s AND season = %s AND week = %s
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["depth_chart_pos"],
+                record["player_id"],
+                record["season"],
+                record["week"]
+            )
+            for record in player_depth_chart
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(player_depth_chart)} player_depth_chart records in the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following player_depth_chart records in our db: {player_depth_chart}",
+            exc_info=True,
+        )
+        raise e
 
 def insert_player_depth_charts(player_depth_chart: list): 
     """
