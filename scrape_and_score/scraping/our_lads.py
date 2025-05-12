@@ -120,7 +120,7 @@ def generate_and_persist_depth_chart_records(teams: list, season: int, week: int
         # update / insert based on flag 
         if is_update:
             upsert_player_teams_records(relevant_players, team_id, season, team, player_name_id_mapping, week)
-            #TODO: Implement and invoke me : upsert_player_depth_chart_position_records()
+            upsert_player_depth_chart_position_records(player_name_id_mapping, player_depth_chart_position_records, season)
         else:
             insert_player_teams_records(relevant_players, None, None, team_id, season, team, player_name_id_mapping, week)
             insert_player_depth_chart_position_records(player_name_id_mapping, player_depth_chart_position_records, season)
@@ -208,7 +208,64 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
 
             insert_player_teams_records(relevant_players, start_date_mapping, end_date_mapping, team_id, season, team, player_name_id_mapping)
             insert_player_depth_chart_position_records(player_name_id_mapping, player_depth_chart_position_records, season)
-                    
+
+
+def upsert_player_depth_chart_position_records(player_name_id_mapping: dict, player_depth_chart_position_records: list, season: int):
+    """
+    Functionality to update & insert player depth chart position records into our database 
+
+    Args:
+        player_name_id_mapping (dict): mapping of a player name to an ID 
+        player_depth_chart_position_records (list): list of relevant records to insert into our database 
+        season (int): relevatn season this corresponds to 
+    
+    Returns: None
+    """
+
+    logging.info("Attempting to update relevant depth_chart_position records & insert new entries")
+
+    # update records with corresponding player ID 
+    for record in player_depth_chart_position_records: 
+        record["player_id"] = player_name_id_mapping[record["name"]]
+        record["season"] = season
+
+    
+    records_to_insert = []
+    records_to_update = []
+    
+    # ensure record is unique (i.e not already inserted, and not a duplicate)
+    for record in player_depth_chart_position_records:
+        depth_chart_pos = fetch_data.fetch_player_depth_chart_position_by_pk(record)
+
+        # no record exists for player; insert new record
+        if depth_chart_pos is None:
+            records_to_insert.append(record)
+            continue
+
+        # validate that depth chart position persisted matches players current depth chart position
+        if depth_chart_pos == record['depth_chart_pos']:
+            logging.info(f"Player '{record['name']}' has a valid player_depth_chart record persisted; skipping insertion/updates")
+            continue
+
+        logging.info(f"Player '{record['name']}' has an INVALID player_depth_chart record persisted for Week {record['week']} and Season {record['season']}; adding record to list of records to update")
+        records_to_update.append(record)
+
+    # account for insertions 
+    if records_to_insert:
+        logging.info(f"'player_depth_chart' records to be inserted:\n\t{records_to_insert}") 
+        # insert_data.insert_player_depth_charts(records_to_insert)  TODO: Uncomment me
+    else:
+        logging.info(f"No new 'player_depth_chart' records; skipping insertion")
+
+    # account for updates 
+    if records_to_update:
+        logging.info(f"'player_depth_chart' records to be updated:\n\t{records_to_update}") 
+        # insert_data.update_player_depth_chart_postion(records_to_update) TODO: Uncomment me
+    else:
+        logging.info(f"No 'player_depth_chart' records require updating; skipping updates")
+
+
+
 
 def insert_player_depth_chart_position_records(player_name_id_mapping: dict, player_depth_chart_position_records: list, season: int):
     """
@@ -232,7 +289,7 @@ def insert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     filtered_depth_chart_records = []
     seen_records = set()
     for record in player_depth_chart_position_records:
-        if fetch_data.fetch_player_depth_chart_record_by_pk(record) is None:
+        if fetch_data.fetch_player_depth_chart_position_by_pk(record) is None:
             record_key = (record["player_id"], record["week"], record["season"])
 
             if record_key not in seen_records:
@@ -288,6 +345,7 @@ def upsert_player_teams_records(relevant_players: list, team_id: int, season: in
         # extract players existing player_teams records 
         player_team_records = fetch_data.fetch_player_teams_records_by_player_and_season(player_name_id_mapping[player_name], season)
 
+        # if no player_teams record exist for player, add to list of records to be inserted 
         if not player_team_records:
             player_teams_records_to_insert.append({"player_id": player_name_id_mapping[player_name], "team_id": team_id, "season": season, "strt_wk": week, "end_wk": 18})
             continue
@@ -305,8 +363,10 @@ def upsert_player_teams_records(relevant_players: list, team_id: int, season: in
         
         # no insert/update needed to valid record found
         if found_valid_record:
+            logging.info(f"Player '{player_name}' has a valid 'player_team' record persisted; no need to update/insert")
             continue
 
+        logging.info(f"Player '{player_name}' has no valid 'player_team' record persisted; must end date existing record & create new entry to account for new team")
 
         # no record found, we must 1) end date relevant record 2) insert new record 
         record_to_update = next((record for record in player_team_records if record["end_wk"] == 18), None)
@@ -320,15 +380,22 @@ def upsert_player_teams_records(relevant_players: list, team_id: int, season: in
  
         # create new record for players new team 
         player_teams_records_to_insert.append({"player_id": player_name_id_mapping[player_name], "team_id": team_id, "season": season, "strt_wk": week, "end_wk": 18})
-    
-    #TODO: Call relevant functions to actually insert / update thse records in the DB after double checking our logic 
 
 
+    # account for insertions 
+    if player_teams_records_to_insert:
+        logging.info(f"'player_teams' records to be inserted:\n\t{player_teams_records_to_insert}") 
+        # insert_data.insert_player_teams_records(player_teams_records_to_insert) TODO: Uncomment me 
+    else:
+        logging.info(f"No new 'player_teams' records; skipping insertion")
 
+    # account for updates 
+    if player_teams_records_to_update:
+        logging.info(f"'player_teams' records to be updated:\n\t{player_teams_records_to_update}") 
+        # insert_data.update_player_teams_records_end_dates(player_teams_records_to_update) TODO: Uncomment me
+    else:
+        logging.info(f"No 'player_teams' records require updating; skipping updates")
 
-def upsert_player_depth_chart_position_records(): 
-    #TODO: Implement me 
-    return None
 
 
 def insert_player_teams_records(relevant_players: list, start_date_mapping: dict, end_date_mapping: dict, team_id: int, season: int, team: dict, player_name_id_mapping: dict, week: int = None):
