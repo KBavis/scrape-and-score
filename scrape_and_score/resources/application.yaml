@@ -1,6 +1,9 @@
 # website configurations
 website:
-   pro-football-reference:
+   espn:
+      urls:
+         upcoming: "https://www.espn.com/nfl/schedule/_/week/{}/year/{}/seasontype/2"
+   pro-football-reference: 
       urls:
          home-page: "https://www.pro-football-reference.com/"
          team-metrics: "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
