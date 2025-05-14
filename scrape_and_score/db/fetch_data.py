@@ -34,6 +34,29 @@ def fetch_all_teams():
     return teams
 
 
+def fetch_game_date_from_team_game_log(season: int, week: int, team_id: int):
+
+    sql = "SELECT game_date FROM team_game_log WHERE team_id = %s AND year = %s AND week = %s"
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (team_id, season, week))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+
+    except Exception as e:
+        logging.error("An error occurred while fetching game date for previous week", exc_info=True)
+        raise e
+
+
+
+
 """
 Functionality to fetch a team by their team name 
 
