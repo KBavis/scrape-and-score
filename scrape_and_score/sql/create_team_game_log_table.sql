@@ -52,6 +52,7 @@ CREATE TABLE team_game_log (
     int INT,
     turnovers INT,
     time_of_poss FLOAT,
+    game_date DATE,
     PRIMARY KEY (team_id, week, year),
     FOREIGN KEY (team_id) REFERENCES team(team_id) ON DELETE CASCADE,
     FOREIGN KEY (opp) REFERENCES team(team_id) ON DELETE CASCADE
