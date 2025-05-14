@@ -127,25 +127,8 @@ Args:
 def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     logging.info(f"Attempting to scrape player metrics for the year {year}")
     player_metrics = []
-    player_urls = []
 
-    # sort players with hashed names persisted or not to optimize URL construction
-    players_with_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is not None]
-    players_without_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is None and player['pfr_available'] == 1] # disregard players previously indicated to be unavailable
-
-    # log players skipped due to being unavailable
-    log_disregarded_players(team_and_player_data)
-
-    # order players by last name first initial 
-    ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
-
-    # construct each players metrics link for players with no hashed name persisted 
-    if players_without_hashed_name is not None and len(players_without_hashed_name) > 0:
-        player_urls.extend(get_player_urls(ordered_players, year))
-
-    # construct players metrics link for players with hashed name persisted 
-    if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
-        player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, year))
+    player_urls = construct_player_urls(team_and_player_data, year)
 
     # for each player url, fetch relevant metrics
     for player_url in player_urls:
@@ -168,7 +151,7 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
             continue # skip players with no metrics 
 
         # logic to account for player demographics 
-        parse_and_insert_player_demographics(soup, player_url['player'], year)
+        parse_and_insert_player_demographics_and_dob(soup, player_url['player'], year)
 
         player_metrics.append(
             {
@@ -180,7 +163,31 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     return player_metrics
 
 
-def parse_and_insert_player_demographics(soup: BeautifulSoup, player_name: str, year: int):
+def construct_player_urls(players: list, season: int):
+    player_urls = []
+
+    # sort players with hashed names persisted or not to optimize URL construction
+    players_with_hashed_name = [player for player in players if player['hashed_name'] is not None]
+    players_without_hashed_name = [player for player in players if player['hashed_name'] is None and player['pfr_available'] == 1] # disregard players previously indicated to be unavailable
+
+    # log players skipped due to being unavailable
+    log_disregarded_players(players)
+
+    # order players by last name first initial 
+    ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
+
+    # construct each players metrics link for players with no hashed name persisted 
+    if players_without_hashed_name is not None and len(players_without_hashed_name) > 0:
+        player_urls.extend(get_player_urls(ordered_players, season))
+
+    # construct players metrics link for players with hashed name persisted 
+    if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
+        player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, season))
+    
+    return player_urls
+
+
+def parse_and_insert_player_demographics_and_dob(soup: BeautifulSoup, player_name: str, year: int):
     """
     Check if player demographics record from pro-football-reference are persisted, if not, persist
 
