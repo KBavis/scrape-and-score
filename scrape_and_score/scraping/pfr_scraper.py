@@ -114,6 +114,37 @@ def scrape_recent():
     return team_metrics, player_metrics
 
 
+
+def scrape_and_persist_player_demographics(season: int): 
+    """
+    Functionality to scrape & persist 'player_demographic' records for players in an upcoming season
+
+    NOTE: This functionality should be executed after new players have been accounted for 
+
+    Args:
+        season (int): the season to scrape & persist for 
+    """
+
+    logging.info(f"Scraping & persisted player demographics for the {season} NFL Season")
+
+    # fetch relevant players
+    players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
+
+    # construct URLs 
+    player_urls = construct_player_urls(players, season)
+
+    for url in player_urls:
+
+        html = fetch_page(url)
+        if html is None: 
+            logging.warning(f"No valid HTML retrieved for player '{url['player']}'")
+            continue
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        parse_and_insert_player_demographics_and_dob(soup, url['player'], season)
+
+
 """
 Functionality to fetch the metrics for each relevant player on current 53 man roster of specified year
 
