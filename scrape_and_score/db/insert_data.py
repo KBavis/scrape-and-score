@@ -289,6 +289,43 @@ def update_team_game_log_game_date(game_date: datetime, pk: dict):
         raise e
 
 
+def insert_upcoming_team_game_logs(records: list):
+    """
+    Functionality to insert upcoming team game logs into our database 
+
+    Args:
+        records (list): the records to persist 
+    """
+    
+    sql = """
+      INSERT INTO team_game_log (team_id, week, year, rest_days, home_team, distance_traveled, opp, game_date, day)
+      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (record["team_id"], record["week"], record["year"], record["rest_days"], record['is_home'], record['distance_traveled'], record['opp'], record['game_date'], record['day'])
+            for record in records 
+        ]  
+
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(f"Successfully inserted {len(records)} team game logs for upcoming NFL games in the database")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the team game logs: {records}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+
 """
 Functionality to update multiple team game logs.
 
