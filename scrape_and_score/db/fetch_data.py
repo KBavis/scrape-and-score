@@ -94,6 +94,29 @@ def fetch_team_by_name(team_name: int):
     return team
 
 
+def fetch_team_name_by_id(id: int):
+    sql = "SELECT name FROM team WHERE team_id = %s"
+
+    name = None
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (id,))  
+            row = cur.fetchone()
+
+            if row:
+                name = row[0]
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching team with team_id[{id}]: {e}"
+        )
+        raise e
+
+    return name
+
+
 """
 Functionality to fetch all players
 
