@@ -277,7 +277,7 @@ def update_team_game_log_game_date(game_date: datetime, pk: dict):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, game_date, pk['team_id'], pk['week'], pk['year'])
+            cur.execute(sql, (game_date, pk['team_id'], pk['week'], pk['year']))
             connection.commit()
             logging.info(f"Successfully updated team game log's (PK={pk}) game_date in the database")
 
