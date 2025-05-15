@@ -178,7 +178,7 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
 
         game_log = get_game_log(soup, position, recent_games)
         if game_log.empty:
-            logging.warn(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
+            logging.warning(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
             continue # skip players with no metrics 
 
         # logic to account for player demographics 
