@@ -4,6 +4,7 @@ import pandas as pd
 from service import team_service, player_service
 import time
 from . import fetch_data
+from datetime import datetime
 
 """
 Functionality to persist a particular player 
@@ -250,6 +251,39 @@ def insert_team_game_logs(game_logs: list):
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting the team game logs: {game_logs}",
+            exc_info=True,
+        )
+        raise e
+    
+
+
+def update_team_game_log_game_date(game_date: datetime, pk: dict):
+    """
+    Update team game log record with up-to-date game date 
+
+    Args:
+        game_date (datetime): new datetime to assign to team game log record
+        pk (dict): PK of team game log to update
+    """
+
+    sql = """
+        UPDATE team_game_log
+        SET
+            game_date = %s
+        WHERE team_id = %s AND week = %s AND year = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, game_date, pk['team_id'], pk['week'], pk['year'])
+            connection.commit()
+            logging.info(f"Successfully updated team game log's (PK={pk}) game_date in the database")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the team game log game_date: {pk}",
             exc_info=True,
         )
         raise e
