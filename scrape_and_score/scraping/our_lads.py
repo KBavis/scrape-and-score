@@ -124,8 +124,6 @@ def generate_and_persist_depth_chart_records(teams: list, season: int, week: int
         else:
             insert_player_teams_records(relevant_players, None, None, team_id, season, team, player_name_id_mapping, week)
             insert_player_depth_chart_position_records(player_name_id_mapping, player_depth_chart_position_records, season)
-        
-        break #TODO: Remove me!
 
                  
 
@@ -253,14 +251,14 @@ def upsert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     # account for insertions 
     if records_to_insert:
         logging.info(f"'player_depth_chart' records to be inserted:\n\t{records_to_insert}") 
-        # insert_data.insert_player_depth_charts(records_to_insert)  TODO: Uncomment me
+        insert_data.insert_player_depth_charts(records_to_insert)  
     else:
         logging.info(f"No new 'player_depth_chart' records; skipping insertion")
 
     # account for updates 
     if records_to_update:
         logging.info(f"'player_depth_chart' records to be updated:\n\t{records_to_update}") 
-        # insert_data.update_player_depth_chart_postion(records_to_update) TODO: Uncomment me
+        insert_data.update_player_depth_chart_postion(records_to_update) 
     else:
         logging.info(f"No 'player_depth_chart' records require updating; skipping updates")
 
@@ -299,8 +297,8 @@ def insert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     if not filtered_depth_chart_records:
         logging.info(f"No new player depth chart records in the {season} season; skipping insertion")
     else:
-        print(f"\n\nPlayer Depth Chart Position Records About to Get Inserted:\n\t{filtered_depth_chart_records}")
-        # insert_data.insert_player_depth_charts(filtered_depth_chart_records) TODO: Uncomment me
+        logging.info(f"\n\nPlayer Depth Chart Position Records About to Get Inserted:\n\t{filtered_depth_chart_records}")
+        insert_data.insert_player_depth_charts(filtered_depth_chart_records)
 
 
 def generate_player_depth_chart_positions(players: list, date: str, date_week_mapping: dict, player_depth_chart_position_records: list, season: int, week: int = None):
@@ -430,7 +428,7 @@ def insert_player_teams_records(relevant_players: list, start_date_mapping: dict
         logging.info(f"No new player teams records to insert for the team {team['team']} in the {season} season; skipping insertion")
     else:
         print(f"\n\nPlayer Teams Records About To Get Inserted:\n\t{filtered_player_teams_records}")
-        # insert_data.insert_player_teams_records(filtered_player_teams_records) TODO: Uncomment me
+        insert_data.insert_player_teams_records(filtered_player_teams_records)
     
 
 
