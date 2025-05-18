@@ -103,16 +103,18 @@ def update_player_hashed_name(hashed_names: list):
 
 
 
-def update_player_pfr_availablity_status(player_ids: list): 
+def update_player_pfr_availablity_status(player_ids: list, is_available: bool = False): 
     """
     Update player records to indicate they are not available in PFR (unable to find HREF)
 
     Args:
         player_ids (list): list of player_ids to update 
     """
-    query = """
+    available = 1 if is_available else 0
+        
+    query = f"""
         UPDATE player 
-        SET pfr_available = 0
+        SET pfr_available = {available}
         WHERE player_id = %s
     """
 
