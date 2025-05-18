@@ -9,6 +9,8 @@ website:
          team-metrics: "https://www.pro-football-reference.com/teams/{TEAM_ACRONYM}/{CURRENT_YEAR}.htm"
          player-metrics: "https://www.pro-football-reference.com/players/{LAST_NAME_INITAL}/{HASHED_NAME}.htm"
          advanced-metrics: "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}/advanced/"
+         team-draft: "https://www.pro-football-reference.com/teams/{}/{}_draft.htm"
+         player-page: "https://www.pro-football-reference.com/players/{}/{}.htm"
    fantasy-pros:
       urls:
          depth-chart: "https://www.fantasypros.com/nfl/depth-chart/{TEAM}.php"
