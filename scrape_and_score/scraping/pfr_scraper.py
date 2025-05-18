@@ -344,6 +344,12 @@ def parse_and_insert_player_demographics_and_dob(soup: BeautifulSoup, player_nam
             logging.info('No player date of birth persisted; updating player record with players date of birth')
             player_meta_data_div = soup.find('div', {'id': 'info'})
             player_dob_el = player_meta_data_div.find(id='necro-birth')
+
+            # verify relevant information is on page
+            if player_dob_el is None:
+                logging.warning(f"No DOB Element Exists for player {player_name}; skipping insertion of player demographics")
+                return
+            
             player_dob = player_dob_el.get("data-birth")
             insert_data.insert_player_dob(player_id, player_dob)
         
