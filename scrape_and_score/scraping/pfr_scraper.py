@@ -127,15 +127,20 @@ def scrape_and_persist_player_demographics(season: int):
 
     logging.info(f"Scraping & persisted player demographics for the {season} NFL Season")
 
+    # scrape & persist each teams new draftees hashed_names & check if in PFR 
+    scrape_and_persist_team_draftees_hashed_names(season)
+
+    base_url = props.get_config('website.pro-football-reference.urls.player-page')
+
     # fetch relevant players
     players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
 
     # construct URLs 
-    player_urls = construct_player_urls(players, season)
+    player_urls = construct_player_urls(players, season, base_url)
 
     for url in player_urls:
 
-        html = fetch_page(url)
+        html = fetch_page(url['url'])
         if html is None: 
             logging.warning(f"No valid HTML retrieved for player '{url['player']}'")
             continue
@@ -143,6 +148,73 @@ def scrape_and_persist_player_demographics(season: int):
         soup = BeautifulSoup(html, "html.parser")
 
         parse_and_insert_player_demographics_and_dob(soup, url['player'], season)
+
+
+def scrape_and_persist_team_draftees_hashed_names(season: int):
+    """
+    Functionality to scrape & persist the hashed_names in PFR for new team draftees 
+
+    Args:
+        season (int): relevant season 
+    """
+
+    # generate URLs 
+    base_url = props.get_config('website.pro-football-reference.urls.team-draft')
+    teams = props.get_config('nfl.teams')
+
+    urls = [ base_url.format(team['acronym'], season) for team in teams ]
+    
+    players_to_update = []
+    relevant_positions = ['QB', 'RB', 'TE', 'WR']
+
+    for url in urls:
+
+        # scrape team page containing draftees 
+        html = fetch_page(url)
+        soup = BeautifulSoup(html, "html.parser")
+
+        # parse HTML element containing draftee information
+        draftees_table = soup.find("table", {'id': 'draft'})
+        draftees = draftees_table.find_next("tbody")
+        draft_records = draftees.find_all('tr')
+
+        # iterate through each player drafteed
+        for player in draft_records:
+
+            # skip players that aren't fantasy relevant
+            position = player.find('td', {'data-stat': 'pos'}).text
+            if position not in relevant_positions:
+                continue
+            
+            # extract HREF from HTML
+            player_element = player.find('td', {'data-stat': 'player'})
+            player_link = player_element.find_next('a')
+
+            player_name = player_link.text 
+            player_href = player_link.get('href')
+
+            # parse out relevant hashed name & append to records to update
+            hashed_name = player_href.split("/")[-1].replace(".htm", "")
+
+            # fetch player ID corresponding to player 
+            normalized_name = player_service.normalize_name(player_name)
+            player_id = player_service.get_player_id_by_normalized_name(normalized_name)
+
+            if player_id is None:
+                # retry with additional details
+                player_id = player_service.get_player_id_by_position_season_and_normalized_name(season, position, normalized_name)
+                if player_id is None:
+                    logging.warning(f'Unable to extract the player_id for player: {player_name}; skipping update of player hashed_name')
+                    continue
+
+            players_to_update.append({"hashed_name": hashed_name, "player_id": player_id})
+
+    # update db with hashed names
+    if players_to_update:
+        insert_data.update_player_hashed_name(players_to_update)
+        player_ids = [id['player_id'] for id in players_to_update]
+        insert_data.update_player_pfr_availablity_status(player_ids, True)
+
 
 
 """
@@ -194,7 +266,7 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     return player_metrics
 
 
-def construct_player_urls(players: list, season: int):
+def construct_player_urls(players: list, season: int, base_url: str = None):
     player_urls = []
 
     # sort players with hashed names persisted or not to optimize URL construction
@@ -203,6 +275,13 @@ def construct_player_urls(players: list, season: int):
 
     # log players skipped due to being unavailable
     log_disregarded_players(players)
+
+    # check if this is for player pages or player metrics
+    if base_url is not None:
+        if players_without_hashed_name:
+            logging.warning(f"The following players will also be skipped as there is no hashed_name persisted for them:\n\t{players_without_hashed_name}")
+
+        return get_player_page_urls(players_with_hashed_name, base_url)
 
     # order players by last name first initial 
     ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
@@ -215,6 +294,24 @@ def construct_player_urls(players: list, season: int):
     if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
         player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, season))
     
+    return player_urls
+
+def get_player_page_urls(players: list, base_url: str):
+    """
+    Functionality to construct player page URLs 
+
+    Args:
+        players (list): the list of players to construct URLs for 
+        base_url (str): the base URL to construct player page URL for 
+    """
+    player_urls = [
+        {
+            "player": player['player_name'], 
+            "position": player['position'], 
+            "url": base_url.format(get_last_name_first_initial(player['player_name']), player['hashed_name'])
+        } for player in players
+    ]
+
     return player_urls
 
 
@@ -301,7 +398,6 @@ def get_player_urls_with_hash(players: list, year: int):
     Returns 
         list : list of player hashes 
     """
-
     base_url = "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}"
     player_urls = [
         {
