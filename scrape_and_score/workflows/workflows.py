@@ -1,4 +1,4 @@
-from scraping import our_lads, pfr_scraper as pfr, rotowire_scraper, football_db, betting_pros
+from scraping import our_lads, pfr_scraper as pfr, rotowire_scraper, football_db, betting_pros, espn
 from service import team_game_logs_service, player_game_logs_service
 from models.lin_reg import LinReg
 from data import nn_preprocess, linreg_preprocess
@@ -11,7 +11,7 @@ from datetime import datetime
 from constants import TRAINING_CONFIGS
 from models.neural_net import NeuralNetwork
 from models import optimization, post_training
-from . import utils
+from . import utils 
 
 
 def upcoming(week: int, season: int):
@@ -25,14 +25,19 @@ def upcoming(week: int, season: int):
         season (int): the season this data corresponds to 
     """
 
-    # acount for first execution of a particular season (i.e new players, players being traded, etc)
-    if utils.is_first_execution_of_season(season):
-         our_lads.scrape_and_persist_upcoming(season, week) 
-         #TODO: Insert player demographic records 
-    else:
-        our_lads.scrape_and_persist_upcoming(season, week, True)
+    # scrape & persist player records (update records if necessary)
+    is_update = utils.is_player_records_persisted(season)
+    our_lads.scrape_and_persist_upcoming(season, week, is_update=is_update)
+       
     
+    # scrape & persist player demographics (if necessary)
+    if not utils.is_player_demographics_persisted(season):
+        pfr.scrape_and_persist_player_demographics(season)
+
+    #TODO: Scrape other metrics (betting odds, injuries, weather, etc)
     # invoke daily scraping functionality (player betting odds, team betting odds, weather status, player injuries, & player teams / depth chart position statuses)
+    espn.scrape_upcoming_games(season, week)
+    
 
 
    #TODO: Finish other flows of invoking this function (i.e daily scraping, etc) 
