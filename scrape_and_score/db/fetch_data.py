@@ -231,13 +231,23 @@ def fetch_player_by_normalized_name(normalized_name: str):
     return player
 
 
+def fetch_player_id_by_normalized_name_season_and_position(normalized_name: str, position: str, season: int):
+    """
+    Fetch player ID corresponding to normalized name, position, and season
 
-def fetch_player_id_by_normalized_name(normalized_name: str):
+    Args:
+        normalized_name (str): the name to extract player ID for 
+        position (str): the position extract player ID for 
+        season (int): relevant season
+
+    Returns
+        int: the player ID corresponding to args
+    """
 
     sql = """
-        SELECT player_id 
-        FROM player 
-        WHERE normalized_name = %s
+        SELECT p.player_id FROM player p
+        JOIN player_teams pt ON p.player_id = pt.player_id 
+        WHERE normalized_name LIKE %s AND pt.season = %s AND p.position = %s
     """
     player_id = None
 
@@ -245,7 +255,42 @@ def fetch_player_id_by_normalized_name(normalized_name: str):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (normalized_name,))  # use cleaned name
+            player_name = normalized_name.split(' ')
+            if len(player_name) > 2:
+                player_last_name = player_name[1]
+            else:
+                player_last_name = player_name[-1]
+
+            like_pattern = f"% {player_last_name}"
+            cur.execute(sql, (like_pattern,season, position))  
+            row = cur.fetchone()
+
+            if row:
+                player_id = row[0]
+            else:
+                logging.warning(f"Unable to find player ID for {normalized_name}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching player ID for {normalized_name}: {e}")
+        raise e
+
+    return player_id
+
+def fetch_player_id_by_normalized_name(normalized_name: str):
+
+    sql = """
+        SELECT player_id 
+        FROM player 
+        WHERE normalized_name LIKE %s
+    """
+    player_id = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            like_pattern = f"%{normalized_name}%"
+            cur.execute(sql, (like_pattern,))  # use cleaned name
             row = cur.fetchone()
 
             if row:
