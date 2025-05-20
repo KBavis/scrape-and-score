@@ -639,8 +639,95 @@ def insert_player_props(player_props: dict, season: int):
         )
         raise e
     
-    
 
+def insert_upcoming_player_props(records: list):
+    """
+    Insert upcoming player_betting_odds records into our database 
+
+    Args:
+        records (list): list of records to insert 
+    """
+    sql = """
+        INSERT INTO player_betting_odds (player_id, player_name, label, cost, line, week, season) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    
+    params = [
+        (
+            record['player_id'],
+            record['player_name'],
+            record['odds']['label'],
+            record['odds']['cost'],
+            record['odds']['line'],
+            record['week'],
+            record['season']
+        )
+        for record in records
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(params)} upcoming player_betting_odds into our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following upcoming player betting odds: {records}",
+            exc_info=True,
+        )
+        raise e 
+
+
+def update_upcoming_player_props(records: list):
+    """
+        Update upcoming player_betting_odds records in our database 
+
+        Args:
+            records (list): list of records to update
+    """
+    
+    sql = """
+        UPDATE player_betting_odds 
+        SET 
+            cost = %s,
+            line = %s
+        WHERE 
+            week = %s AND season = %s AND label = %s AND player_id = %s
+    """
+    
+    params = [
+        (
+            record['odds']['cost'],
+            record['odds']['line'],
+            record['week'],
+            record['season'],
+            record['odds']['label'],
+            record['player_id']
+        )
+        for record in records
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(params)} upcoming player_betting_odds in our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following upcoming player betting odds: {records}",
+            exc_info=True,
+        )
+        raise e 
 
 """
 Functionality to insert historical betting odds into our DB 
