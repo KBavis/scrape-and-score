@@ -232,7 +232,6 @@ def generate_update_records(
 """
 Fetch odds for upcoming game that is to be played so we can make predicitions 
 
-TODO: Add resilience & check if these upcoming odds are already persisted
 
 Args:
    None 
@@ -242,7 +241,12 @@ Returns:
 """
 
 
-def scrape_upcoming(week: int, season: int):
+def scrape_upcoming(week: int, season: int, team_ids: list = None):
+    logging.info(
+        f"Attempting to scrape upcoming 'team_betting_odds' for season={season}, week={week}"
+        f"{f', team_ids={team_ids}' if team_ids is not None else ''}"
+    )
+
     # extract configs
     url = props.get_config("website.rotowire.urls.upcoming-odds")
 
@@ -253,7 +257,6 @@ def scrape_upcoming(week: int, season: int):
 
     # extract unique game IDs
     game_ids = df["gameID"].unique()
-    logging.info(f"Unique game IDs representing upcoming NFL games: {game_ids}")
 
     # calculate avg o/u & spreads for each game
     df["avg_ou"] = None
@@ -273,10 +276,86 @@ def scrape_upcoming(week: int, season: int):
 
     # create persistable record s
     upcoming_betting_odds = get_upcoming_betting_odds_records(
-        df, game_ids, week, season
+        df, game_ids, week, season, team_ids
     )
 
-    insert_data.insert_teams_odds(upcoming_betting_odds, True)
+    insert_records, update_records = filter_existing_records(upcoming_betting_odds)
+
+    if insert_records:
+        logging.info(f"Attempting to insert {len(insert_records)} 'team_betting_odds' records into DB")
+        insert_data.insert_teams_odds(upcoming_betting_odds, True)
+    else:
+        logging.info(f"No new 'team_betting_odds' records found for week {week} of the {season} NFL season; skipping insertion")
+    
+    if update_records:
+        logging.info(f"Attempting to update {len(update_records)} 'team_betting_odds' records in DB")
+        insert_data.update_teams_odds(update_records)
+    else:
+        logging.info(f"No updates made to 'team_betting_odds' records for week {week} of the {season} NFL season; skipping updates")
+
+
+
+def filter_existing_records(upcoming_betting_odds: list): 
+    """
+    Functionality to seperate our records that have already been persisted (and have changes) and records that should be inserted 
+
+    Args:
+        upcoming_betting_odds (list): list of upcoming betting odds to persist 
+
+    Returns
+        tuple: odds to update and odds to insert  
+    """
+
+    insert_records = []
+    update_records = []
+
+    for odds in upcoming_betting_odds:
+
+        home_team_id = odds['home_team_id']
+        away_team_id = odds['away_team_id']
+        year = odds['year']
+        week = odds['week']
+
+        # check if record exists by PK 
+        record = fetch_data.fetch_team_betting_odds_by_pk(home_team_id, away_team_id, year, week)
+        if record is None:
+            logging.info(f'No record persisted corresponding to PK (home_team_id={home_team_id},away_team_id={away_team_id},season={year},week={week}): Insertable record appended.')
+            insert_records.append(odds)
+            continue
+
+        # check if any data has been modified 
+        if are_odds_modified(record, odds):
+            logging.info(f'Record persisted & updates are required for record with PK (home_team_id={home_team_id},away_team_id={away_team_id},season={year},week={week}): Updateable record appended.')
+            update_records.append(odds)
+            continue
+
+        logging.info(f"Odds already persisted & no changes required for 'team_betting_odds' record with PK=(home_team_id={home_team_id},away_team_id={away_team_id},season={year},week={week})")
+
+
+    return insert_records, update_records
+
+
+def are_odds_modified(persisted_record: dict, current_record: dict):
+    """"
+    Helper function to determine if the odds have been modified 
+
+    Args:
+        persisted_record (dict): value persisted in DB 
+        current_record (dict): value just scraped in this application invocation
+
+    Returns:
+        bool: flag indicating if we need to update record in DB 
+    """
+
+    return not (
+        persisted_record["home_team_id"] == current_record["home_team_id"] and
+        persisted_record["away_team_id"] == current_record["away_team_id"] and
+        persisted_record["week"] == current_record["week"] and
+        persisted_record["season"] == current_record["year"] and
+        persisted_record["favorite_team_id"] == current_record["favorite_team_id"] and
+        persisted_record["game_over_under"] == current_record["game_over_under"] and
+        persisted_record["spread"] == current_record["spread"]
+    )
 
 
 """
@@ -287,6 +366,7 @@ Args:
    game_ids (list): list of unique game IDs to generate records for 
    week (int): week corresponding to betting odds 
    year (int): season correspondign to betting odds 
+   team_ids (list): relevant team IDs to acount for 
 
 Returns:
    records (list): list of betting odds to persist
@@ -294,7 +374,7 @@ Returns:
 
 
 def get_upcoming_betting_odds_records(
-    df: pd.DataFrame, game_ids: list, week: int, year: int
+    df: pd.DataFrame, game_ids: list, week: int, year: int, team_ids: list 
 ):
     logging.info(
         "Attempting to generate upcoming betting odds records to persist to our DB"
@@ -315,6 +395,13 @@ def get_upcoming_betting_odds_records(
         else:
             away_team_id = team_service.get_team_id_by_name(game_df.iloc[0]["name"])
             home_team_id = team_service.get_team_id_by_name(game_df.iloc[1]["name"])
+        
+
+        # check if away / home team ID is among relevant teams we want to fetch betting odds for 
+        if team_ids is not None:
+            if home_team_id not in team_ids or away_team_id not in team_ids:
+                logging.info(f"The NFL Game taking place between Team {home_team_id} and Team {away_team_id} has already occurred; skipping fetching betting odds")
+                continue
 
         favorite_team_id = get_favorite_team_id(game_df)
 
@@ -330,6 +417,7 @@ def get_upcoming_betting_odds_records(
         }
         records.append(record)
 
+    logging.info(f'Successfully generated {len(records)} upcoming team_betting_odds records')
     return records
 
 
