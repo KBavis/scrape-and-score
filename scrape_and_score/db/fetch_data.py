@@ -370,6 +370,113 @@ def fetch_one_player_game_log():
 
     return player_game_log
 
+def fetch_team_game_logs_by_week_and_season(season: int, week: int):
+    """
+    Retrieve 'team_game_log' records corresponding to particular season / week
+
+    Args:
+        season (int): relevant NFL season
+        week (int): relevant week
+    
+    Returns:
+        list: persisted team game log records corresponding to week / season
+    """
+    sql = """
+        SELECT
+            team_id, week, day, year, rest_days, home_team, distance_traveled,
+            opp, result, points_for, points_allowed, tot_yds, pass_yds, rush_yds,
+            opp_tot_yds, opp_pass_yds, opp_rush_yds, pass_tds, pass_cmp, pass_att,
+            pass_cmp_pct, rush_att, rush_tds, yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att, pass_rate, sacked, sack_yds_lost,
+            rush_yds_per_att, total_off_plays, total_yds, yds_per_play,
+            fga, fgm, xpa, xpm, total_punts, punt_yds,
+            pass_fds, rsh_fds, pen_fds, total_fds,
+            thrd_down_conv, thrd_down_att, fourth_down_conv, fourth_down_att,
+            penalties, penalty_yds, fmbl_lost, int, turnovers, time_of_poss,
+            game_date
+        FROM team_game_log
+        WHERE week = %s AND year = %s
+    """
+    team_game_logs = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (week, season))
+            rows = cur.fetchall()
+            
+            if not rows:
+                logging.warning(f'No team game logs persisted corresponding to week {week} in the {season} NFL season.')
+                return team_game_logs
+            
+            for row in rows:
+                team_game_logs.append({
+                    "team_id": row[0],
+                    "week": row[1],
+                    "day": row[2],
+                    "year": row[3],
+                    "rest_days": row[4],
+                    "home_team": row[5],
+                    "distance_traveled": row[6],
+                    "opp": row[7],
+                    "result": row[8],
+                    "points_for": row[9],
+                    "points_allowed": row[10],
+                    "tot_yds": row[11],
+                    "pass_yds": row[12],
+                    "rush_yds": row[13],
+                    "opp_tot_yds": row[14],
+                    "opp_pass_yds": row[15],
+                    "opp_rush_yds": row[16],
+                    "pass_tds": row[17],
+                    "pass_cmp": row[18],
+                    "pass_att": row[19],
+                    "pass_cmp_pct": row[20],
+                    "rush_att": row[21],
+                    "rush_tds": row[22],
+                    "yds_gained_per_pass_att": row[23],
+                    "adj_yds_gained_per_pass_att": row[24],
+                    "pass_rate": row[25],
+                    "sacked": row[26],
+                    "sack_yds_lost": row[27],
+                    "rush_yds_per_att": row[28],
+                    "total_off_plays": row[29],
+                    "total_yds": row[30],
+                    "yds_per_play": row[31],
+                    "fga": row[32],
+                    "fgm": row[33],
+                    "xpa": row[34],
+                    "xpm": row[35],
+                    "total_punts": row[36],
+                    "punt_yds": row[37],
+                    "pass_fds": row[38],
+                    "rsh_fds": row[39],
+                    "pen_fds": row[40],
+                    "total_fds": row[41],
+                    "thrd_down_conv": row[42],
+                    "thrd_down_att": row[43],
+                    "fourth_down_conv": row[44],
+                    "fourth_down_att": row[45],
+                    "penalties": row[46],
+                    "penalty_yds": row[47],
+                    "fmbl_lost": row[48],
+                    "int": row[49],
+                    "turnovers": row[50],
+                    "time_of_poss": row[51],
+                    "game_date": row[52]
+                })
+
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching the team game log corresponding to PK {pk}: {e}"
+        )
+        raise e
+
+    return team_game_logs
+
 
 def fetch_team_game_log_by_pk(pk: dict):
     """
