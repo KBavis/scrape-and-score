@@ -1,5 +1,6 @@
 from config import props
 import requests
+from service import player_service
 from db import fetch_data, insert_data
 import logging
 import time
@@ -58,6 +59,123 @@ def fetch_historical_odds(season: int):
             insert_data.insert_player_props(player_props, season)
         else:
             logging.warn(f"No player props found for player {player_name} and season {season}; skipping insertion")
+
+
+def fetch_upcoming_odds(week:int, season: int, player_ids: list):
+    """
+    Fetch relevant player props for upcoming NFL games & insert/update records into our DB
+
+    Args:
+        week (int): relevant week 
+        season (int): relevant season 
+        player_ids (list): relevant player IDs we need to fetch odds for 
+
+    """
+    markets = props.get_config("website.betting-pros.market-ids")
+
+    # extract event ids corresponding to week / season 
+    event_ids = fetch_event_ids_for_week(week, season)
+
+    records = []
+
+    # iterate through each potential player
+    for player_id in player_ids:
+
+        # extract player name by ID 
+        player_name = player_service.get_player_name_by_id(player_id)
+        if player_name is None:
+            logging.warning(f"Failed to retrieve player name corresponding to player ID {player_id}")
+            continue
+
+        logging.info(f'Fetching player props for the player "{player_name}" for week {week} of the {season} NFL season')
+
+        # extract player slug for request 
+        first_and_last = player_name.replace("'", "").replace(".", "").lower().split(" ")[:2] 
+        player_slug = "-".join(first_and_last)
+
+        # extract betting odds 
+        betting_odds = get_player_betting_odds(player_slug, event_ids, markets)
+            
+        if betting_odds == None:
+            logging.info(f'No betting odds retrieved for player {player_name} for week {week} in {season} season')
+            continue
+        
+        records.append({"week": week, "season": season, "player_id": player_id, "player_name": player_name, "odds": betting_odds})
+
+    update_records, insert_records = filter_upcoming_player_odds(records)
+
+    # insert player betting odds
+    if insert_records:
+        logging.info(f'Attempting to insert {len(insert_records)}) player_betting_odds records for week {week} of the {season} NFL season')  
+        insert_data.insert_upcoming_player_props(insert_records)
+    else:
+        logging.warning(f"No new player props retrieved for week {week} of the {season} NFL season; skipping insertion")
+
+    # update player betting odds 
+    if update_records:
+        logging.info(f'Attempting to update {len(update_records)}) player_betting_odds records for week {week} of the {season} NFL season')  
+        insert_data.update_upcoming_player_props(update_records)
+    else:
+        logging.warning(f"No lines/costs modifications for players betting lines for week {week} of the {season} NFL season; skipping updates")
+    
+
+def filter_upcoming_player_odds(records: list):
+    """
+    Filter upcoming 'player_betting_odds' records to either be an insertable record or to be updated 
+
+    Args:
+        records (list): list of records retrieved for players 
+
+    Returns:
+        tuple: updateable & insertable records 
+    """
+
+    update_records = [] 
+    insert_records = []
+
+    for record in records:
+
+        # extract relevant information
+        player_id = record['player_id']
+        week = record['week']
+        season = record['season']
+        label = record['odds']['label']
+
+
+        # retrieve player betting odds record by PK 
+        persisted_record = fetch_data.fetch_player_betting_odds_record_by_pk(player_id, week, season, label)
+        if persisted_record is None:
+            logging.info(f"No record persisted for PK(player_id={player_id},week={week},season={season},label={label}); appending as insertable record")
+            insert_records.append(record)
+            continue
+
+        # check if modifications were made to record 
+        if are_odds_modified(persisted_record, record):
+            logging.info(f"Player '{record['player_name']}' player_betting_odds with PK(player_id={player_id},week={week},season={season},label={label}) has been modified; appending as updatable record")
+            update_records.append(record)
+            continue
+
+    return update_records, insert_records
+
+
+def are_odds_modified(persisted_record: dict, current_record: dict) -> bool:
+    """
+    Determines if the cost or line has changed for a player's odds record.
+
+    Args:
+        persisted_record (dict): The existing record from the DB
+        current_record (dict): The new scraped record
+
+    Returns:
+        bool: True if either cost or line has changed; otherwise False.
+    """
+
+    # Check if cost or line has changed
+    return (
+        persisted_record["odds"]["cost"] != current_record["cost"] or
+        persisted_record["odds"]["line"] != current_record["line"]
+    )
+
 
 
 """
