@@ -65,6 +65,8 @@ def fetch_upcoming_odds(week:int, season: int, player_ids: list):
     """
     Fetch relevant player props for upcoming NFL games & insert/update records into our DB
 
+    TODO: Implement some sort of retry functionality for failed requests
+
     Args:
         week (int): relevant week 
         season (int): relevant season 
