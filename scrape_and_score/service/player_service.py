@@ -25,6 +25,21 @@ def get_player_id_by_normalized_name(name: str):
     player_id = fetch_data.fetch_player_id_by_normalized_name(normalized_name)
     return player_id
 
+def get_player_name_by_id(id: int):
+    """
+    Fetch players name by their ID 
+
+    Args:
+        id (int): player ID to retireve name for 
+
+    Returns:
+        str: player's name 
+    """
+    logging.info(f"Attempting to retrieve the player name corresponding to player ID {id}")
+    return fetch_data.fetch_player_name_by_id(id)
+    
+
+
 def get_player_id_by_position_season_and_normalized_name(season: int, position: int, name: str):
     """
     Retrieve a player ID corresponding to a particular season, normalized name, and position
