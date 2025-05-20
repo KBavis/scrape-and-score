@@ -850,6 +850,49 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year: int):
     return team_game_logs
 
 
+def fetch_player_betting_odds_record_by_pk(player_id: int, week: int, season: int, label: str):
+    """
+    Retrieve a player betting odds record by PK 
+
+    Args:
+        player_id (int): relevant player ID 
+        week (int): week to retrieve record for 
+        season (int): season to retrieve record for 
+        label (str): label to account for 
+
+    Args:
+        dict: persisted record 
+    """
+    
+    sql = "SELECT player_id, label, cost, line, week, season FROM player_betting_odds WHERE player_id = %s AND week= %s AND season = %s AND label = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, week, season, label))
+            row = cur.fetchone()
+
+            if row:
+                return {
+                    "player_id": row[0],
+                    "label": row[1],
+                    "cost": row[2],
+                    "line": row[3],
+                    "week": row[4],
+                    "season": row[5]
+                }
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching the team game logs corresponding to team {team_id} and year {year}: {e}"
+        )
+        raise e
+
+
+
 """
 Functionality to retrieve the needed dependent and independent variables needed 
 to create our predicition models 
