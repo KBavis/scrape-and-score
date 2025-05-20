@@ -26,17 +26,79 @@ def upcoming(week: int, season: int):
     """
 
     # scrape & persist player records (update records if necessary)
-    is_update = utils.is_player_records_persisted(season)
-    our_lads.scrape_and_persist_upcoming(season, week, is_update=is_update)
+    # is_update = utils.is_player_records_persisted(season)
+    # our_lads.scrape_and_persist_upcoming(season, week, is_update=is_update)
        
     
-    # scrape & persist player demographics (if necessary)
+    # # scrape & persist player demographics (if necessary)
     if not utils.is_player_demographics_persisted(season):
         pfr.scrape_and_persist_player_demographics(season)
 
-    #TODO: Scrape other metrics (betting odds, injuries, weather, etc)
-    # invoke daily scraping functionality (player betting odds, team betting odds, weather status, player injuries, & player teams / depth chart position statuses)
+    # scrape & update upcoming NFL games
     espn.scrape_upcoming_games(season, week)
+
+    # generate mapping of team_ids / player_ids / game_date 
+    game_mapping = utils.generate_game_mapping(season, week)
+
+    # filter games already played 
+    relevant_games = utils.filter_completed_games(game_mapping)
+
+    # extract relevant IDs
+    all_team_ids = [team_id for game in relevant_games for team_id in game["team_ids"]]
+    all_player_ids = [player_id for game in relevant_games for player_id in game['player_ids']]
+
+
+    """
+    TODO: Implement scraping of weather data & persist 
+
+    NOTE: !!!!! I think we may also be able to textract this data from api.bettingpros when we fetch particular event Ids !!!
+            Relevant information like the stadium being turf/ grass , etc
+                https://api.bettingpros.com/v3/events?sport=NFL&week=1&season=2025
+
+    Steps:
+        1. Determine if we can get this data from rotowire (this is most preferable since we will get same data that we need to persist)
+        2. If unable, do the following
+                a) Utilize https://www.weatherapi.com/my/ to extract 1) Weather Icon, 2) Temperature, 3) Precip Probability, 4) Precip Type, 5) Wind Spped, 6) Wind Bearing 
+                b) Utilize a static mapping of a team to its corresponding stadium (i.e is it turf, grass, or dome)
+                c) Game Time, Game Date (should this get removed?), Kickoff, Month, and Start (i.e Day/Night) can most likely be determined later on if not needed for predictive power 
+                    - i.e persist in the 'update' flow all metrics not needed by hitting rotowire and updating existing entry 
+    """
+    # scrape upcoming team betting odds & game conditions 
+    rotowire_scraper.scrape_upcoming(week, season, all_team_ids)
+
+    # scrape player injuries 
+    football_db.scrape_upcoming(week, season, all_player_ids) #TODO: Validate this site is updated throughout week of the NFL game 
+
+    # scrape player betting odds 
+    #TODO: Fix issue with 'list indices must be integers or slices, not str' in filter upcoming player odds (take first 5 player ids and retry)
+    betting_pros.fetch_upcoming_odds(week, season, all_player_ids) #TODO: Update this impl to account for 'game_conditions' records 
+
+    #TODO: If not already inserted, generate player_game_log recores using all_player_ids 
+
+
+
+
+
+
+
+        
+
+
+
+    """
+    TODO Scrape other metrics (betting odds, injuries, weather, etc):
+        4. For each fantasy relevant player 
+                a) scrape upcoming player betting odds 
+                b) check if player already has record persisted 
+                c) if yes, check if any changes have been made, log, and update the record 
+                d) if not, persist new entries 
+        6. Scrape game conditions for two teams in current mapping
+                a) scrape game conditions
+                b) check if entry persisted
+                c) if persisted, check if lines changed, log, and update record
+                d) if not persist new entries
+    """
+
     
 
 
