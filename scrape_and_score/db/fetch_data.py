@@ -2188,6 +2188,60 @@ def fetch_max_week_persisted_in_team_betting_odds_table(year: int):
         raise e
 
 
+def fetch_team_betting_odds_by_pk(home_team_id: int, away_team_id: int, season: int, week: int):
+    """
+    Retrieve 'team_betting_odds' record from DB by PK if its exists 
+
+    Args:
+        home_team_id (int): team ID corresponding to home team
+        away_team_id (int): team ID corresponding to away team
+        season (int): relevant season 
+        week (int): relevant week 
+
+    Returns:
+        dict: team betting odds record persisted 
+    """
+
+    sql = """
+        SELECT home_team_id, away_team_id, home_team_score, away_team_score, week, season, game_over_under, favorite_team_id, spread, total_points, over_hit, under_hit, favorite_covered, underdog_covered
+        FROM team_betting_odds 
+        WHERE season = %s AND week = %s AND home_team_id = %s AND away_team_id = %s 
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season,week,home_team_id, away_team_id))
+            row = cur.fetchone()
+
+            if row:
+                return {
+                    "home_team_id": row[0],
+                    "away_team_id": row[1], 
+                    "home_team_score": row[2],
+                    "away_team_score": row[3],
+                    "week": row[4],
+                    "season": row[5],
+                    "game_over_under": row[6],
+                    "favorite_team_id": row[7],
+                    "spread": row[8],
+                    "total_points": row[9],
+                    "over_hit": row[10],
+                    "under_hit": row[11],
+                    "favorite_covered": row[12],
+                    "underdog_covered": row[13]
+                }
+        
+        return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching team betting odds record by PK", exc_info=True
+        )
+        raise e
+
+
 """
 Retrieve favorite_team_id, spread, and game_over_under from team_betting_odds table if a corresponding entry exists 
 
