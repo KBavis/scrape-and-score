@@ -304,6 +304,41 @@ def fetch_player_id_by_normalized_name(normalized_name: str):
 
     return player_id
 
+def fetch_player_name_by_id(id: int):
+    """
+    Retrieve player's name by their ID 
+
+    Args:
+        id (int): the player ID 
+
+    Returns:
+        str: player name 
+    """
+
+    sql = """
+        SELECT name
+        FROM player 
+        WHERE player_id = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (id,))  
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                logging.warning(f"Unable to find player name corresponding to player ID {id}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching player name for player ID {id}", exc_info=True)
+        raise e
+
+    return None
+
 
 """
 Functionality to retrieve a single team game log from our DB 
