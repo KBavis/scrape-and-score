@@ -2501,6 +2501,47 @@ def get_count_player_teams_records_for_season(season: int):
             f"An error occurred while retrieving the count of player_teams records pertaining to season {season}", exc_info=True
         )
         raise e
+    
+def fetch_players_corresponding_to_season_week_team(season: int, week: int, team_id: int): 
+
+    """
+    Fetch player_ids corresponding to particular season, week, and team_id
+
+    Args:
+        season (int): relevant NFL season
+        week (int): relevant week 
+        team_id (int): relevant teams 
+    
+    Returns:
+        list: player_ids corresponding to this week/season/team
+    """
+
+    sql = "SELECT player_id FROM player_teams WHERE season = %s AND %s >= strt_wk AND %s <= end_wk AND team_id = %s"
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, week, week, team_id))
+            rows = cur.fetchall()
+
+            if not rows:
+                logging.warning(f'No players found corresponding to week {week} and team ID {team_id} of the {season} NFL season')
+                return players
+            
+
+            for row in rows:
+                players.append(row[0])
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving players corresponding to season {season}, week {week}, and team_id {team_id}", exc_info=True
+        )
+        raise e
+    
+    return players
 
 def retrieve_player_demographics_record_by_pk(season: int, player_id: int): 
     """Functionality to retrieve a player demographic record by its PK
