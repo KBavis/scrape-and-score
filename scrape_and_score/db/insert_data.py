@@ -2405,6 +2405,73 @@ def insert_game_conditions(records: list):
         raise e
 
 
+def update_game_conditions(records: list):
+    """
+    Update existing game condition records in the game_conditions table.
+
+    Args:
+        records (list): List of game condition records (dicts)
+    """
+    sql = """
+        UPDATE game_conditions
+        SET 
+            game_date = %s,
+            game_time = %s,
+            kickoff = %s,
+            month = %s,
+            start = %s,
+            surface = %s,
+            weather_icon = %s,
+            temperature = %s,
+            precip_probability = %s,
+            precip_type = %s,
+            wind_speed = %s,
+            wind_bearing = %s
+        WHERE
+            season = %s AND
+            week = %s AND
+            home_team_id = %s AND
+            visit_team_id = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record.get("game_date"),
+                int(record.get("game_time")), 
+                record.get("kickoff"),
+                record.get("month"),
+                record.get("start"),
+                record.get("surface"),
+                record.get("weather_icon"),
+                float(record.get("temperature")),
+                record.get("precip_probability"),
+                record.get("precip_type"),
+                float(record.get("wind_speed")),
+                int(record.get("wind_bearing")),
+                int(record.get("season")),
+                int(record.get("week")),
+                int(record.get("home_team_id")),
+                int(record.get("visit_team_id"))
+            )
+            for record in records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info("Successfully updated game condition records.")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating game condition records: {records}",
+            exc_info=True
+        )
+        raise e
+
+
 def insert_player_dob(player_id: int, dob: str):
     """
     Insert players date of birth 
