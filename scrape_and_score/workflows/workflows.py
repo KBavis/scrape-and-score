@@ -55,7 +55,7 @@ def upcoming(week: int, season: int):
     football_db.scrape_upcoming(week, season, all_player_ids) #TODO: Validate this site is updated throughout week of the NFL game 
 
     # scrape player betting odds & game conditions 
-    betting_pros.fetch_upcoming_odds(week, season, all_player_ids) #TODO: Update this impl to account for 'game_conditions' records 
+    betting_pros.fetch_upcoming_player_odds_and_game_conditions(week, season, all_player_ids)
 
 
 def historical(start_year: int, end_year: int):
