@@ -126,20 +126,24 @@ def get_team_betting_odds_records(data: pd.DataFrame):
 Create a mapping of a teams acronym to corresponding team ID in our database
 
 Args:
-    None
+    is_betting_pros (bool): flag to indicate if we need ot use betting pros 
 
 Returns:
    mapping (dict): mapping of a teams acronmy to team_id in our db
 """
 
 
-def create_team_id_mapping():
+def create_team_id_mapping(is_betting_pros: bool= False):
     # load configs
     teams = props.get_config("nfl.teams")
     mappings = {}
 
     for team in teams:
-        acronym = team.get("rotowire", team["pfr_acronym"])
+        if is_betting_pros:
+            acronym = team.get("bettingpros") or team.get("rotowire") or team["pfr_acronym"]
+        else:
+            acronym = team.get("rotowire") or team["pfr_acronym"]
+            
         alternate = None
         
         # account for alternate acronyms that have changed over year 
