@@ -588,6 +588,51 @@ def insert_team_rankings(rankings: list):
         raise e
 
 
+def insert_upcoming_player_game_logs(game_logs: list):
+    """
+    Functionality to insert upcoming 'player_game_logs' into our database
+
+    Args:
+        game_logs (list): list of game logs to insert into DB 
+    """ 
+
+    sql = """
+        INSERT INTO player_game_log (player_id, week, day, year, home_team, opp) 
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    
+    params = [
+        (
+            game_log['player_id'],
+            game_log['week'],
+            game_log['day'],
+            game_log['year'],
+            game_log['home_team'],
+            game_log['opp']
+        )
+        for game_log in game_logs
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(params)} player_game_log records into our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_game_log records: {game_logs}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+
 """
 Functionality to insert historical player props into our DB 
 
