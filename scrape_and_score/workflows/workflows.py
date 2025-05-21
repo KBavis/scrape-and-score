@@ -47,6 +47,8 @@ def upcoming(week: int, season: int):
     all_team_ids = [team_id for game in relevant_games for team_id in game["team_ids"]]
     all_player_ids = [player_id for game in relevant_games for player_id in game['player_ids']]
 
+    # insert strubbed player game logs if necesary 
+    utils.add_stubbed_player_game_logs(all_player_ids, week, season)
 
     """
     TODO: Implement scraping of weather data & persist 
