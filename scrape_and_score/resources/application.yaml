@@ -147,6 +147,7 @@ nfl:
       - name: Jacksonville Jaguars
         acronym: jax
         pfr_acronym: JAX
+        bettingpros: JAC
       - name: Kansas City Chiefs
         acronym: kan
         pfr_acronym: KAN
