@@ -3,7 +3,9 @@ import requests
 from service import player_service
 from db import fetch_data, insert_data
 import logging
+from . import rotowire_scraper as rotowire
 import time
+from datetime import datetime
 
 """
 Fetch all historical player odds 
@@ -65,7 +67,7 @@ def fetch_historical_odds(season: int):
 def fetch_upcoming_player_odds_and_game_conditions(week: int, season: int, player_ids: list):
 
     # fetch & persist player odds 
-    fetch_upcoming_player_odds(week, season, player_ids)
+    # fetch_upcoming_player_odds(week, season, player_ids)
 
     # fetch & persist game conditions 
     fetch_upcoming_game_conditions(week, season)
@@ -82,23 +84,222 @@ def fetch_upcoming_game_conditions(week: int, season: int):
         season (int): relevant season 
     """
 
+    logging.info(f"Attempting to fetch upcoming 'game_conditions' records for week {week} of the {season} NFL seaons")
+
     # extract games & their respective conditions for specific week/season 
     url = props.get_config("website.betting-pros.urls.events")
     parsed_url = url.replace("{WEEK}", str(week)).replace("{YEAR}", str(season))
     json = get_data(parsed_url)
 
+    records = []
+
+    mapping = rotowire.create_team_id_mapping(True)
+
     # iterate through each event
     for event in json["events"]:
         
+        # extract relevant stadium conditions
         surface = extract_surface(event['venue'])
-        
+
+        # extract relevant weather conditions 
         weather = event['weather']
         temperature = weather['forecast_temp']
         wind_bearing = weather['forecast_wind_degree']
+        wind_speed = weather['forecast_wind_speed']
         precip_prob = weather['forecast_rain_chance']
+        weather_status = weather['forecast_icon']
+        precip_type = extract_precip_type(weather['forecast_icon'])
 
-        #TODO: Finsih me 
+        # extract relevant game time features
+        game_date, game_time, kickoff, month, start = extract_game_time_metrics(event['scheduled'])
 
+        # extract home & away team ID 
+        home_id = mapping[event['home']]
+        away_id = mapping[event['visitor']]
+
+        records.append({
+            "surface": surface,
+            "temperature": temperature,
+            "wind_bearing": wind_bearing,
+            "wind_speed": wind_speed,
+            "precip_prob": precip_prob,
+            "weather_status": weather_status,
+            "precip_type": precip_type,
+            "game_date": game_date,
+            "game_time": game_time,
+            "kickoff": kickoff,
+            "month": month,
+            "start": start,
+            "season": season,
+            "week": week,
+            "home_team_id": home_id,
+            "visit_team_id": away_id
+        })
+    
+
+    # filter update / insert records 
+    update_records, insert_records = filter_game_conditions(records)
+
+    # handle game_conditions insertions
+    if insert_records:
+        logging.info(f'Attempting to insert {len(insert_records)} game_conditions records for week {week} of the {season} NFL season')  
+        insert_data.insert_game_conditions(insert_records)
+    else:
+        logging.warning(f"No new game conditions retrieved for week {week} of the {season} NFL season; skipping insertion")
+
+    # handle game_conditions updates
+    if update_records:
+        logging.info(f'Attempting to update {len(update_records)} game_conditions records for week {week} of the {season} NFL season')  
+        insert_data.update_game_conditions(update_records)
+    else:
+        logging.warning(f"No updates to game conditions for week {week} of the {season} NFL season; skipping updates")
+
+
+def filter_game_conditions(records: list):
+    """
+    Filter upcoming 'game_conditions' records to either be insertable or updatable.
+
+    Args:
+        records (list): List of game condition records (scraped)
+
+    Returns:
+        tuple: (update_records, insert_records)
+    """
+    logging.info("Attempting to filter 'game_conditions' into insertable vs updatable records")
+
+    update_records = []
+    insert_records = []
+
+    for record in records:
+        pk = {"season": record['season'], "week": record['week'], "home_team_id": record['home_team_id'], "visit_team_id": record['visit_team_id']}
+
+        # Fetch existing record from DB
+        persisted_record = fetch_data.fetch_game_conditions_record_by_pk(pk)
+
+        if persisted_record is None:
+            logging.info(f"No record persisted for PK={pk}; appending as insertable record")
+            insert_records.append(record)
+            continue
+
+        if are_game_conditions_modified(persisted_record, record):
+            logging.info(f"Game conditions for PK={pk} have been modified; appending as updatable record")
+            update_records.append(record)
+
+    return update_records, insert_records
+
+
+def are_game_conditions_modified(persisted: dict, current: dict) -> bool:
+    """
+    Determines if any relevant game condition field has changed.
+
+    Args:
+        persisted (dict): The existing record from the DB
+        current (dict): The newly scraped record
+
+    Returns:
+        bool: True if any tracked field has changed; otherwise False.
+    """
+    keys_to_compare = [
+        "game_date",
+        "game_time",
+        "kickoff",
+        "month",
+        "start",
+        "surface",
+        "weather_icon",
+        "temperature",
+        "precip_probability",
+        "precip_type",
+        "wind_speed",
+        "wind_bearing"
+    ]
+
+    for key in keys_to_compare:
+        persisted_value = persisted.get(key)
+        current_value = current.get(key)
+
+        # account for different datatypes 
+        if key == 'game_time':
+            persisted_value =  int(persisted.get(key)) if persisted.get(key) is not None else None
+            current_value = int(current.get(key)) if current.get(key) is not None else None
+        elif key == 'temperature':
+            persisted_value = float(persisted.get(key)) if persisted.get(key) is not None else None
+            current_value = float(current.get(key)) if current.get(key) is not None else None
+
+        if persisted_value != current_value:
+            logging.info(f"The following 'game_condition' value has been modified: {key}")
+            print(f"Persisted Value: {persisted_value}, Current Value: {current_value}")
+            return True
+    return False
+
+
+
+def extract_precip_type(weather_icon: str):
+    """
+    Extract the precip type from the weather icon
+
+    Args:
+        weather_icon (str): summation of current weather status 
+
+    Returns:
+        precip_type (str): the precipitation type
+    """
+
+    if not weather_icon:
+        return None
+
+    weather = weather_icon.lower()
+
+    if "rain" in weather:
+        return "Rain"
+    elif "snow" in weather:
+        return "Snow"
+    elif "sleet" in weather:
+        return "Sleet"
+    elif "hail" in weather:
+        return "Hail"
+    else:
+        return None
+
+def extract_game_time_metrics(datetime_str: str): 
+    """
+    Extract relevant game time metrics from the scheduled kick off datetime 
+
+    Args:
+        datetime_str (str): scheduled kickoff time in format "YYYY-MM-DD HH:MM:SS"
+    
+    Returns:
+            tuple: (game_date, game_time, kickoff, month, start)
+            - game_date: str, e.g., "2019-09-05 00:00:00"
+            - game_time: int, e.g., 20 (hour in military time)
+            - kickoff: str, e.g., "Sep 5 8:20 PM"
+            - month: str, e.g., "September"
+            - start: str, one of "Day", "Late", or "Night"
+    """
+
+    dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+
+    # full datetime 
+    game_date = dt
+
+    # military time of game
+    game_time = dt.hour
+
+    # kick off time
+    kickoff = dt.strftime("%b %-d %-I:%M %p") if hasattr(dt, 'strftime') else dt.strftime("%b %#d %#I:%M %p")  
+
+    # full month name
+    month = dt.strftime("%B")
+
+    # time of day classification
+    if game_time < 12:
+        start = "Day"
+    elif 12 <= game_time < 17:
+        start = "Late"
+    else:
+        start = "Night"
+
+    return game_date, game_time, kickoff, month, start
 
 
 def extract_surface(venue: dict): 
@@ -125,6 +326,9 @@ def extract_surface(venue: dict):
     
     if venue['surface'] == "turf" or venue['surface'] == 'artificial': 
         return "Turf"
+    
+    if 'grass' in venue['surface'].lower():
+        return 'Grass'
     
     return venue['surface'].title() if venue['surface'] else ''
 
