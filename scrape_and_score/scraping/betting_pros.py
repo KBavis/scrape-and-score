@@ -67,7 +67,7 @@ def fetch_historical_odds(season: int):
 def fetch_upcoming_player_odds_and_game_conditions(week: int, season: int, player_ids: list):
 
     # fetch & persist player odds 
-    # fetch_upcoming_player_odds(week, season, player_ids)
+    fetch_upcoming_player_odds(week, season, player_ids)
 
     # fetch & persist game conditions 
     fetch_upcoming_game_conditions(week, season)
