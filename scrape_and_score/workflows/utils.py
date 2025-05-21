@@ -1,6 +1,7 @@
-from db import fetch_data
+from db import fetch_data, insert_data
 from datetime import datetime
 import logging
+import random
 
 
 def is_player_demographics_persisted(season: int):
@@ -33,6 +34,47 @@ def is_player_records_persisted(season: int):
 
     return num_pt_records != 0
 
+
+def add_stubbed_player_game_logs(player_ids: list, week: int, season: int):
+    """
+    Generate & insert stubbed player game logs required for predictions
+
+    Args:
+        player_ids (list): list of relevant player IDs 
+        week (int): relevant week
+        season (int): relevant season
+    """
+
+    logging.info(f"Attempting to insert 'player_game_log' records for Week {week} and {season} NFL Season")
+
+    # randomly check persistence of player game log to determine if we need to persist
+    player_game_log = fetch_data.fetch_player_game_log_by_pk({"player_id": random.choice(player_ids), "week": week, "year": season})
+    if player_game_log is not None:
+        logging.info(f"Player Game Logs corresponding to Week {week} of the {season} NFL Season already persisted; skipping insertion")
+        return
+    
+    # fetch relevant game logs 
+    game_logs = fetch_data.fetch_team_game_logs_by_week_and_season(season, week)
+
+    # iterate through each player 
+    records = []
+    for player_id in player_ids:
+
+        # fetch players team
+        team_id = fetch_data.fetch_player_teams_by_week_season_and_player_id(season, week, player_id)
+
+        # extract team game log 
+        game_log = next((game_log for game_log in game_logs if game_log['team_id'] == team_id), None)
+        if game_log is None:
+            logging.error(f"No 'team_game_log' found corresponding to PK (team ID={team_id},week={week},season={season})")
+            raise Exception("No team game log record found")
+        
+        records.append({"player_id": player_id, "day": game_log["day"], "week": week, "year": season, "home_team": game_log['home_team'], "opp": game_log["opp"]})
+    
+
+    # insert records 
+    logging.info(f"Attempting to insert {len(records)} player_game_log records into our database")
+    insert_data.insert_upcoming_player_game_logs(records) 
 
 def generate_game_mapping(season: int, week: int): 
     """
