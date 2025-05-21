@@ -304,40 +304,90 @@ def fetch_player_id_by_normalized_name(normalized_name: str):
 
     return player_id
 
-def fetch_player_name_by_id(id: int):
-    """
-    Retrieve player's name by their ID 
-
-    Args:
-        id (int): the player ID 
-
-    Returns:
-        str: player name 
-    """
+def fetch_player_id_by_normalized_name(normalized_name: str):
 
     sql = """
-        SELECT name
+        SELECT player_id 
         FROM player 
-        WHERE player_id = %s
+        WHERE normalized_name LIKE %s
     """
+    player_id = None
 
     try:
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (id,))  
+            like_pattern = f"%{normalized_name}%"
+            cur.execute(sql, (like_pattern,))  # use cleaned name
             row = cur.fetchone()
 
             if row:
-                return row[0]
+                player_id = row[0]
             else:
-                logging.warning(f"Unable to find player name corresponding to player ID {id}")
+                logging.warning(f"Unable to find player ID for {normalized_name}")
 
     except Exception as e:
-        logging.error(f"An error occurred while fetching player name for player ID {id}", exc_info=True)
+        logging.error(f"An error occurred while fetching player ID for {normalized_name}: {e}")
         raise e
 
-    return None
+    return player_id
+
+
+def fetch_game_conditions_record_by_pk(pk: dict):
+    """
+    Retrieve game_conditions record by its composite primary key.
+
+    Args:
+        pk (dict): Dictionary with keys 'season', 'week', 'home_team_id', 'visit_team_id'
+
+    Returns:
+        dict or None: The matching game_conditions record as a dictionary, or None if not found
+    """
+    sql = """
+        SELECT 
+            game_date,
+            game_time,
+            kickoff,
+            month,
+            start,
+            surface,
+            weather_icon,
+            temperature,
+            precip_probability,
+            precip_type,
+            wind_speed,
+            wind_bearing
+        FROM game_conditions
+        WHERE season = %s AND week = %s AND home_team_id = %s AND visit_team_id = %s
+    """
+
+    try:
+        connection = get_connection()
+        with connection.cursor() as cur:
+            cur.execute(sql, (
+                pk['season'],
+                pk['week'],
+                pk['home_team_id'],
+                pk['visit_team_id']
+            ))
+            row = cur.fetchone()
+
+            if row:
+                columns = [
+                    "game_date", "game_time", "kickoff", "month", "start",
+                    "surface", "weather_icon", "temperature", "precip_probability",
+                    "precip_type", "wind_speed", "wind_bearing"
+                ]
+                return dict(zip(columns, row))
+            else:
+                return None
+            
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching game_conditions for PK(season={pk['season']}, week={pk['week']}, "
+            f"home_team_id={pk['home_team_id']}, visit_team_id={pk['visit_team_id']})", exc_info=True
+        )
+        raise e
 
 
 """
