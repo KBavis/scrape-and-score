@@ -701,9 +701,9 @@ def insert_upcoming_player_props(records: list):
         (
             record['player_id'],
             record['player_name'],
-            record['odds']['label'],
-            record['odds']['cost'],
-            record['odds']['line'],
+            record['label'],
+            record['cost'],
+            record['line'],
             record['week'],
             record['season']
         )
@@ -747,11 +747,11 @@ def update_upcoming_player_props(records: list):
     
     params = [
         (
-            record['odds']['cost'],
-            record['odds']['line'],
+            record['cost'],
+            record['line'],
             record['week'],
             record['season'],
-            record['odds']['label'],
+            record['label'],
             record['player_id']
         )
         for record in records
