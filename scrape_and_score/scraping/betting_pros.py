@@ -61,7 +61,75 @@ def fetch_historical_odds(season: int):
             logging.warn(f"No player props found for player {player_name} and season {season}; skipping insertion")
 
 
-def fetch_upcoming_odds(week:int, season: int, player_ids: list):
+
+def fetch_upcoming_player_odds_and_game_conditions(week: int, season: int, player_ids: list):
+
+    # fetch & persist player odds 
+    fetch_upcoming_player_odds(week, season, player_ids)
+
+    # fetch & persist game conditions 
+    fetch_upcoming_game_conditions(week, season)
+
+
+
+
+def fetch_upcoming_game_conditions(week: int, season: int):
+    """
+    Retrieve upcoming game conditions & persist updates 
+
+    Args:
+        week (int): relevant week
+        season (int): relevant season 
+    """
+
+    # extract games & their respective conditions for specific week/season 
+    url = props.get_config("website.betting-pros.urls.events")
+    parsed_url = url.replace("{WEEK}", str(week)).replace("{YEAR}", str(season))
+    json = get_data(parsed_url)
+
+    # iterate through each event
+    for event in json["events"]:
+        
+        surface = extract_surface(event['venue'])
+        
+        weather = event['weather']
+        temperature = weather['forecast_temp']
+        wind_bearing = weather['forecast_wind_degree']
+        precip_prob = weather['forecast_rain_chance']
+
+        #TODO: Finsih me 
+
+
+
+def extract_surface(venue: dict): 
+    """
+    Helper function to normalize the surface we are persisting 
+
+    TODO: Split up logic to have surface_type and stadium_type (i.e Dome or Outdoors vs Artificial or Turf or Grass)
+
+    TODO: Create mapping of venue stadium names to type of turf since I believe there are some incorrect values 
+
+    Args:
+        venue (dict): extracted venue from response 
+
+    Returns:
+        str: normalized surface
+    """ 
+
+    if not venue:
+        logging.warning(f"No 'venue' retrieved from GET:/events response")
+        return ""
+    
+    if venue['stadium_type'] == 'retractable_dome':
+        return "Dome"
+    
+    if venue['surface'] == "turf" or venue['surface'] == 'artificial': 
+        return "Turf"
+    
+    return venue['surface'].title() if venue['surface'] else ''
+
+
+def fetch_upcoming_player_odds(week:int, season: int, player_ids: list):
     """
     Fetch relevant player props for upcoming NFL games & insert/update records into our DB
 
