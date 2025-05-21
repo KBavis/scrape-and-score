@@ -662,6 +662,8 @@ def fetch_player_game_log_by_pk(pk: dict):
                     "rec_yd": row[21],
                     "rec_td": row[22],
                     "snap_pct": row[23],
+                    "fantasy_points": row[24],
+                    "off_snps": row[25]
                 }
 
     except Exception as e:
@@ -2633,6 +2635,41 @@ def get_count_player_teams_records_for_season(season: int):
             f"An error occurred while retrieving the count of player_teams records pertaining to season {season}", exc_info=True
         )
         raise e
+    
+
+def fetch_player_teams_by_week_season_and_player_id(season: int, week: int, player_id: int):
+    """
+    Retrieve playe teams record by week/season/player_id
+
+    Args:
+        season (int): relevant season
+        week (int): relevant week
+        player_id (int): relevant player ID 
+    """
+
+    sql = "SELECT team_id FROM player_teams WHERE season = %s AND %s >= strt_wk AND %s <= end_wk AND player_id = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, week, week, player_id))
+            row = cur.fetchone()
+
+            if not row:
+                logging.warning(f'No players found corresponding to week {week} and player ID {player_id} of the {season} NFL season')
+                return None
+            else:
+                return row[0]
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving players team corresponding to season {season}, week {week}, and player ID {player_id}", exc_info=True
+        )
+        raise e
+    
+    return players
+
     
 def fetch_players_corresponding_to_season_week_team(season: int, week: int, team_id: int): 
 
