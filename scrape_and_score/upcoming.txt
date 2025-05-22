@@ -1,0 +1,135 @@
+Results Workflow
+
+1. player_betting_odds
+		- no results needed
+
+2. team_game_log 
+		- Update record by PK with the following values 
+				"result"
+				"points_for"
+				"points_allowed"
+				"tot_yds"
+				"pass_yds"
+				"rush_yds"
+				"opp_tot_yds"
+				"opp_pass_yds"
+				"opp_rush_yds"
+				"pass_tds"
+				"pass_cmp"
+				"pass_att"
+				"pass_cmp_pct"
+				"rush_att"
+				"rush_tds"
+				"yds_gained_per_pass_att"
+				"adj_yds_gained_per_pass_att"
+				"pass_rate"
+				"sacked"
+				"sack_yds_lost"
+				"rush_yds_per_att"
+				"total_off_plays"
+				"total_yds"
+				"yds_per_play"
+				"fga"
+				"fgm"
+				"xpa"
+				"xpm"
+				"total_punts"
+				"punt_yds"
+				"pass_fds"
+				"rsh_fds"
+				"pen_fds"
+				"total_fds"
+				"thrd_down_conv"
+				"thrd_down_att"
+				"fourth_down_conv"
+				"fourth_down_att"
+				"penalties"
+				"penalty_yds"
+				"fmbl_lost"
+				"int"
+				"turnovers"
+				"time_of_poss"
+
+3. player_game_log
+		- Update record by PK with the following values
+			"result"
+			"points_for"
+			"points_allowed"
+			"completions"
+			"attempts"
+			"pass_yd"
+			"pass_td"
+			"interceptions"
+			"rating"
+			"sacked"
+			"rush_att"
+			"rush_yds"
+			"rush_tds"
+			"tgt"
+			"rec"
+			"rec_yd"
+			"rec_td"
+			"snap_pct"
+			"fantasy_points"
+			"off_snps"
+
+4. player_injuries 
+		- no results needed 
+
+5. game_conditions
+		- add a TODO to validate if the persisted game_conditions somewhat resembles the values retrieved from rotowire 
+		- I think no results needed for time being 
+
+6. player_weekly_agg_metrics
+		- none (this should be handled by insertion into player game log)
+
+7. team_weekly_agg_metrics 
+		- none (this should be handled by insertion in team game log)
+
+8. player_demographics
+		- nothing
+
+9. TEAM SEASONAL TABLES
+		- check if its week 18 
+		- if so, invoke the following function (or variation of it): format_and_insert_team_seasonal_general_metrics
+
+10. PLAYER SEASONAL TABLES
+		- check if its week 18 
+		- if so, invoke the following function (or variation of it): format_and_insert_team_seasonal_general_metrics
+
+
+11. player_teams 
+		- nothing 
+
+12. player_depth_chart 
+		- nothing 
+
+13. player 
+		- nothing
+
+14. team_ranks 
+		- calculate team weekly ranking and insert into our database
+			"team_id"
+			"week"
+			"season"
+			"off_rush_rank"
+			"off_pass_rank"
+			"def_rush_rank"
+			"def_pass_rank"
+
+15. team_betting_odds 
+		- we already have some functionality in rotowire, but confirm if it works 
+			"total_points"
+			"over_hit"
+			"under_hit"
+			"favorite_covered"
+			"underdog_covered"
+
+
+16. player_advanced_passing 
+		- invoke a variation of scrape_player_advanced_metrics() from pfr_scraper
+		- ensure its only for specific week
+
+17. player_advanced_rushing_receiving
+		- invoke a variation of scrape_player_advanced_metrics() from pfr_scraper
+		- ensure its only for specific week
