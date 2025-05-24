@@ -887,6 +887,205 @@ def update_teams_odds(betting_odds: list):
             exc_info=True,
         )
         raise e
+    
+def update_player_game_log_with_results(update_records: list):
+    """
+    Update 'player_game_log' records with their respective results 
+
+    Args:
+        update_records (list): list of records to updated persisted records in db with
+    """
+    sql = """
+        UPDATE player_game_log
+        SET 
+            result = %s,
+            points_for = %s,
+            points_allowed = %s,
+            completions = %s,
+            attempts = %s,
+            pass_yd = %s,
+            pass_td = %s,
+            interceptions = %s,
+            rating = %s,
+            sacked = %s,
+            rush_att = %s,
+            rush_yds = %s,
+            rush_tds = %s,
+            tgt = %s,
+            rec = %s,
+            rec_yd = %s,
+            rec_td = %s,
+            snap_pct = %s,
+            fantasy_points = %s,
+            off_snps = %s
+        WHERE 
+            year = %s AND player_id = %s AND week = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["result"],
+                record["points_for"],
+                record["points_allowed"],
+                record["completions"],
+                record["attempts"],
+                record["pass_yd"],
+                record["pass_td"],
+                record["interceptions"],
+                record["rating"],
+                record["sacked"],
+                record["rush_att"],
+                record["rush_yds"],
+                record["rush_tds"],
+                record["tgt"],
+                record["rec"],
+                record["rec_yd"],
+                record["rec_td"],
+                record["snap_pct"],
+                record["fantasy_points"],
+                record["off_snps"],
+                record["year"],
+                record["player_id"],
+                record["week"]
+            )
+            for record in update_records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(f"Successfully updated {len(update_records)} player game log records in the database")
+    except Exception as e:
+        logging.error("An exception occurred while updating player_game_log", exc_info=True)
+        raise e
+
+
+def update_team_game_log_with_results(update_records: list):
+    """
+    Update 'team_game_log' records with results of NFL games
+
+    Args:
+        update_records (list): list of records to update persisted records with
+    """
+    
+    sql = """
+        UPDATE team_game_log
+        SET 
+            result = %s,
+            points_for = %s,
+            points_allowed = %s,
+            tot_yds = %s,
+            pass_yds = %s,
+            rush_yds = %s,
+            opp_tot_yds = %s,
+            opp_pass_yds = %s,
+            opp_rush_yds = %s,
+            pass_tds = %s,
+            pass_cmp = %s,
+            pass_att = %s,
+            pass_cmp_pct = %s,
+            rush_att = %s,
+            rush_tds = %s,
+            yds_gained_per_pass_att = %s,
+            adj_yds_gained_per_pass_att = %s,
+            pass_rate = %s,
+            sacked = %s,
+            sack_yds_lost = %s,
+            rush_yds_per_att = %s,
+            total_off_plays = %s,
+            total_yds = %s,
+            yds_per_play = %s,
+            fga = %s,
+            fgm = %s,
+            xpa = %s,
+            xpm = %s,
+            total_punts = %s,
+            punt_yds = %s,
+            pass_fds = %s,
+            rsh_fds = %s,
+            pen_fds = %s,
+            total_fds = %s,
+            thrd_down_conv = %s,
+            thrd_down_att = %s,
+            fourth_down_conv = %s,
+            fourth_down_att = %s,
+            penalties = %s,
+            penalty_yds = %s,
+            fmbl_lost = %s,
+            int = %s,
+            turnovers = %s,
+            time_of_poss = %s
+        WHERE 
+            team_id = %s AND year = %s AND season = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["result"],
+                record["points_for"],
+                record["points_allowed"],
+                record["tot_yds"],
+                record["pass_yds"],
+                record["rush_yds"],
+                record["opp_tot_yds"],
+                record["opp_pass_yds"],
+                record["opp_rush_yds"],
+                record["pass_tds"],
+                record["pass_cmp"],
+                record["pass_att"],
+                record["pass_cmp_pct"],
+                record["rush_att"],
+                record["rush_tds"],
+                record["yds_gained_per_pass_att"],
+                record["adj_yds_gained_per_pass_att"],
+                record["pass_rate"],
+                record["sacked"],
+                record["sack_yds_lost"],
+                record["rush_yds_per_att"],
+                record["total_off_plays"],
+                record["total_yds"],
+                record["yds_per_play"],
+                record["fga"],
+                record["fgm"],
+                record["xpa"],
+                record["xpm"],
+                record["total_punts"],
+                record["punt_yds"],
+                record["pass_fds"],
+                record["rsh_fds"],
+                record["pen_fds"],
+                record["total_fds"],
+                record["thrd_down_conv"],
+                record["thrd_down_att"],
+                record["fourth_down_conv"],
+                record["fourth_down_att"],
+                record["penalties"],
+                record["penalty_yds"],
+                record["fmbl_lost"],
+                record["int"],
+                record["turnovers"],
+                record["time_of_poss"],
+                record["team_id"],
+                record["year"],
+                record["season"]
+            )
+            for record in update_records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(f"Successfully updated {len(update_records)} team game log records in the database")
+    except Exception as e:
+        logging.error("An exception occurred while updating team_game_log", exc_info=True)
+        raise e
+
 
 
 """
