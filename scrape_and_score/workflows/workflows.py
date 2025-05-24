@@ -103,19 +103,27 @@ def historical(start_year: int, end_year: int):
 
 
 
-def update(week: int, season: int):
+def results(week: int, season: int):
     """
-    Invoke necessary functionality to scrape necessary updates to records based on game outcomes
-
-    TODO: Ensure this is resilient for situations where some data may alrady have been persisted
+    Invoke necessary functionality to scrape necessary updates to records based on game outcomes. 
 
     Args:
         week (int): upcoming week to extract functionality for 
         season (int): the season this data corresponds to 
     """
 
-    # update team betting odd records with relevant outcomes
+    # update 'team_game_log' records with results
+
+    # update 'player_game_log' records with results 
+    # NOTE: in the case the player game log record is not found
+    # pfr_available --> 0 , remove player_game_log corresponding to player 
+
+    # insert 'team_ranks' records based on outcomes 
+
+    # update 'team_betting_odds' records with results
     rotowire_scraper.update_recent_betting_records(week, season)
+
+    # insert player advanced metrics based on outcomes 
 
 
 
