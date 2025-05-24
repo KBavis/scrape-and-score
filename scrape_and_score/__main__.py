@@ -50,7 +50,7 @@ def main():
         elif cl_args.results: 
             week, season = cl_args.results
             logging.info(f"---------------'Results' Wofklow Invoked: Updating player & team data based on game outcomes for [Week: {week}, Season: {season}]---------------")
-            workflows.historical(start_year, end_year)
+            workflows.results(week, season)
 
 
         
