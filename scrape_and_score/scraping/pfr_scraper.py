@@ -114,6 +114,80 @@ def scrape_recent():
     return team_metrics, player_metrics
 
 
+def update_team_player_game_logs_with_results(week: int, season: int):
+    """
+    Update 'player_game_log' and 'team_game_log' records with relevant results 
+
+
+    Args:
+        week (int): relevant week to account for 
+        season (int): relevant season to account for 
+    """
+
+
+    # scrape & persist team game logs 
+    update_team_game_logs(week, season)
+
+    # TODO: scrape & persist playerr game logs & player advanced game logs 
+
+
+    
+def update_team_game_logs(week: int, season: int):
+    """
+    Scrape & persist team game log results 
+
+    Args:
+        week (int): relevant week
+        season (int): relevant season
+    """
+
+    teams = fetch_data.fetch_all_teams():
+    team_names = [team['name'] for team in teams]
+    
+    base_url = props.get_config("website.pro-football-reference.urls.team-metrics")
+
+    # iterate through each team
+    for team in team_names:
+        logging.info(f"Updating 'team_game_log' with results for [Team={team}, Week={week}, Season={season}]")
+
+        html = get_team_metrics_html(team, season, base_url)
+        if html is None:
+            logging.error(f"Unable to retrieve HTML for Team '{team}' for Week {week} of the {season} NFL Season")
+            raise Exception('Unable to retrieve HTML for Team Game Log')
+    
+        soup = BeautifulSoup(html, "html.parser")
+        updates = extract_team_game_log_updates(soup, week, season)
+
+        # skip accounting for updates if none found 
+        if updates is None:
+            continue
+
+
+def extract_team_game_log_updates(soup: BeautifulSoup, week: int, season: int):
+
+    games = soup.find_all("tbody")[1].find_all("tr")
+
+    if not games:
+        logging.warning(f"No games found for week {week} and season {season}; skipping extraction of results")
+        return None
+
+    for game in games:
+
+        # skip all games where week != week
+        week_element = game.find("th", {"data-stat": "week_num"})
+        curr_week = extract_int(game, 'week_num') if not week_element else int(week_element.text)
+
+        if curr_week != week:
+            continue
+
+
+        # TODO: extract relevant updates 
+        print(game)
+
+
+    
+
+
 
 def scrape_and_persist_player_demographics(season: int): 
     """
@@ -461,10 +535,10 @@ def fetch_team_game_logs(teams: list, url_template: str, year: int, recent_games
 
         # validate teams metrics were retrieved properly
         if team_data.empty:
-            logging.error(
-                f"An error occured while fetching metrics for the team '{team}'"
+            logging.warning(
+                f"No team data was retreived for Team '{team}'"
             )
-            raise Exception(f"Unable to collect team data for the NFL Team '{team}'")
+            continue
 
         # append result
         team_metrics.append({"team_name": team, "team_metrics": team_data})
