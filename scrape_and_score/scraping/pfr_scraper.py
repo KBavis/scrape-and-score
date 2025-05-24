@@ -114,9 +114,10 @@ def scrape_recent():
     return team_metrics, player_metrics
 
 
-def update_team_player_game_logs_with_results(week: int, season: int):
+def update_game_logs_and_insert_advanced_metrics(week: int, season: int):
     """
-    Update 'player_game_log' and 'team_game_log' records with relevant results 
+    Update 'player_game_log' and 'team_game_log' records with relevant results and insert 
+    relevant advanced player metrics into our database 
 
 
     Args:
@@ -129,8 +130,22 @@ def update_team_player_game_logs_with_results(week: int, season: int):
     update_team_game_logs(week, season)
 
     # TODO: scrape & persist playerr game logs & player advanced game logs 
+    update_player_game_logs(week, season)
+
+    #TODO: Insert advanced player metrics 
 
 
+def update_player_game_logs(week: int, season: int):
+    """"
+    Functionality to update player game logs with relevant outcomes OR remove unecessary stubbed player game logs 
+
+    Args: 
+        week (int): relevant week 
+        season (int): relevant season 
+    """
+
+    #TODO: Implement me 
+    return 
     
 def update_team_game_logs(week: int, season: int):
     """
@@ -141,10 +156,12 @@ def update_team_game_logs(week: int, season: int):
         season (int): relevant season
     """
 
-    teams = fetch_data.fetch_all_teams():
+    teams = fetch_data.fetch_all_teams()
     team_names = [team['name'] for team in teams]
     
     base_url = props.get_config("website.pro-football-reference.urls.team-metrics")
+
+    records = []
 
     # iterate through each team
     for team in team_names:
@@ -162,27 +179,201 @@ def update_team_game_logs(week: int, season: int):
         if updates is None:
             continue
 
+        # update record with team ID 
+        updates['team_id'] = team_service.get_team_id_by_name(team)
 
-def extract_team_game_log_updates(soup: BeautifulSoup, week: int, season: int):
+        print(f"Team game logs record scraped for Week {week} of {season} NFL Season:\n\t{updates}")
 
-    games = soup.find_all("tbody")[1].find_all("tr")
+        # append record
+        records.append(updates)
+    
 
-    if not games:
-        logging.warning(f"No games found for week {week} and season {season}; skipping extraction of results")
-        return None
+    update_records, insert_records = filter_update_team_game_logs(records)
+    if update_records:
+        logging.info(f"Updating {len(update_records)} 'team_game_log' records with results")
+        insert_data.update_team_game_log_with_results(update_records)
 
-    for game in games:
+    if insert_records:
+        raise Exception(f'Found unique game logs when attempting to update team game logs with results: {insert_records}')
 
-        # skip all games where week != week
-        week_element = game.find("th", {"data-stat": "week_num"})
-        curr_week = extract_int(game, 'week_num') if not week_element else int(week_element.text)
 
-        if curr_week != week:
+def filter_update_team_game_logs(records: list):
+    """
+    Filter records into insertable or udpateable records 
+
+    Args: 
+        records (list): reords to filter
+    
+    Returns:
+        tuple: (update_records, insert_records)
+    """
+    insert_records = []
+    update_records = []
+
+    for record in records:
+        
+        pk = {"team_id": record['team_id'], "week": record['week'], "year": record['season']}
+        persisted_team_game_log = fetch_data.fetch_team_game_log_by_pk(pk)
+
+        if not persisted_team_game_log:
+            logging.info(f"No 'team_game_log' persisted corresponding to PK=[{pk}]; appending as insertable record")
+            insert_records.append(record)
             continue
 
+        # verify if changes have been made 
+        if is_team_game_log_modified(record, persisted_team_game_log):
+            logging.info(f"'team_game_log' correspond to PK=[{pk}] has been modified; appending as updateable record")
+            update_records.append(record)
+            continue
+    
+    return update_records, insert_records
 
-        # TODO: extract relevant updates 
-        print(game)
+
+def is_team_game_log_modified(current_game_log: dict, persisted_game_log: dict):
+    """
+    Verify if persisted 'team_game_log' was modfiied or not 
+
+    Args:
+        current_game_log (dict): the current gmae log 
+        persisted_game_log (dict): already persisted game log 
+
+    Returns:
+        bool: flag indicated if modified or not 
+    """
+
+    keys = [
+        'result', 'points_for', 'points_allowed',
+        'off_tot_yds', 'off_pass_yds', 'off_rush_yds',
+        'def_tot_yds', 'def_pass_yds', 'def_rush_yds',
+        'pass_tds', 'pass_cmp', 'pass_att', 'pass_cmp_pct',
+        'rush_att', 'rush_tds',
+        'yds_gained_per_pass_att', 'adj_yds_gained_per_pass_att', 'pass_rate',
+        'sacked', 'sack_yds_lost',
+        'rush_yds_per_att', 'total_off_plays', 'yds_per_play',
+        'fga', 'fgm', 'xpa', 'xpm',
+        'total_punts', 'punt_yds',
+        'pass_fds', 'rsh_fds', 'pen_fds', 'total_fds',
+        'thrd_down_conv', 'thrd_down_att', 'fourth_down_conv', 'fourth_down_att',
+        'penalties', 'penalty_yds',
+        'fmbl_lost', 'interceptions', 'turnovers',
+        'time_of_poss'
+    ]
+
+    for key in keys:
+        if current_game_log[key] != persisted_game_log[key]:
+            return True
+        
+    return False
+
+
+def extract_team_game_log_updates(soup: BeautifulSoup, week: int, season: int):
+    """
+    Extract relevant metrics pertaining to a particular NFL team for a given week/season
+
+    Args:
+        soup (BeautifulSoup): parsed HTMl
+        week (int): relevant week
+        season (int): relevant season
+
+    Returns:
+        dict: team game log corresponding to team/week/season
+    """
+
+    games = soup.find_all("tbody")
+    if games and len(games) > 1:
+        games = games[1].find_all("tr")
+    else:
+        logging.info(f"No team game log records found for week {week} and season {season}")
+        return None
+
+    if not games or len(games) < 1:
+        logging.warning(f"No games found for week {week} and season {season}; skipping extraction of results")
+        return None
+    
+    
+    game_range = range(len(games)) 
+    for i in game_range:
+
+        week_element = games[i].find("th", {"data-stat": "week_num"})
+        curr_week = int(week_element.text) if week_element else extract_int(games[i], 'week_num')
+        if not curr_week or curr_week != week:
+            continue
+
+        # extract normal team/opp metrics 
+        result = extract_str(games[i], "game_outcome") 
+        points_for = extract_int(games[i], "pts_off")
+        points_allowed = extract_int(games[i], "pts_def")
+        off_tot_yds = extract_int(games[i], "yards_off")
+        off_pass_yds = extract_int(games[i], "pass_yds_off")
+        off_rush_yds = extract_int(games[i], "rush_yds_off")
+        def_tot_yds = extract_int(games[i], "yards_def")
+        def_pass_yds = extract_int(games[i], "pass_yds_def")
+        def_rush_yds = extract_int(games[i], "rush_yds_def")
+        
+        # extract advanced team metrics 
+        #TODO: Seems like pfr removed these metrics. Continue to check if PFR returns to adding these or extract from other sources 
+        (
+            pass_tds, pass_cmp, pass_att, pass_cmp_pct,
+            rush_att, rush_tds, yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att, pass_rate, sacked,
+            sack_yds_lost, rush_yds_per_att, total_off_plays,
+            yds_per_play, fga, fgm, xpa, xpm,
+            total_punts, punt_yds, pass_fds, rsh_fds, pen_fds,
+            total_fds, thrd_down_conv, thrd_down_att, fourth_down_conv,
+            fourth_down_att, penalties, penalty_yds, fmbl_lost,
+            interceptions, turnovers, time_of_poss
+        ) = extract_advanced_metrics(games, i)
+
+
+        team_game_log = {
+            "week": week,
+            "season": season,
+            "result": result,
+            "points_for": points_for,
+            "points_allowed": points_allowed,
+            "off_tot_yds": off_tot_yds,
+            "off_pass_yds": off_pass_yds,
+            "off_rush_yds": off_rush_yds,
+            "def_tot_yds": def_tot_yds,
+            "def_pass_yds": def_pass_yds,
+            "def_rush_yds": def_rush_yds,
+            "pass_tds": pass_tds,
+            "pass_cmp": pass_cmp,
+            "pass_att": pass_att,
+            "pass_cmp_pct": pass_cmp_pct,
+            "rush_att": rush_att,
+            "rush_tds": rush_tds,
+            "yds_gained_per_pass_att": yds_gained_per_pass_att,
+            "adj_yds_gained_per_pass_att": adj_yds_gained_per_pass_att,
+            "pass_rate": pass_rate,
+            "sacked": sacked,
+            "sack_yds_lost": sack_yds_lost,
+            "rush_yds_per_att": rush_yds_per_att,
+            "total_off_plays": total_off_plays,
+            "yds_per_play": yds_per_play,
+            "fga": fga,
+            "fgm": fgm,
+            "xpa": xpa,
+            "xpm": xpm,
+            "total_punts": total_punts,
+            "punt_yds": punt_yds,
+            "pass_fds": pass_fds,
+            "rsh_fds": rsh_fds,
+            "pen_fds": pen_fds,
+            "total_fds": total_fds,
+            "thrd_down_conv": thrd_down_conv,
+            "thrd_down_att": thrd_down_att,
+            "fourth_down_conv": fourth_down_conv,
+            "fourth_down_att": fourth_down_att,
+            "penalties": penalties,
+            "penalty_yds": penalty_yds,
+            "fmbl_lost": fmbl_lost,
+            "interceptions": interceptions,
+            "turnovers": turnovers,
+            "time_of_poss": time_of_poss
+        }
+
+        return team_game_log
 
 
     
@@ -1326,6 +1517,9 @@ def convert_time_to_float(time_str: str) -> float:
     Returns:
         int: converted value 
     """
+    if not time_str:
+        return 0.0
+    
     minutes, seconds = map(int, time_str.split(":"))
     return minutes + seconds / 60
 
