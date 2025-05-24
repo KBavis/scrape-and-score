@@ -45,6 +45,8 @@ def upcoming(week: int, season: int):
     all_team_ids = [team_id for game in relevant_games for team_id in game["team_ids"]]
     all_player_ids = [player_id for game in relevant_games for player_id in game['player_ids']]
 
+    #TODO: Filter out 'pfr_unavailable' players 
+
     # insert strubbed player game logs if necesary 
     utils.add_stubbed_player_game_logs(all_player_ids, week, season)
 
@@ -113,6 +115,7 @@ def results(week: int, season: int):
     """
 
     # update 'team_game_log' records with results
+    pfr.update_game_logs_and_insert_advanced_metrics(week, season)
 
     # update 'player_game_log' records with results 
     # NOTE: in the case the player game log record is not found
