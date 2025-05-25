@@ -114,19 +114,19 @@ def results(week: int, season: int):
         season (int): the season this data corresponds to 
     """
 
-    # update 'team_game_log' records with results
+    # update 'team_game_log' and 'player_game_log' records with results
     pfr.update_game_logs_and_insert_advanced_metrics(week, season)
-
-    # update 'player_game_log' records with results 
-    # NOTE: in the case the player game log record is not found
-    # pfr_available --> 0 , remove player_game_log corresponding to player 
+    
+    # update player game log records with fantasy points 
+    player_game_logs_service.calculate_fantasy_points(season, season, week=week) 
 
     # insert 'team_ranks' records based on outcomes 
+    team_game_logs_service.calculate_all_teams_rankings(season, week)
 
     # update 'team_betting_odds' records with results
     rotowire_scraper.update_recent_betting_records(week, season)
 
-    # insert player advanced metrics based on outcomes 
+    # TODO: scrape & insert player / team seasonal metrics (i.e rankings )
 
 
 
