@@ -125,27 +125,96 @@ def update_game_logs_and_insert_advanced_metrics(week: int, season: int):
         season (int): relevant season to account for 
     """
 
-
     # scrape & persist team game logs 
     update_team_game_logs(week, season)
 
-    # TODO: scrape & persist playerr game logs & player advanced game logs 
+    # scprae & persist player game logs
     update_player_game_logs(week, season)
 
-    #TODO: Insert advanced player metrics 
+    # scprae & persist player advanced metrics 
+    scrape_player_advanced_metrics(season, season, week)
 
 
 def update_player_game_logs(week: int, season: int):
     """"
     Functionality to update player game logs with relevant outcomes OR remove unecessary stubbed player game logs 
 
+    TODO: If player game log not found, and not a bye week, and run date > game date --> pfr_available --> 0 , remove player_game_log corresponding to player 
+
     Args: 
         week (int): relevant week 
         season (int): relevant season 
     """
 
-    #TODO: Implement me 
-    return 
+    logging.info(f"Attempting to update Week {week} of the {season} NFL Season 'player_game_log' records with the results ")
+    player_metrics = []
+    
+    players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
+    player_urls = construct_player_urls(players, season)
+
+    # for each player url, fetch relevant metrics
+    for player_url in player_urls:
+        url = player_url["url"]
+        player_name = player_url["player"]
+        position = player_url["position"]
+
+        raw_html = fetch_page(url)
+        if raw_html == None:  
+            continue
+
+        soup = BeautifulSoup(raw_html, "html.parser")
+
+        # retrieve game logs
+        game_log = get_game_log(soup, position)
+        if game_log.empty:
+            logging.warning(f"Player {player_name} has no available game logs for the {season} season; skipping updating player game logs")
+            continue 
+
+        # filter out non-relevant weeks 
+        filtered_df = game_log[game_log['week'] == week]
+        if filtered_df.empty:
+            logging.info(f"Player {player_name} has no 'player_game_log' available corresponding to week {week} of the {season} NFL season; skipping updating game log with results")
+            continue
+
+        # validate length of filtered df 
+        if filtered_df.shape[0] > 1:
+            raise Exception(f'Found multiple game logs corresponding to week {week} of the {season} NFL season for player {player_name}')
+        
+        game = filtered_df.iloc[0]
+
+        # create updateable record 
+        player_metrics.append(
+            {
+                "player_id": player_service.get_player_id_by_normalized_name(player_service.normalize_name(player_name)),
+                "week": week,  
+                "year": season,
+                "result": game.get("result", None),
+                "points_for": game.get("points_for", None),
+                "points_allowed": game.get("points_allowed", None),
+                "completions": game.get("completions", None),
+                "attempts": game.get("attempts", None),
+                "pass_yd": game.get("pass_yd", None),
+                "pass_td": game.get("pass_td", None),
+                "interceptions": game.get("interceptions", None),
+                "rating": game.get("rating", None),
+                "sacked": game.get("sacked", None),
+                "rush_att": game.get("rush_att", None),
+                "rush_yds": game.get("rush_yds", None),
+                "rush_tds": game.get("rush_tds", None),
+                "tgt": game.get("tgt", None),
+                "rec": game.get("rec", None),
+                "rec_yd": game.get("rec_yd", None),
+                "rec_td": game.get("rec_td", None),
+                "snap_pct": game.get("snap_pct", None),
+                "fantasy_points": game.get("fantasy_points", None),
+                "off_snps": game.get("off_snps", None),
+            }
+        )
+
+    if player_metrics:
+        logging.info(f"Attempting to update {len(player_metrics)} player_game_log records with results")
+        insert_data.update_player_game_log_with_results(player_metrics)
+
     
 def update_team_game_logs(week: int, season: int):
     """
@@ -1005,7 +1074,7 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
     return stats
 
 
-def scrape_player_advanced_metrics(start_year: int, end_year: int): 
+def scrape_player_advanced_metrics(start_year: int, end_year: int, week: int = None): 
 
     for year in range(start_year, end_year + 1):
         logging.info(f"Scraping player advanced passing, rushing, and receiving metrics for the {year} season")
@@ -1014,7 +1083,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
         players = fetch_data.fetch_players_on_a_roster_in_specific_year_with_hashed_name(year)
 
         # filter previously inserted records 
-        players_already_persisted = fetch_data.fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year)
+        players_already_persisted = fetch_data.fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year, week)
         players = [player for player in players if player['player_id'] not in players_already_persisted ]
         logging.info(f"Players to fetch metrics for filtered down to length {len(players)} for season {year} of the NFL season")
 
@@ -1048,7 +1117,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
                     logging.warn(f"No passing metrics for player {player_url['player_name']} and year {year} were not retreived; skipping insertion\n\n")
                     continue
                 
-                filtered_metrics = filter_metrics_by_week(advanced_passing_metrics)
+                filtered_metrics = filter_metrics_by_week(advanced_passing_metrics, week)
                 insert_data.insert_player_advanced_passing_metrics(filtered_metrics, player_url['player_id'], year)
 
             # rushing & receiving table 
@@ -1066,16 +1135,17 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
                 if advanced_rushing_receiving_metrics is None:
                     logging.warn(f"No rushing/receiving metrics for player {player_url['player_name']} and season {year} were not retreived; skipping insertion\n\n")
                     continue
-                filtered_metrics = filter_metrics_by_week(advanced_rushing_receiving_metrics)
+                filtered_metrics = filter_metrics_by_week(advanced_rushing_receiving_metrics, week)
                 insert_data.insert_player_advanced_rushing_receiving_metrics(filtered_metrics, player_url['player_id'], year)
 
 
-def filter_metrics_by_week(metrics: list):
+def filter_metrics_by_week(metrics: list, curr_week: int = None):
     """
     Filters out duplicate entries based on the 'week' field. Keeps the first occurrence of each week.
     
     Args:
         metrics (list): A list of dictionaries containing player metrics.
+        week (int): optional arg of week 
         
     Returns:
         list: A filtered list with only the first instance for each week.
@@ -1085,6 +1155,11 @@ def filter_metrics_by_week(metrics: list):
 
     for metric in metrics:
         week = metric.get('week') 
+
+        # skip irrelevant weeks if we want only a particular week
+        if curr_week is not None and week != week:
+            continue
+
         if week not in seen_weeks:
             filtered_metrics.append(metric)
             seen_weeks.add(week)
