@@ -322,13 +322,14 @@ Functionality to calculate rankings (offense & defense) for a team
 
 Args:
    year (int): year to take into account when fetching rankings 
+   week (int): optional week parameter
 
 Returns 
    None 
 """
 
 
-def calculate_all_teams_rankings(year: int):
+def calculate_all_teams_rankings(year: int, week: int = None):
     logging.info(
         f"Attemtping to calculate teams off/def rankings based on metrics for {year} season"
     )
@@ -344,21 +345,35 @@ def calculate_all_teams_rankings(year: int):
     # fetch all game logs for current season
     teams_game_logs = [ get_teams_game_logs_for_season(team.get("team_id"), year) for team in teams ] 
 
+    # filter game logs by week if necessary 
+    if week is not None:
+        filtered_game_logs = []
+
+        for game_log in teams_game_logs:
+            if game_log['week'] == week:
+                filtered_game_logs.append(game_log)
+        
+        if not filtered_game_logs:
+            raise Exception(f'Unable to retireve team game logs corresponding to Week {week} of the {year} NFL Season to calculate team weekly rankings')
+        
+        teams_game_logs = filtered_game_logs
+
     # calculate weekly aggregate metrics 
     teams_weekly_aggregate_metrics = [ get_weekly_aggergate_metrics(season_game_logs) for season_game_logs in teams_game_logs] 
 
     # calculate rankings up to max week 
-    calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics, year)
+    calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics, year, week)
 
 
 
-def calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics: list, season: int):
+def calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics: list, season: int, rel_week: int):
     """
     Function to calculate the weekly rankings for a team 
 
     Args:
         teams_weekly_aggregate_metrics (list): list of season long aggregate metrics for a team 
         season (int): season to calculate weekly rankings for 
+        week (int): relvant week
     
     Returns:
         weekly_rankings (list): weekly rankings that need to be persisted 
@@ -376,10 +391,13 @@ def calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics: list, 
 
     if curr_week >= max_week:
         logging.info(f"All team rankings are persisted for the season {season}; skipping calculating & persisting of team rankings")
+
+    # utilize only reelvant week if necessary 
+    weeks = range(curr_week, max_week + 1) if rel_week is None else range(rel_week, rel_week + 1)
+        
     
     # loop through relevant weeks
-    for week in range(curr_week, max_week + 1):
-        print(week)
+    for week in weeks:
         
         # extract each teams cumulative rankings corresponding to current week 
         teams_curr_week_agg_metrics = []
