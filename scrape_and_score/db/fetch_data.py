@@ -2184,7 +2184,7 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
     return players
 
 
-def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int):
+def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int, week: int = None):
     """
     Retrieve player IDs of players who have advanced metrics persisted 
 
@@ -2194,16 +2194,26 @@ def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int):
     Returns:
         dict: set of disitinct players ids that are already persisted
     """
-    
-    sql = """ 
-        SELECT DISTINCT player_id
-        FROM player_advanced_passing
-        WHERE season = %s
-        UNION
-        SELECT DISTINCT player_id
-        FROM player_advanced_rushing_receiving
-        WHERE season = %s;
-    """
+    if week is None: 
+        sql = """ 
+            SELECT DISTINCT player_id
+            FROM player_advanced_passing
+            WHERE season = %s
+            UNION
+            SELECT DISTINCT player_id
+            FROM player_advanced_rushing_receiving
+            WHERE season = %s;
+        """
+    else:
+        sql = """ 
+            SELECT DISTINCT player_id
+            FROM player_advanced_passing
+            WHERE season = %s AND week = %s
+            UNION
+            SELECT DISTINCT player_id
+            FROM player_advanced_rushing_receiving
+            WHERE season = %s AND week = %s;
+        """
     
     try:
         connection = get_connection()
