@@ -3110,3 +3110,37 @@ def fetch_player_date_of_birth(player_id: int):
             f"An error occurred while fetching player date of birth corresponding to player ID {player_id}: {e}"
         )
         raise e
+    
+    
+def fetch_player_name_by_id(player_id: int):
+    """
+    Fetch players name by their ID 
+
+    Args:
+        player_id (int): the player we want to retrieve name for 
+    """
+    
+    sql = """
+        SELECT name
+        FROM player
+        WHERE player_id = %s
+    """
+
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id,))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching player name corresponding to player ID {player_id}: {e}"
+        )
+        raise e
