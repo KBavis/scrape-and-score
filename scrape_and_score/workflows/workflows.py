@@ -16,6 +16,39 @@ from . import utils
 
 FINAL_WEEK = 18
 
+rb_nn = None
+qb_nn = None
+wr_nn = None
+te_nn = None
+
+
+
+def predict(week: int, season: int, model: str):
+    """
+    Generate and output the top 40 players by fantasy points for each position 
+    for the specified week and season using the given model.
+
+    Args:
+        week (int): relevant week to generate predictions for 
+        season (int): relevant seaon to generate predictions for 
+        model (str): model to utilize to generate predictions (either 'nn' or 'lin_reg')
+    """
+
+    if model != 'nn' and model != 'lin_reg':
+        raise Exception("Only 'nn' or 'lin_reg' are valid aguments to invoke 'predict' workflow")
+    
+
+
+    #TODO: Create linear regression prediction logic 
+    if model == 'lin_reg':
+        raise Exception('Linear regression prediction functionality is currently not implemented')
+    
+    
+
+    # fetch relevant prediction data 
+
+
+
 
 def upcoming(week: int, season: int):
     """
@@ -179,6 +212,7 @@ def neural_network(should_train: bool, start_time: datetime):
         'te_model.pth',
         'wr_model.pth'
     ] 
+    global rb_nn, qb_nn, wr_nn, te_nn
 
     # check if models exists and  that we do not want to retrain models
     directory = "models/nn/{}"

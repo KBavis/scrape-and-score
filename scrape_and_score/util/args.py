@@ -18,14 +18,6 @@ def parse():
     model_group = parser.add_mutually_exclusive_group()
     data_collection_group = parser.add_mutually_exclusive_group()
 
-    # establish independent args 
-    parser.add_argument(
-        "--train",
-        action="store_true",
-        default=False,
-        help="Re-train our neural network model."
-    )
-
     # data collction args
     data_collection_group.add_argument(
         "--historical",
@@ -62,6 +54,23 @@ def parse():
        default=False,
        help="Utilize linear regression model capabilities for our predictions" 
     )
+
+
+    # establish independent args 
+    parser.add_argument(
+        "--train",
+        action="store_true",
+        default=False,
+        help="Re-train our neural network model."
+    )
+    parser.add_argument(
+        "--predict",
+        metavar=("WEEK", "SEASON"), 
+        nargs=2,
+        type=int,
+        help="Generate top 40 fantasy point predictions for each position for a specific week & season"
+    )
+
 
     # parse args
     args = parser.parse_args()

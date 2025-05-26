@@ -62,6 +62,20 @@ def main():
             logging.info(f"---------------'Neural Network' Wofklow Invoked: Generating Neural Network for predicting players fantasy points---------------")
             workflows.neural_network(cl_args.train, start_time)
 
+        
+        # prediction workflows 
+        if cl_args.predict:
+            
+            # verify model selected 
+            if not cl_args.nn and not cl_args.lin_reg:
+                logging.error(f"Please invoke prediction workflow with either the --nn or --lin_reg command line argument to indicate which model you would like to utilize.")
+                raise Exception("Unable to invoke 'Predict' workflow without necessary model selection argument being passed")
+
+            week, season = cl_args.predict
+            logging.info(f"---------------'Predict' Wofklow Invoked: Generating top 40 fantasy point predictions for each position for [Week: {week}, Season: {season}]---------------")
+            model = 'nn' if cl_args.nn else 'lin_reg'
+            workflows.predict(week, season, model)
+
         # TODO: Implement prediction workflows utilizing choosen model above 
 
     except Exception as e:
