@@ -276,6 +276,87 @@ def fetch_player_id_by_normalized_name_season_and_position(normalized_name: str,
 
     return player_id
 
+def fetch_team_seasonal_metrics(team_id: int, season: int):
+    """
+    Retrieve team seasonal metrics for a particular season 
+
+    Args:
+        team_id (int): relevant team 
+        season (int): relevant season 
+    """
+    sql = """
+        SELECT 
+            *
+        FROM team_seasonal_general_metrics g
+        LEFT JOIN team_seasonal_kicking_metrics k ON g.team_id = k.team_id AND g.season = k.season
+        LEFT JOIN team_seasonal_punting_metrics pu ON g.team_id = pu.team_id AND g.season = pu.season
+        LEFT JOIN team_seasonal_passing_metrics pa ON g.team_id = pa.team_id AND g.season = pa.season
+        LEFT JOIN team_seasonal_rushing_receiving_metrics rr ON g.team_id = rr.team_id AND g.season = rr.season
+        LEFT JOIN team_seasonal_defensive_metrics d ON g.team_id = d.team_id AND g.season = d.season
+        LEFT JOIN team_seasonal_scoring_metrics s ON g.team_id = s.team_id AND g.season = s.season
+        LEFT JOIN team_seasonal_ranks r ON g.team_id = r.team_id AND g.season = r.season
+        WHERE g.team_id = %s AND g.season = %s
+    """
+
+    metrics = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (team_id, season))
+            row = cur.fetchone()
+
+            if row:
+                colnames = [desc[0] for desc in cur.description]
+                metrics = dict(zip(colnames, row))
+            else:
+                logging.warning(f"No metrics found for team_id={team_id}, season={season}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching team metrics for team_id={team_id}, season={season}: {e}")
+        raise e
+
+    return metrics
+
+
+def fetch_player_seasonal_metrics(season: int):
+    """
+    Retrieve player seasonal metrics for a particular season 
+
+    Args:
+        season (int): relevant season
+    """
+    sql = """
+        SELECT 
+            *
+        FROM player_seasonal_scoring_metrics pssm
+        LEFT JOIN player_seasonal_passing_metrics pspm ON pssm.player_id = pspm.player_id AND pssm.season = pspm.season 
+        LEFT JOIN player_seasonal_rushing_receiving_metrics psrrm ON pssm.player_id = psrrm.player_id AND pssm.season = psrrm.season 
+        WHERE pssm.season = %s
+    """
+
+    metrics = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, ))
+            row = cur.fetchone()
+
+            if row:
+                colnames = [desc[0] for desc in cur.description]
+                metrics = dict(zip(colnames, row))
+            else:
+                logging.warning(f"No seasonal metrics persisted for players for season={season}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching player season metrics; season={season}: {e}")
+        raise e
+
+    return metrics
+
 def fetch_player_id_by_normalized_name(normalized_name: str):
 
     sql = """

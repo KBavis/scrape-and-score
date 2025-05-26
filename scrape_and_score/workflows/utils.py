@@ -2,6 +2,8 @@ from db import fetch_data, insert_data
 from datetime import datetime
 import logging
 import random
+from service import team_service
+from config import props
 
 
 def is_player_demographics_persisted(season: int):
@@ -33,6 +35,40 @@ def is_player_records_persisted(season: int):
     num_pt_records = fetch_data.get_count_player_teams_records_for_season(season) #NOTE: If player_teams is empty, relevant players / depth_chart_position records are also assumed to be lacking for specific season since this is done in a single flow
 
     return num_pt_records != 0
+
+
+def are_team_seasonal_metrics_persisted(season: int):
+    """
+    Utility function to determine if team seasonal metrics are persisted 
+
+    Args:
+        season (int): relevant season 
+    """
+
+    team_ids = [team_service.get_team_id_by_name(team['name']) for team in props.get_config('nfl.teams')]
+
+    for id in team_ids:
+        metrics = fetch_data.fetch_team_seasonal_metrics(id, season)
+        
+        if metrics is None:
+            return False 
+    
+    return True
+
+
+def are_player_seasonal_metrics_persisted(season: int):
+    """
+    Utility function to determine if player seasonal metrics are persisted 
+
+    Args:
+        season (int): relevant season 
+    """
+
+    metrics = fetch_data.fetch_player_seasonal_metrics(season)
+
+    return True if metrics is not None else False
+
+    
 
 
 def add_stubbed_player_game_logs(player_ids: list, week: int, season: int):

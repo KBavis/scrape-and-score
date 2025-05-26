@@ -14,6 +14,9 @@ from models import optimization, post_training
 from . import utils 
 
 
+FINAL_WEEK = 18
+
+
 def upcoming(week: int, season: int):
     """
     Invoke necessary functionality to scrape & persist player / team data for upcoming week
@@ -126,8 +129,10 @@ def results(week: int, season: int):
     # update 'team_betting_odds' records with results
     rotowire_scraper.update_recent_betting_records(week, season)
 
-    # TODO: scrape & insert player / team seasonal metrics (i.e rankings )
-
+    # insert seasonal rankings if week 18 and not inserted
+    if week == FINAL_WEEK:
+        if not utils.are_team_seasonal_metrics_persisted(season) or not utils.are_player_seasonal_metrics_persisted(season):
+            pfr.fetch_teams_and_players_seasonal_metrics(season, season)
 
 
 def linear_regression():
