@@ -1979,9 +1979,9 @@ def fetch_independent_and_dependent_variables():
       JOIN 
          team_betting_odds tbo -- team betting lines 
       ON (
-        (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week) 
+        (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week AND pgl.year = tbo.season) 
             OR 
-        (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
+        (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week AND pgl.year = tbo.season)
       ) 
    """
 
