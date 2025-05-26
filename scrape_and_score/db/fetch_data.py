@@ -1971,9 +1971,9 @@ def fetch_independent_and_dependent_variables():
       LEFT JOIN
          team_seasonal_ranks opp_tsr ON td.team_id = opp_tsr.team_id AND (pgl.year - 1) = opp_tsr.season -- opposing team seasonal ranks for previous year
       JOIN 
-         team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season -- players team weekly rankings heading into matchup
+         team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week - 1 = t_tr.week AND pgl.year = t_tr.season -- players team weekly rankings heading into matchup
       JOIN
-         team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season -- opposing team weekly rankings heading into matchup
+         team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week - 1 = t_td.week AND pgl.year = t_td.season -- opposing team weekly rankings heading into matchup
       JOIN
          PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season -- player betting lines 
       JOIN 
