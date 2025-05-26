@@ -46,6 +46,7 @@ def predict(week: int, season: int, model: str):
     
 
     # fetch relevant prediction data 
+    # TODO: Figure out how to rework fetch_data in preprocess.py to only fetch data pertaining to relevant week / season
 
 
 
