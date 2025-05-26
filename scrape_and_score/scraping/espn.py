@@ -35,14 +35,14 @@ def scrape_upcoming_games(season: int, week: int):
 
         for game in games:
 
-            home_team_cell = game.find('td',class_='events__col Table__TD')
-            away_team_cell = game.find('td',class_='colspan__col Table__TD')
+            away_team_cell = game.find('td',class_='events__col Table__TD')
+            home_team_cell = game.find('td',class_='colspan__col Table__TD')
 
-            home_team = extract_team_name(home_team_cell)
-            away_team = extract_team_name(away_team_cell, is_away=True)
+            away_team = extract_team_name(away_team_cell)
+            home_team = extract_team_name(home_team_cell, is_home=True)
 
             records.append({"home_team": home_team, "away_team": away_team, "week": week, "season": season, "game_date": game_date})
-
+    
     generate_and_persist(records, season, week)
 
 
@@ -180,13 +180,13 @@ def generate_team_id_mapping():
 
 
 
-def extract_team_name(team: BeautifulSoup, is_away: bool = False):
+def extract_team_name(team: BeautifulSoup, is_home: bool = False):
     """
     Extract team names from parsed HTML 
 
     Args:
         team (BeautifulSoup): parsed HTML 
-        is_away (bool): flag indicating if this is for the away team or not 
+        is_home (bool): flag indicating if this is for the away team or not 
     
     Returns:
         str: team's name
@@ -194,7 +194,7 @@ def extract_team_name(team: BeautifulSoup, is_away: bool = False):
     div = team.find_next('div')
     spans = div.find_all('span')
 
-    if is_away:
+    if is_home:
         span = spans[1]
     else:
         span = spans[0]
