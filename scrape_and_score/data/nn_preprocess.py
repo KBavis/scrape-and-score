@@ -12,9 +12,22 @@ import time
 # global variable to account for dynamic categorical column names
 injury_feature_names = []
 
-def preprocess(): 
-   logging.info('Attempting to fetch & pre-process our training/testing data for our Neural Networks...')
-   df = fetch_data()
+def preprocess(week: int = None, season: int = None): 
+   """
+   Pre-process relevant data in order to either a) train our neural network models, or b) make predictions utilizing our neural network models 
+
+   Args:
+      week (int): optional parameter that allows us to specify a particular week of data that we are interested in pre-processing 
+      season (int): optional parameter that allows us to specify a particular season of data that we are interested in pre-procesisng 
+
+   Returns:
+      pd.DataFrame: pre-processing data within a pd.DataFrame 
+   """
+
+   week_season_str = f"for Week {week} of the {season} NFL Season" if week is not None and season is not None else ""
+
+   logging.info(f'Attempting to fetch & pre-process our training/testing data for our Neural Networks {week_season_str}...')
+   df = fetch_data(week, season)
 
    parsed_df = parse_player_props(df)
    parsed_df = encode_player_injuries(parsed_df)
@@ -411,9 +424,16 @@ def normalize_injury_locations(injuries: list):
 
 
 
-def fetch_data(): 
+def fetch_data(week: int, season: int): 
    """
-      Retrieve indepdenent variables 
+      Retrieve indepdenent variables to either train our neural network or to generate predictions 
+
+      Args:
+         week (int): relevant week
+         season (int): relevant season 
+
+      Returns:
+         dict: relevant data 
    """
    logging.info("Fetching inputs & outputs for Neural Network training & testing")
-   return fetch.fetch_independent_and_dependent_variables()
+   return fetch.fetch_independent_and_dependent_variables(week, season)
