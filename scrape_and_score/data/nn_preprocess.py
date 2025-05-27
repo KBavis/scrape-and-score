@@ -270,7 +270,12 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
    df['temperature'] = df['temperature'].fillna(-999)
 
    # remove percent sign from percip probability
-   df['precip_probability'] = df['precip_probability'].replace('', None).fillna(-1)
+   df['precip_probability'] = (
+    df['precip_probability']
+      .replace('', None)
+      .fillna('-1')
+      .infer_objects(copy=False)
+   )
    df['precip_probability'] = df['precip_probability'].str.replace('%', '', regex=False).astype(float)
 
    return df
