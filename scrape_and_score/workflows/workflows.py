@@ -43,11 +43,9 @@ def predict(week: int, season: int, model: str):
     if model == 'lin_reg':
         raise Exception('Linear regression prediction functionality is currently not implemented')
     
-    
 
     # fetch relevant prediction data 
-    # TODO: Figure out how to rework fetch_data in preprocess.py to only fetch data pertaining to relevant week / season 
-    # NOTE: This could be something like an optional argument with relevant week / season that we pass to preprocess() and subsequently to preprocess.fetch_data() 
+    df = nn_preprocess.preprocess(week, season)
 
 
 
