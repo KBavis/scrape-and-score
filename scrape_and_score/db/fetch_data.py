@@ -1026,24 +1026,27 @@ def fetch_player_betting_odds_record_by_pk(player_id: int, week: int, season: in
 
 
 
-"""
-Functionality to retrieve the needed dependent and independent variables needed 
-to create our predicition models 
-
-Args:
-   None 
-
-Returns:
-   df (pd.DataFrame): data frame containing results of query 
-
-"""
 
 #TODO: Optimize query so it doesn't take forever to run 
 #TODO: Move SQL that stores this query somewhere outside of string 
-#TODO: Ensure that the we update join statement for previous year data to ensure we don't just exclude all rookies!
-#TODO: Ensure we update weekly agg metrics join to account for previous week (current week will contain )
-def fetch_independent_and_dependent_variables():
-    sql = """
+def fetch_independent_and_dependent_variables(week: int, season: int):
+    """
+    Functionality to retrieve the needed dependent and independent variables needed 
+    to create our predicition models 
+
+    Args:
+        week (int): either the relevant week or None 
+        season (int): the relevant season or None
+
+    Returns:
+    df (pd.DataFrame): data frame containing results of query 
+
+    """
+
+    # generate where clause in the case this is for predictions
+    where_clause = f"WHERE pgl.week = {week} AND pgl.year = {season}" if week is not None and season is not None else ""
+
+    sql = f"""
     WITH PlayerProps AS (
         SELECT 
             pbo.player_name,
@@ -1983,8 +1986,9 @@ def fetch_independent_and_dependent_variables():
             OR 
         (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week AND pgl.year = tbo.season)
       ) 
+      {where_clause}
    """
-
+    
     df = None
 
     try:
@@ -2007,6 +2011,8 @@ def fetch_independent_and_dependent_variables():
 """
 Retrieve relevant inputs for a player in order to make prediction
 TODO: FIX ME SO THAT OFFENSIVE/DEFENSIVE RANKS AREN'T THE SAME 
+
+TODO: This can prob just get removed 
 
 Args:
    week (int): the week corresponding to the matchup we are predicitng for
