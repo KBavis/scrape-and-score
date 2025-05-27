@@ -219,10 +219,10 @@ def neural_network(should_train: bool, start_time: datetime):
     # check if models exists and  that we do not want to retrain models
     directory = "models/nn/{}"
     if all(os.path.exists(directory.format(model)) for model in required_models) and should_train == False:
-        rb_nn = torch.load('rb_model.pth', weights_only=False)
-        qb_nn = torch.load('qb_model.pth', weights_only=False)
-        wr_nn = torch.load('wr_model.pth', weights_only=False)
-        te_nn = torch.load('te_model.pth', weights_only=False)
+        rb_nn = torch.load(f'{directory.format('rb_model.pth')}', weights_only=False)
+        qb_nn = torch.load(f'{directory.format('qb_model.pth')}', weights_only=False)
+        wr_nn = torch.load(f'{directory.format('wr_model.pth')}', weights_only=False)
+        te_nn = torch.load(f'{directory.format('te_model.pth')}', weights_only=False)
     else:
 
         # pre-process training & testing data
