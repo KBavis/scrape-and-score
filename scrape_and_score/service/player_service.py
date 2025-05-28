@@ -35,7 +35,6 @@ def get_player_name_by_id(id: int):
     Returns:
         str: player's name 
     """
-    logging.info(f"Attempting to retrieve the player name corresponding to player ID {id}")
     return fetch_data.fetch_player_name_by_id(id)
     
 
