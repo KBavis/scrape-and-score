@@ -4,6 +4,7 @@ import logging
 import random
 from service import team_service
 from config import props
+import os
 
 
 def is_player_demographics_persisted(season: int):
@@ -148,6 +149,99 @@ def generate_game_mapping(season: int, week: int):
         })
     
     return games
+
+
+def get_position_features():
+    """
+    Retrieve relevant features utilized in the training of our position specific neural network model 
+
+    Args:
+        None
+    
+    Returns:
+        tuple: (qb_features, rb_features, wr_features, te_features): each relevant features specific features that are being utilized to make predictions
+    """
+
+    logging.info("Attempting to extract relevant positional features utilized in the training of relevant Neural Networks")
+
+    dir = 'data/inputs'
+
+    # validate relevant directory exists 
+    if not os.path.exists(dir):
+        raise Exception(f"Please ensure that the directory, '{dir}', exists.")
+    
+    # validate necessary files are present 
+    all_files = os.listdir(dir)
+    if not all_files: 
+        raise Exception(f"Please ensure that you first train your neural network models by passing in the --train argument when invoking the application prior to generating predictions")
+    
+    # extract file names 
+    files = [f for f in all_files if os.path.isfile(os.path.join(dir, f))]
+
+    # validate that each position has features file 
+    positions = {'QB','RB','WR','TE'}
+    feature_files = {}
+    now = datetime.now()
+
+    for file in files:
+
+        parts = file.split('_')
+        if len(parts) < 4: 
+            continue # skip irrelevant files
+
+        position = parts[0]
+        if position not in positions:
+            continue
+
+        # extract datetime and parse 
+        try:
+            date_str = parts[2] + parts[3].split('.')[0] 
+            file_dt = datetime.strptime(date_str, '%Y%m%d%H%M%S')
+        except ValueError:
+            continue  
+
+        # keep file name with datetime closest to current time 
+        if position in feature_files:
+            prev_dt, _ = feature_files[position]
+            if abs(now - file_dt) < abs(now - prev_dt):
+                feature_files[position] = (file_dt, file)
+        else:
+            feature_files[position] = (file_dt, file)
+    
+    # validate all positions have features
+    missing_pos = positions - feature_files.keys()
+    if missing_pos:
+        raise Exception(
+            f"Unable to retrieve features for positions: {missing_pos}. "
+            f"Please invoke this application with the --train flag to generate relevant feature files."
+        )
+    
+
+    # extract relevant features from each files 
+    
+    position_features = { position: extract_file_contents(feature_files[position][1], dir) for position in positions }
+    return position_features
+    
+
+
+def extract_file_contents(file: str, dir: str):
+    """
+    Helper function to transform contents of our feautres txt files into a Python list
+
+    Args:
+        file (str): relevant file name to extract features from 
+        dir (str): relevant directory where file resides
+
+    Returns:
+        list: list of features 
+    """
+
+    with open(os.path.join(dir, file), 'r') as f:
+        lines = [line.strip() for line in f]
+    
+    return lines  
+
+    
 
 
 def filter_completed_games(games: list):
