@@ -12,6 +12,7 @@ from constants import TRAINING_CONFIGS
 from models.neural_net import NeuralNetwork
 from models import optimization, post_training
 from . import utils 
+from models import prediction
 
 
 FINAL_WEEK = 18
@@ -47,7 +48,38 @@ def predict(week: int, season: int, model: str):
     # fetch relevant prediction data 
     df = nn_preprocess.preprocess(week, season)
 
+    positions = ['QB', 'RB', 'WR', 'TE']
 
+    # create mappings 
+    feature_mapping = utils.get_position_features()
+    model_mapping = {
+        'QB': qb_nn,
+        'RB': rb_nn,
+        'WR': wr_nn,
+        'TE': te_nn
+    }
+    
+    # iterate through relevant positions
+    for position in positions: 
+
+        # extract position relevant data 
+        position_feature = f'position_{position}'
+        position_specific_df = df[df[position_feature] == 1].copy()
+
+        # extract players associated with each individaul prediction
+        players = position_specific_df['player_id']
+
+        # extract most recent relevant features corresponding to position
+        position_features = feature_mapping[position]
+
+        # ensure columns are in correct order and all features are available that were used to train nn
+        position_specific_df = nn_preprocess.add_missing_features(position_specific_df, position_features)
+
+        # seperate out inputs 
+        prediction_data = position_specific_df[position_features]
+        X = torch.from_numpy(nn_preprocess.scale_and_transform(prediction_data)).float()
+
+        prediction.generate_predictions(position, week, season, model_mapping[position], players, X)
 
 
 def upcoming(week: int, season: int):
