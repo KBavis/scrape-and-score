@@ -135,8 +135,8 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    global injury_feature_names
    scaler = StandardScaler()
 
-   # store independent variables in seperate data frame 
-   xs = df.drop(columns=['fantasy_points']).copy()
+   # store independent variables in seperate data frame if available 
+   xs = df.drop(columns=['fantasy_points']).copy() if 'fantasy_points' in df.columns else df.copy()
 
    # extract game condition hot encoded features
    columns = df.columns
