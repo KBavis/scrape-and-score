@@ -36,7 +36,9 @@ def preprocess(week: int = None, season: int = None):
    manual_feature_engineering(parsed_df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
-   processed_df.drop(columns=['player_id', 'home_team'], inplace=True) # drop un-needed values 
+
+   not_needed_cols = ['player_id', 'home_team'] if week is None and season is None else ['home_team'] # only remove player ID column in the case this isn't for generating predictions
+   processed_df.drop(columns=not_needed_cols, inplace=True) # drop un-needed values 
 
    # independent variables to account for cyclical nature
    cyclical_df = processed_df[['week', 'season']].copy()
