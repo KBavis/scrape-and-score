@@ -57,6 +57,27 @@ def preprocess(week: int = None, season: int = None):
 
    return processed_df
 
+def add_missing_features(df: pd.DataFrame, cols: list):
+   """
+   Functionality to add missing feautres to input data frame utilized for predictions 
+
+   Args:
+      df (pd.DataFrame): data frame that is potentially missing features 
+      cols (list): list of relevant inputs we expected to find in the data frame 
+   """
+
+   # add necessary columns
+   for col in cols:
+      if col not in df.columns:
+         df[col] = -1
+
+   # reorder columns to be expected order
+   df = df[cols]
+
+   return df
+
+
+
 
 def feature_selection(df: pd.DataFrame, position: str):
    """
