@@ -4,6 +4,7 @@ import pandas as pd
 from service import team_service, player_service
 import time
 from . import fetch_data
+from datetime import datetime
 
 """
 Functionality to persist a particular player 
@@ -102,16 +103,18 @@ def update_player_hashed_name(hashed_names: list):
 
 
 
-def update_player_pfr_availablity_status(player_ids: list): 
+def update_player_pfr_availablity_status(player_ids: list, is_available: bool = False): 
     """
     Update player records to indicate they are not available in PFR (unable to find HREF)
 
     Args:
         player_ids (list): list of player_ids to update 
     """
-    query = """
+    available = 1 if is_available else 0
+        
+    query = f"""
         UPDATE player 
-        SET pfr_available = 0
+        SET pfr_available = {available}
         WHERE player_id = %s
     """
 
@@ -253,6 +256,76 @@ def insert_team_game_logs(game_logs: list):
             exc_info=True,
         )
         raise e
+    
+
+
+def update_team_game_log_game_date(game_date: datetime, pk: dict):
+    """
+    Update team game log record with up-to-date game date 
+
+    Args:
+        game_date (datetime): new datetime to assign to team game log record
+        pk (dict): PK of team game log to update
+    """
+
+    sql = """
+        UPDATE team_game_log
+        SET
+            game_date = %s
+        WHERE team_id = %s AND week = %s AND year = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (game_date, pk['team_id'], pk['week'], pk['year']))
+            connection.commit()
+            logging.info(f"Successfully updated team game log's (PK={pk}) game_date in the database")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the team game log game_date: {pk}",
+            exc_info=True,
+        )
+        raise e
+
+
+def insert_upcoming_team_game_logs(records: list):
+    """
+    Functionality to insert upcoming team game logs into our database 
+
+    Args:
+        records (list): the records to persist 
+    """
+    
+    sql = """
+      INSERT INTO team_game_log (team_id, week, year, rest_days, home_team, distance_traveled, opp, game_date, day)
+      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (record["team_id"], record["week"], record["year"], record["rest_days"], record['is_home'], record['distance_traveled'], record['opp'], record['game_date'], record['day'])
+            for record in records 
+        ]  
+
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(f"Successfully inserted {len(records)} team game logs for upcoming NFL games in the database")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the team game logs: {records}",
+            exc_info=True,
+        )
+        raise e
+
+
 
 
 """
@@ -515,6 +588,51 @@ def insert_team_rankings(rankings: list):
         raise e
 
 
+def insert_upcoming_player_game_logs(game_logs: list):
+    """
+    Functionality to insert upcoming 'player_game_logs' into our database
+
+    Args:
+        game_logs (list): list of game logs to insert into DB 
+    """ 
+
+    sql = """
+        INSERT INTO player_game_log (player_id, week, day, year, home_team, opp) 
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    
+    params = [
+        (
+            game_log['player_id'],
+            game_log['week'],
+            game_log['day'],
+            game_log['year'],
+            game_log['home_team'],
+            game_log['opp']
+        )
+        for game_log in game_logs
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(params)} player_game_log records into our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following player_game_log records: {game_logs}",
+            exc_info=True,
+        )
+        raise e
+
+
+
+
 """
 Functionality to insert historical player props into our DB 
 
@@ -566,8 +684,95 @@ def insert_player_props(player_props: dict, season: int):
         )
         raise e
     
-    
 
+def insert_upcoming_player_props(records: list):
+    """
+    Insert upcoming player_betting_odds records into our database 
+
+    Args:
+        records (list): list of records to insert 
+    """
+    sql = """
+        INSERT INTO player_betting_odds (player_id, player_name, label, cost, line, week, season) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    
+    params = [
+        (
+            record['player_id'],
+            record['player_name'],
+            record['label'],
+            record['cost'],
+            record['line'],
+            record['week'],
+            record['season']
+        )
+        for record in records
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully inserted {len(params)} upcoming player_betting_odds into our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while inserting the following upcoming player betting odds: {records}",
+            exc_info=True,
+        )
+        raise e 
+
+
+def update_upcoming_player_props(records: list):
+    """
+        Update upcoming player_betting_odds records in our database 
+
+        Args:
+            records (list): list of records to update
+    """
+    
+    sql = """
+        UPDATE player_betting_odds 
+        SET 
+            cost = %s,
+            line = %s
+        WHERE 
+            week = %s AND season = %s AND label = %s AND player_id = %s
+    """
+    
+    params = [
+        (
+            record['cost'],
+            record['line'],
+            record['week'],
+            record['season'],
+            record['label'],
+            record['player_id']
+        )
+        for record in records
+    ]
+    
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(params)} upcoming player_betting_odds in our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following upcoming player betting odds: {records}",
+            exc_info=True,
+        )
+        raise e 
 
 """
 Functionality to insert historical betting odds into our DB 
@@ -639,6 +844,248 @@ def insert_teams_odds(betting_odds: list, upcoming=False):
             exc_info=True,
         )
         raise e
+
+
+def update_teams_odds(betting_odds: list):
+    
+    sql = """
+        UPDATE team_betting_odds 
+        SET 
+            game_over_under = %s,
+            favorite_team_id = %s, 
+            spread = %s
+        WHERE 
+            week = %s AND season = %s AND home_team_id = %s AND away_team_id = %s
+    """
+
+    params = [
+        (
+            odds["game_over_under"],
+            odds["favorite_team_id"],
+            odds["spread"],
+            odds["week"],
+            odds["year"],
+            odds["home_team_id"],
+            odds["away_team_id"],
+        )
+        for odds in betting_odds
+    ]
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(betting_odds)} team betting odds records in our database"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following team betting odds: {betting_odds}",
+            exc_info=True,
+        )
+        raise e
+    
+def update_player_game_log_with_results(update_records: list):
+    """
+    Update 'player_game_log' records with their respective results 
+
+    Args:
+        update_records (list): list of records to updated persisted records in db with
+    """
+    sql = """
+        UPDATE player_game_log
+        SET 
+            result = %s,
+            points_for = %s,
+            points_allowed = %s,
+            completions = %s,
+            attempts = %s,
+            pass_yd = %s,
+            pass_td = %s,
+            interceptions = %s,
+            rating = %s,
+            sacked = %s,
+            rush_att = %s,
+            rush_yds = %s,
+            rush_tds = %s,
+            tgt = %s,
+            rec = %s,
+            rec_yd = %s,
+            rec_td = %s,
+            snap_pct = %s,
+            fantasy_points = %s,
+            off_snps = %s
+        WHERE 
+            year = %s AND player_id = %s AND week = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["result"],
+                record["points_for"],
+                record["points_allowed"],
+                record["completions"],
+                record["attempts"],
+                record["pass_yd"],
+                record["pass_td"],
+                record["interceptions"],
+                record["rating"],
+                record["sacked"],
+                record["rush_att"],
+                record["rush_yds"],
+                record["rush_tds"],
+                record["tgt"],
+                record["rec"],
+                record["rec_yd"],
+                record["rec_td"],
+                record["snap_pct"],
+                record["fantasy_points"],
+                record["off_snps"],
+                record["year"],
+                record["player_id"],
+                record["week"]
+            )
+            for record in update_records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(f"Successfully updated {len(update_records)} player game log records in the database")
+    except Exception as e:
+        logging.error("An exception occurred while updating player_game_log", exc_info=True)
+        raise e
+
+
+def update_team_game_log_with_results(update_records: list):
+    """
+    Update 'team_game_log' records with results of NFL games
+
+    Args:
+        update_records (list): list of records to update persisted records with
+    """
+    
+    sql = """
+        UPDATE team_game_log
+        SET 
+            result = %s,
+            points_for = %s,
+            points_allowed = %s,
+            tot_yds = %s,
+            pass_yds = %s,
+            rush_yds = %s,
+            opp_tot_yds = %s,
+            opp_pass_yds = %s,
+            opp_rush_yds = %s,
+            pass_tds = %s,
+            pass_cmp = %s,
+            pass_att = %s,
+            pass_cmp_pct = %s,
+            rush_att = %s,
+            rush_tds = %s,
+            yds_gained_per_pass_att = %s,
+            adj_yds_gained_per_pass_att = %s,
+            pass_rate = %s,
+            sacked = %s,
+            sack_yds_lost = %s,
+            rush_yds_per_att = %s,
+            total_off_plays = %s,
+            total_yds = %s,
+            yds_per_play = %s,
+            fga = %s,
+            fgm = %s,
+            xpa = %s,
+            xpm = %s,
+            total_punts = %s,
+            punt_yds = %s,
+            pass_fds = %s,
+            rsh_fds = %s,
+            pen_fds = %s,
+            total_fds = %s,
+            thrd_down_conv = %s,
+            thrd_down_att = %s,
+            fourth_down_conv = %s,
+            fourth_down_att = %s,
+            penalties = %s,
+            penalty_yds = %s,
+            fmbl_lost = %s,
+            int = %s,
+            turnovers = %s,
+            time_of_poss = %s
+        WHERE 
+            team_id = %s AND year = %s AND season = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["result"],
+                record["points_for"],
+                record["points_allowed"],
+                record["tot_yds"],
+                record["pass_yds"],
+                record["rush_yds"],
+                record["opp_tot_yds"],
+                record["opp_pass_yds"],
+                record["opp_rush_yds"],
+                record["pass_tds"],
+                record["pass_cmp"],
+                record["pass_att"],
+                record["pass_cmp_pct"],
+                record["rush_att"],
+                record["rush_tds"],
+                record["yds_gained_per_pass_att"],
+                record["adj_yds_gained_per_pass_att"],
+                record["pass_rate"],
+                record["sacked"],
+                record["sack_yds_lost"],
+                record["rush_yds_per_att"],
+                record["total_off_plays"],
+                record["total_yds"],
+                record["yds_per_play"],
+                record["fga"],
+                record["fgm"],
+                record["xpa"],
+                record["xpm"],
+                record["total_punts"],
+                record["punt_yds"],
+                record["pass_fds"],
+                record["rsh_fds"],
+                record["pen_fds"],
+                record["total_fds"],
+                record["thrd_down_conv"],
+                record["thrd_down_att"],
+                record["fourth_down_conv"],
+                record["fourth_down_att"],
+                record["penalties"],
+                record["penalty_yds"],
+                record["fmbl_lost"],
+                record["int"],
+                record["turnovers"],
+                record["time_of_poss"],
+                record["team_id"],
+                record["year"],
+                record["season"]
+            )
+            for record in update_records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(f"Successfully updated {len(update_records)} team game log records in the database")
+    except Exception as e:
+        logging.error("An exception occurred while updating team_game_log", exc_info=True)
+        raise e
+
 
 
 """
@@ -744,6 +1191,45 @@ def insert_bye_week_rankings(team_bye_weeks: list, season: int, ):
         raise e
 
 
+def update_player_teams_records_end_dates(player_teams_records: list): 
+    """
+    Functionality to end date 'player_teams' records in our database 
+
+    Args:
+        player_teams_records (list): records requiring updates
+    
+    """
+    sql = f"""
+            UPDATE player_teams 
+            SET end_wk = %s
+            WHERE player_id = %s AND team_id = %s AND season = %s
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["end_wk"],
+                record["player_id"],
+                record["team_id"],
+                record["season"]
+            )
+            for record in player_teams_records 
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(player_teams_records)} player_teams records in the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following player_teams records in our database: {player_teams_records}",
+            exc_info=True,
+        )
+        raise e
 
 def insert_player_teams_records(player_teams_records: list): 
     sql = f"""
@@ -811,6 +1297,45 @@ def insert_player_weekly_aggregate_metrics(player_agg_metrics: list):
         )
         raise e
 
+
+def update_player_depth_chart_postion(player_depth_chart: list): 
+    """
+    Functionality to update player depth chart record positions in our DB 
+
+    ArgsL
+        player_depth_chart (list): players depth charts to update
+    """
+    sql = """
+            UPDATE player_depth_chart 
+            SET depth_chart_pos = %s 
+            WHERE player_id = %s AND season = %s AND week = %s
+         """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record["depth_chart_pos"],
+                record["player_id"],
+                record["season"],
+                record["week"]
+            )
+            for record in player_depth_chart
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info(
+                f"Successfully updated {len(player_depth_chart)} player_depth_chart records in the database"
+            )
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating the following player_depth_chart records in our db: {player_depth_chart}",
+            exc_info=True,
+        )
+        raise e
 
 def insert_player_depth_charts(player_depth_chart: list): 
     """
@@ -2074,6 +2599,73 @@ def insert_game_conditions(records: list):
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting game condition records: {records}",
+            exc_info=True
+        )
+        raise e
+
+
+def update_game_conditions(records: list):
+    """
+    Update existing game condition records in the game_conditions table.
+
+    Args:
+        records (list): List of game condition records (dicts)
+    """
+    sql = """
+        UPDATE game_conditions
+        SET 
+            game_date = %s,
+            game_time = %s,
+            kickoff = %s,
+            month = %s,
+            start = %s,
+            surface = %s,
+            weather_icon = %s,
+            temperature = %s,
+            precip_probability = %s,
+            precip_type = %s,
+            wind_speed = %s,
+            wind_bearing = %s
+        WHERE
+            season = %s AND
+            week = %s AND
+            home_team_id = %s AND
+            visit_team_id = %s
+    """
+
+    try:
+        connection = get_connection()
+
+        params = [
+            (
+                record.get("game_date"),
+                int(record.get("game_time")), 
+                record.get("kickoff"),
+                record.get("month"),
+                record.get("start"),
+                record.get("surface"),
+                record.get("weather_icon"),
+                float(record.get("temperature")),
+                record.get("precip_probability"),
+                record.get("precip_type"),
+                float(record.get("wind_speed")),
+                int(record.get("wind_bearing")),
+                int(record.get("season")),
+                int(record.get("week")),
+                int(record.get("home_team_id")),
+                int(record.get("visit_team_id"))
+            )
+            for record in records
+        ]
+
+        with connection.cursor() as cur:
+            cur.executemany(sql, params)
+            connection.commit()
+            logging.info("Successfully updated game condition records.")
+
+    except Exception as e:
+        logging.error(
+            f"An exception occurred while updating game condition records: {records}",
             exc_info=True
         )
         raise e

@@ -22,10 +22,10 @@ class FantasyDataset(Dataset):
         """Retrieve item (tuple) containing feauters & expected value
 
         Args:
-            idx (_type_): _description_
+            idx (torch.tensor): index to retireve item from
 
         Returns:
-            _type_: _description_
+            torch.tensor: relevant item
         """
         # account for batching by DataLoader
         if torch.is_tensor(idx):

@@ -324,7 +324,7 @@ Returns:
 """
 
 
-def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int = None):
+def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int = None, week: int = None):
     # determine if this is for recent week, single year, or a range of years
     if recent_game:
         logging.info(f"Recent game flag passed; calculating fantasy points for most recent week in the year {start_year}")
@@ -352,6 +352,21 @@ def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int =
         receiving_td_pts,
         receiving_pts,
     ) = get_offensive_point_configs()
+
+    # filter player game logs by week if needed
+    if week is not None:
+        filtered_game_logs = []
+        for game_log in player_game_logs:
+            if game_log['week'] == week:
+                filtered_game_logs.append(game_log)
+                continue   
+
+        # raise Exception if unable to find game log corresponding to week
+        if not filtered_game_logs:
+            raise Exception('Unable to extract player game log corresponding to weke ')
+        
+        player_game_logs = filtered_game_logs
+
 
     players_points = []
     for player_game_log in player_game_logs:

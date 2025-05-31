@@ -13,8 +13,6 @@ def scrape_historical(start_year: int, end_year: int):
         end_year (int): year to stop scraping metrics for 
     """
     logging.info(f"Scraping & persisting player_injuries from the year {start_year} to the year {end_year}")
-    
-    player_name_id_mapping = {} 
 
     for season in range(start_year, end_year + 1): 
         for week in range(1, 19):
@@ -24,15 +22,16 @@ def scrape_historical(start_year: int, end_year: int):
 
             player_injuries = parse_all_player_injuries(soup)
 
-            generate_and_persist_player_injury_records(player_injuries, season, week, player_name_id_mapping)
+            generate_and_persist_player_injury_records(player_injuries, season, week)
             
 
-def scrape_upcoming(week: int, season: int): 
+def scrape_upcoming(week: int, season: int, player_ids: list = None): 
     """Scrape & persist current player injuries in the upcoming week of the NFL season for players
 
     Args:
         week (int): week to retrieve injuries for 
         season (int): season to retrieve injuries for 
+        player_ids (list): player IDs corresponding to teams that have yet to play their games 
     """
     logging.info(f"Scraping & persisting player_injuries for week {week} for the {season} NFL season")
 
@@ -41,7 +40,7 @@ def scrape_upcoming(week: int, season: int):
 
     player_injuries = parse_all_player_injuries(soup)
 
-    generate_and_persist_player_injury_records(player_injuries, season, week)
+    generate_and_persist_player_injury_records(player_injuries, season, week, player_ids)
 
 
 
@@ -157,7 +156,7 @@ def extract_game_status(text: str):
 
 
 
-def generate_and_persist_player_injury_records(player_injuries: list, season: int, week: int, player_name_id_mapping: dict = {}): 
+def generate_and_persist_player_injury_records(player_injuries: list, season: int, week: int, player_ids: list, player_name_id_mapping: dict = {}): 
     """Generate and persist player injury records into our datbase 
 
     Args:
@@ -185,6 +184,13 @@ def generate_and_persist_player_injury_records(player_injuries: list, season: in
         if player_id is None:
             logging.warn(f"Skipping record {record} for insertion since no player is persisted with normalized name {player_normalized_name}")
             continue
+
+
+        # validate player ID is corresponding to player whom hasn't played yet 
+        if player_ids is not None:
+            if player_id not in player_ids:
+                logging.warning(f"Skipping record {record} for insertion/update since player has already played their game.")
+                continue
         
         # generate record 
         persistable_records.append(

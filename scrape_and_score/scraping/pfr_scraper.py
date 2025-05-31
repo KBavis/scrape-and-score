@@ -114,6 +114,443 @@ def scrape_recent():
     return team_metrics, player_metrics
 
 
+def update_game_logs_and_insert_advanced_metrics(week: int, season: int):
+    """
+    Update 'player_game_log' and 'team_game_log' records with relevant results and insert 
+    relevant advanced player metrics into our database 
+
+
+    Args:
+        week (int): relevant week to account for 
+        season (int): relevant season to account for 
+    """
+
+    # scrape & persist team game logs 
+    update_team_game_logs(week, season)
+
+    # scprae & persist player game logs
+    update_player_game_logs(week, season)
+
+    # scprae & persist player advanced metrics 
+    scrape_player_advanced_metrics(season, season, week)
+
+
+def update_player_game_logs(week: int, season: int):
+    """"
+    Functionality to update player game logs with relevant outcomes OR remove unecessary stubbed player game logs 
+
+    TODO: If player game log not found, and not a bye week, and run date > game date --> pfr_available --> 0 , remove player_game_log corresponding to player 
+
+    Args: 
+        week (int): relevant week 
+        season (int): relevant season 
+    """
+
+    logging.info(f"Attempting to update Week {week} of the {season} NFL Season 'player_game_log' records with the results ")
+    player_metrics = []
+    
+    players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
+    player_urls = construct_player_urls(players, season)
+
+    # for each player url, fetch relevant metrics
+    for player_url in player_urls:
+        url = player_url["url"]
+        player_name = player_url["player"]
+        position = player_url["position"]
+
+        raw_html = fetch_page(url)
+        if raw_html == None:  
+            continue
+
+        soup = BeautifulSoup(raw_html, "html.parser")
+
+        # retrieve game logs
+        game_log = get_game_log(soup, position)
+        if game_log.empty:
+            logging.warning(f"Player {player_name} has no available game logs for the {season} season; skipping updating player game logs")
+            continue 
+
+        # filter out non-relevant weeks 
+        filtered_df = game_log[game_log['week'] == week]
+        if filtered_df.empty:
+            logging.info(f"Player {player_name} has no 'player_game_log' available corresponding to week {week} of the {season} NFL season; skipping updating game log with results")
+            continue
+
+        # validate length of filtered df 
+        if filtered_df.shape[0] > 1:
+            raise Exception(f'Found multiple game logs corresponding to week {week} of the {season} NFL season for player {player_name}')
+        
+        game = filtered_df.iloc[0]
+
+        # create updateable record 
+        player_metrics.append(
+            {
+                "player_id": player_service.get_player_id_by_normalized_name(player_service.normalize_name(player_name)),
+                "week": week,  
+                "year": season,
+                "result": game.get("result", None),
+                "points_for": game.get("points_for", None),
+                "points_allowed": game.get("points_allowed", None),
+                "completions": game.get("completions", None),
+                "attempts": game.get("attempts", None),
+                "pass_yd": game.get("pass_yd", None),
+                "pass_td": game.get("pass_td", None),
+                "interceptions": game.get("interceptions", None),
+                "rating": game.get("rating", None),
+                "sacked": game.get("sacked", None),
+                "rush_att": game.get("rush_att", None),
+                "rush_yds": game.get("rush_yds", None),
+                "rush_tds": game.get("rush_tds", None),
+                "tgt": game.get("tgt", None),
+                "rec": game.get("rec", None),
+                "rec_yd": game.get("rec_yd", None),
+                "rec_td": game.get("rec_td", None),
+                "snap_pct": game.get("snap_pct", None),
+                "fantasy_points": game.get("fantasy_points", None),
+                "off_snps": game.get("off_snps", None),
+            }
+        )
+
+    if player_metrics:
+        logging.info(f"Attempting to update {len(player_metrics)} player_game_log records with results")
+        insert_data.update_player_game_log_with_results(player_metrics)
+
+    
+def update_team_game_logs(week: int, season: int):
+    """
+    Scrape & persist team game log results 
+
+    Args:
+        week (int): relevant week
+        season (int): relevant season
+    """
+
+    teams = fetch_data.fetch_all_teams()
+    team_names = [team['name'] for team in teams]
+    
+    base_url = props.get_config("website.pro-football-reference.urls.team-metrics")
+
+    records = []
+
+    # iterate through each team
+    for team in team_names:
+        logging.info(f"Updating 'team_game_log' with results for [Team={team}, Week={week}, Season={season}]")
+
+        html = get_team_metrics_html(team, season, base_url)
+        if html is None:
+            logging.error(f"Unable to retrieve HTML for Team '{team}' for Week {week} of the {season} NFL Season")
+            raise Exception('Unable to retrieve HTML for Team Game Log')
+    
+        soup = BeautifulSoup(html, "html.parser")
+        updates = extract_team_game_log_updates(soup, week, season)
+
+        # skip accounting for updates if none found 
+        if updates is None:
+            continue
+
+        # update record with team ID 
+        updates['team_id'] = team_service.get_team_id_by_name(team)
+
+        print(f"Team game logs record scraped for Week {week} of {season} NFL Season:\n\t{updates}")
+
+        # append record
+        records.append(updates)
+    
+
+    update_records, insert_records = filter_update_team_game_logs(records)
+    if update_records:
+        logging.info(f"Updating {len(update_records)} 'team_game_log' records with results")
+        insert_data.update_team_game_log_with_results(update_records)
+
+    if insert_records:
+        raise Exception(f'Found unique game logs when attempting to update team game logs with results: {insert_records}')
+
+
+def filter_update_team_game_logs(records: list):
+    """
+    Filter records into insertable or udpateable records 
+
+    Args: 
+        records (list): reords to filter
+    
+    Returns:
+        tuple: (update_records, insert_records)
+    """
+    insert_records = []
+    update_records = []
+
+    for record in records:
+        
+        pk = {"team_id": record['team_id'], "week": record['week'], "year": record['season']}
+        persisted_team_game_log = fetch_data.fetch_team_game_log_by_pk(pk)
+
+        if not persisted_team_game_log:
+            logging.info(f"No 'team_game_log' persisted corresponding to PK=[{pk}]; appending as insertable record")
+            insert_records.append(record)
+            continue
+
+        # verify if changes have been made 
+        if is_team_game_log_modified(record, persisted_team_game_log):
+            logging.info(f"'team_game_log' correspond to PK=[{pk}] has been modified; appending as updateable record")
+            update_records.append(record)
+            continue
+    
+    return update_records, insert_records
+
+
+def is_team_game_log_modified(current_game_log: dict, persisted_game_log: dict):
+    """
+    Verify if persisted 'team_game_log' was modfiied or not 
+
+    Args:
+        current_game_log (dict): the current gmae log 
+        persisted_game_log (dict): already persisted game log 
+
+    Returns:
+        bool: flag indicated if modified or not 
+    """
+
+    keys = [
+        'result', 'points_for', 'points_allowed',
+        'off_tot_yds', 'off_pass_yds', 'off_rush_yds',
+        'def_tot_yds', 'def_pass_yds', 'def_rush_yds',
+        'pass_tds', 'pass_cmp', 'pass_att', 'pass_cmp_pct',
+        'rush_att', 'rush_tds',
+        'yds_gained_per_pass_att', 'adj_yds_gained_per_pass_att', 'pass_rate',
+        'sacked', 'sack_yds_lost',
+        'rush_yds_per_att', 'total_off_plays', 'yds_per_play',
+        'fga', 'fgm', 'xpa', 'xpm',
+        'total_punts', 'punt_yds',
+        'pass_fds', 'rsh_fds', 'pen_fds', 'total_fds',
+        'thrd_down_conv', 'thrd_down_att', 'fourth_down_conv', 'fourth_down_att',
+        'penalties', 'penalty_yds',
+        'fmbl_lost', 'interceptions', 'turnovers',
+        'time_of_poss'
+    ]
+
+    for key in keys:
+        if current_game_log[key] != persisted_game_log[key]:
+            return True
+        
+    return False
+
+
+def extract_team_game_log_updates(soup: BeautifulSoup, week: int, season: int):
+    """
+    Extract relevant metrics pertaining to a particular NFL team for a given week/season
+
+    Args:
+        soup (BeautifulSoup): parsed HTMl
+        week (int): relevant week
+        season (int): relevant season
+
+    Returns:
+        dict: team game log corresponding to team/week/season
+    """
+
+    games = soup.find_all("tbody")
+    if games and len(games) > 1:
+        games = games[1].find_all("tr")
+    else:
+        logging.info(f"No team game log records found for week {week} and season {season}")
+        return None
+
+    if not games or len(games) < 1:
+        logging.warning(f"No games found for week {week} and season {season}; skipping extraction of results")
+        return None
+    
+    
+    game_range = range(len(games)) 
+    for i in game_range:
+
+        week_element = games[i].find("th", {"data-stat": "week_num"})
+        curr_week = int(week_element.text) if week_element else extract_int(games[i], 'week_num')
+        if not curr_week or curr_week != week:
+            continue
+
+        # extract normal team/opp metrics 
+        result = extract_str(games[i], "game_outcome") 
+        points_for = extract_int(games[i], "pts_off")
+        points_allowed = extract_int(games[i], "pts_def")
+        off_tot_yds = extract_int(games[i], "yards_off")
+        off_pass_yds = extract_int(games[i], "pass_yds_off")
+        off_rush_yds = extract_int(games[i], "rush_yds_off")
+        def_tot_yds = extract_int(games[i], "yards_def")
+        def_pass_yds = extract_int(games[i], "pass_yds_def")
+        def_rush_yds = extract_int(games[i], "rush_yds_def")
+        
+        # extract advanced team metrics 
+        #TODO: Seems like pfr removed these metrics. Continue to check if PFR returns to adding these or extract from other sources 
+        (
+            pass_tds, pass_cmp, pass_att, pass_cmp_pct,
+            rush_att, rush_tds, yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att, pass_rate, sacked,
+            sack_yds_lost, rush_yds_per_att, total_off_plays,
+            yds_per_play, fga, fgm, xpa, xpm,
+            total_punts, punt_yds, pass_fds, rsh_fds, pen_fds,
+            total_fds, thrd_down_conv, thrd_down_att, fourth_down_conv,
+            fourth_down_att, penalties, penalty_yds, fmbl_lost,
+            interceptions, turnovers, time_of_poss
+        ) = extract_advanced_metrics(games, i)
+
+
+        team_game_log = {
+            "week": week,
+            "season": season,
+            "result": result,
+            "points_for": points_for,
+            "points_allowed": points_allowed,
+            "off_tot_yds": off_tot_yds,
+            "off_pass_yds": off_pass_yds,
+            "off_rush_yds": off_rush_yds,
+            "def_tot_yds": def_tot_yds,
+            "def_pass_yds": def_pass_yds,
+            "def_rush_yds": def_rush_yds,
+            "pass_tds": pass_tds,
+            "pass_cmp": pass_cmp,
+            "pass_att": pass_att,
+            "pass_cmp_pct": pass_cmp_pct,
+            "rush_att": rush_att,
+            "rush_tds": rush_tds,
+            "yds_gained_per_pass_att": yds_gained_per_pass_att,
+            "adj_yds_gained_per_pass_att": adj_yds_gained_per_pass_att,
+            "pass_rate": pass_rate,
+            "sacked": sacked,
+            "sack_yds_lost": sack_yds_lost,
+            "rush_yds_per_att": rush_yds_per_att,
+            "total_off_plays": total_off_plays,
+            "yds_per_play": yds_per_play,
+            "fga": fga,
+            "fgm": fgm,
+            "xpa": xpa,
+            "xpm": xpm,
+            "total_punts": total_punts,
+            "punt_yds": punt_yds,
+            "pass_fds": pass_fds,
+            "rsh_fds": rsh_fds,
+            "pen_fds": pen_fds,
+            "total_fds": total_fds,
+            "thrd_down_conv": thrd_down_conv,
+            "thrd_down_att": thrd_down_att,
+            "fourth_down_conv": fourth_down_conv,
+            "fourth_down_att": fourth_down_att,
+            "penalties": penalties,
+            "penalty_yds": penalty_yds,
+            "fmbl_lost": fmbl_lost,
+            "interceptions": interceptions,
+            "turnovers": turnovers,
+            "time_of_poss": time_of_poss
+        }
+
+        return team_game_log
+
+
+    
+
+
+
+def scrape_and_persist_player_demographics(season: int): 
+    """
+    Functionality to scrape & persist 'player_demographic' records for players in an upcoming season
+
+    NOTE: This functionality should be executed after new players have been accounted for 
+
+    Args:
+        season (int): the season to scrape & persist for 
+    """
+
+    logging.info(f"Scraping & persisted player demographics for the {season} NFL Season")
+
+    # scrape & persist each teams new draftees hashed_names & check if in PFR 
+    scrape_and_persist_team_draftees_hashed_names(season)
+
+    base_url = props.get_config('website.pro-football-reference.urls.player-page')
+
+    # fetch relevant players
+    players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
+
+    # construct URLs 
+    player_urls = construct_player_urls(players, season, base_url)
+
+    for url in player_urls:
+
+        html = fetch_page(url['url'])
+        if html is None: 
+            logging.warning(f"No valid HTML retrieved for player '{url['player']}'")
+            continue
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        parse_and_insert_player_demographics_and_dob(soup, url['player'], season)
+
+
+def scrape_and_persist_team_draftees_hashed_names(season: int):
+    """
+    Functionality to scrape & persist the hashed_names in PFR for new team draftees 
+
+    Args:
+        season (int): relevant season 
+    """
+
+    # generate URLs 
+    base_url = props.get_config('website.pro-football-reference.urls.team-draft')
+    teams = props.get_config('nfl.teams')
+
+    urls = [ base_url.format(team['acronym'], season) for team in teams ]
+    
+    players_to_update = []
+    relevant_positions = ['QB', 'RB', 'TE', 'WR']
+
+    for url in urls:
+
+        # scrape team page containing draftees 
+        html = fetch_page(url)
+        soup = BeautifulSoup(html, "html.parser")
+
+        # parse HTML element containing draftee information
+        draftees_table = soup.find("table", {'id': 'draft'})
+        draftees = draftees_table.find_next("tbody")
+        draft_records = draftees.find_all('tr')
+
+        # iterate through each player drafteed
+        for player in draft_records:
+
+            # skip players that aren't fantasy relevant
+            position = player.find('td', {'data-stat': 'pos'}).text
+            if position not in relevant_positions:
+                continue
+            
+            # extract HREF from HTML
+            player_element = player.find('td', {'data-stat': 'player'})
+            player_link = player_element.find_next('a')
+
+            player_name = player_link.text 
+            player_href = player_link.get('href')
+
+            # parse out relevant hashed name & append to records to update
+            hashed_name = player_href.split("/")[-1].replace(".htm", "")
+
+            # fetch player ID corresponding to player 
+            normalized_name = player_service.normalize_name(player_name)
+            player_id = player_service.get_player_id_by_normalized_name(normalized_name)
+
+            if player_id is None:
+                # retry with additional details
+                player_id = player_service.get_player_id_by_position_season_and_normalized_name(season, position, normalized_name)
+                if player_id is None:
+                    logging.warning(f'Unable to extract the player_id for player: {player_name}; skipping update of player hashed_name')
+                    continue
+
+            players_to_update.append({"hashed_name": hashed_name, "player_id": player_id})
+
+    # update db with hashed names
+    if players_to_update:
+        insert_data.update_player_hashed_name(players_to_update)
+        player_ids = [id['player_id'] for id in players_to_update]
+        insert_data.update_player_pfr_availablity_status(player_ids, True)
+
+
+
 """
 Functionality to fetch the metrics for each relevant player on current 53 man roster of specified year
 
@@ -127,25 +564,8 @@ Args:
 def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     logging.info(f"Attempting to scrape player metrics for the year {year}")
     player_metrics = []
-    player_urls = []
 
-    # sort players with hashed names persisted or not to optimize URL construction
-    players_with_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is not None]
-    players_without_hashed_name = [player for player in team_and_player_data if player['hashed_name'] is None and player['pfr_available'] == 1] # disregard players previously indicated to be unavailable
-
-    # log players skipped due to being unavailable
-    log_disregarded_players(team_and_player_data)
-
-    # order players by last name first initial 
-    ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
-
-    # construct each players metrics link for players with no hashed name persisted 
-    if players_without_hashed_name is not None and len(players_without_hashed_name) > 0:
-        player_urls.extend(get_player_urls(ordered_players, year))
-
-    # construct players metrics link for players with hashed name persisted 
-    if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
-        player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, year))
+    player_urls = construct_player_urls(team_and_player_data, year)
 
     # for each player url, fetch relevant metrics
     for player_url in player_urls:
@@ -164,11 +584,11 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
 
         game_log = get_game_log(soup, position, recent_games)
         if game_log.empty:
-            logging.warn(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
+            logging.warning(f"Player {player_name} has no available game logs for the {year} season; skipping game logs")
             continue # skip players with no metrics 
 
         # logic to account for player demographics 
-        parse_and_insert_player_demographics(soup, player_url['player'], year)
+        parse_and_insert_player_demographics_and_dob(soup, player_url['player'], year)
 
         player_metrics.append(
             {
@@ -180,7 +600,56 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
     return player_metrics
 
 
-def parse_and_insert_player_demographics(soup: BeautifulSoup, player_name: str, year: int):
+def construct_player_urls(players: list, season: int, base_url: str = None):
+    player_urls = []
+
+    # sort players with hashed names persisted or not to optimize URL construction
+    players_with_hashed_name = [player for player in players if player['hashed_name'] is not None]
+    players_without_hashed_name = [player for player in players if player['hashed_name'] is None and player['pfr_available'] == 1] # disregard players previously indicated to be unavailable
+
+    # log players skipped due to being unavailable
+    log_disregarded_players(players)
+
+    # check if this is for player pages or player metrics
+    if base_url is not None:
+        if players_without_hashed_name:
+            logging.warning(f"The following players will also be skipped as there is no hashed_name persisted for them:\n\t{players_without_hashed_name}")
+
+        return get_player_page_urls(players_with_hashed_name, base_url)
+
+    # order players by last name first initial 
+    ordered_players = order_players_by_last_name(players_without_hashed_name)  # order players without a hashed name by last name first inital 
+
+    # construct each players metrics link for players with no hashed name persisted 
+    if players_without_hashed_name is not None and len(players_without_hashed_name) > 0:
+        player_urls.extend(get_player_urls(ordered_players, season))
+
+    # construct players metrics link for players with hashed name persisted 
+    if players_with_hashed_name is not None and len(players_with_hashed_name) > 0:
+        player_urls.extend(get_player_urls_with_hash(players_with_hashed_name, season))
+    
+    return player_urls
+
+def get_player_page_urls(players: list, base_url: str):
+    """
+    Functionality to construct player page URLs 
+
+    Args:
+        players (list): the list of players to construct URLs for 
+        base_url (str): the base URL to construct player page URL for 
+    """
+    player_urls = [
+        {
+            "player": player['player_name'], 
+            "position": player['position'], 
+            "url": base_url.format(get_last_name_first_initial(player['player_name']), player['hashed_name'])
+        } for player in players
+    ]
+
+    return player_urls
+
+
+def parse_and_insert_player_demographics_and_dob(soup: BeautifulSoup, player_name: str, year: int):
     """
     Check if player demographics record from pro-football-reference are persisted, if not, persist
 
@@ -209,6 +678,12 @@ def parse_and_insert_player_demographics(soup: BeautifulSoup, player_name: str, 
             logging.info('No player date of birth persisted; updating player record with players date of birth')
             player_meta_data_div = soup.find('div', {'id': 'info'})
             player_dob_el = player_meta_data_div.find(id='necro-birth')
+
+            # verify relevant information is on page
+            if player_dob_el is None:
+                logging.warning(f"No DOB Element Exists for player {player_name}; skipping insertion of player demographics")
+                return
+            
             player_dob = player_dob_el.get("data-birth")
             insert_data.insert_player_dob(player_id, player_dob)
         
@@ -263,7 +738,6 @@ def get_player_urls_with_hash(players: list, year: int):
     Returns 
         list : list of player hashes 
     """
-
     base_url = "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}"
     player_urls = [
         {
@@ -321,10 +795,10 @@ def fetch_team_game_logs(teams: list, url_template: str, year: int, recent_games
 
         # validate teams metrics were retrieved properly
         if team_data.empty:
-            logging.error(
-                f"An error occured while fetching metrics for the team '{team}'"
+            logging.warning(
+                f"No team data was retreived for Team '{team}'"
             )
-            raise Exception(f"Unable to collect team data for the NFL Team '{team}'")
+            continue
 
         # append result
         team_metrics.append({"team_name": team, "team_metrics": team_data})
@@ -600,7 +1074,7 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
     return stats
 
 
-def scrape_player_advanced_metrics(start_year: int, end_year: int): 
+def scrape_player_advanced_metrics(start_year: int, end_year: int, week: int = None): 
 
     for year in range(start_year, end_year + 1):
         logging.info(f"Scraping player advanced passing, rushing, and receiving metrics for the {year} season")
@@ -609,7 +1083,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
         players = fetch_data.fetch_players_on_a_roster_in_specific_year_with_hashed_name(year)
 
         # filter previously inserted records 
-        players_already_persisted = fetch_data.fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year)
+        players_already_persisted = fetch_data.fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year, week)
         players = [player for player in players if player['player_id'] not in players_already_persisted ]
         logging.info(f"Players to fetch metrics for filtered down to length {len(players)} for season {year} of the NFL season")
 
@@ -643,7 +1117,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
                     logging.warn(f"No passing metrics for player {player_url['player_name']} and year {year} were not retreived; skipping insertion\n\n")
                     continue
                 
-                filtered_metrics = filter_metrics_by_week(advanced_passing_metrics)
+                filtered_metrics = filter_metrics_by_week(advanced_passing_metrics, week)
                 insert_data.insert_player_advanced_passing_metrics(filtered_metrics, player_url['player_id'], year)
 
             # rushing & receiving table 
@@ -661,16 +1135,17 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int):
                 if advanced_rushing_receiving_metrics is None:
                     logging.warn(f"No rushing/receiving metrics for player {player_url['player_name']} and season {year} were not retreived; skipping insertion\n\n")
                     continue
-                filtered_metrics = filter_metrics_by_week(advanced_rushing_receiving_metrics)
+                filtered_metrics = filter_metrics_by_week(advanced_rushing_receiving_metrics, week)
                 insert_data.insert_player_advanced_rushing_receiving_metrics(filtered_metrics, player_url['player_id'], year)
 
 
-def filter_metrics_by_week(metrics: list):
+def filter_metrics_by_week(metrics: list, curr_week: int = None):
     """
     Filters out duplicate entries based on the 'week' field. Keeps the first occurrence of each week.
     
     Args:
         metrics (list): A list of dictionaries containing player metrics.
+        week (int): optional arg of week 
         
     Returns:
         list: A filtered list with only the first instance for each week.
@@ -680,6 +1155,11 @@ def filter_metrics_by_week(metrics: list):
 
     for metric in metrics:
         week = metric.get('week') 
+
+        # skip irrelevant weeks if we want only a particular week
+        if curr_week is not None and week != week:
+            continue
+
         if week not in seen_weeks:
             filtered_metrics.append(metric)
             seen_weeks.add(week)
@@ -1112,6 +1592,9 @@ def convert_time_to_float(time_str: str) -> float:
     Returns:
         int: converted value 
     """
+    if not time_str:
+        return 0.0
+    
     minutes, seconds = map(int, time_str.split(":"))
     return minutes + seconds / 60
 

@@ -34,6 +34,29 @@ def fetch_all_teams():
     return teams
 
 
+def fetch_game_date_from_team_game_log(season: int, week: int, team_id: int):
+
+    sql = "SELECT game_date FROM team_game_log WHERE team_id = %s AND year = %s AND week = %s"
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (team_id, season, week))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+
+    except Exception as e:
+        logging.error("An error occurred while fetching game date for previous week", exc_info=True)
+        raise e
+
+
+
+
 """
 Functionality to fetch a team by their team name 
 
@@ -69,6 +92,29 @@ def fetch_team_by_name(team_name: int):
         raise e
 
     return team
+
+
+def fetch_team_name_by_id(id: int):
+    sql = "SELECT name FROM team WHERE team_id = %s"
+
+    name = None
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (id,))  
+            row = cur.fetchone()
+
+            if row:
+                name = row[0]
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching team with team_id[{id}]: {e}"
+        )
+        raise e
+
+    return name
 
 
 """
@@ -185,13 +231,23 @@ def fetch_player_by_normalized_name(normalized_name: str):
     return player
 
 
+def fetch_player_id_by_normalized_name_season_and_position(normalized_name: str, position: str, season: int):
+    """
+    Fetch player ID corresponding to normalized name, position, and season
 
-def fetch_player_id_by_normalized_name(normalized_name: str):
+    Args:
+        normalized_name (str): the name to extract player ID for 
+        position (str): the position extract player ID for 
+        season (int): relevant season
+
+    Returns
+        int: the player ID corresponding to args
+    """
 
     sql = """
-        SELECT player_id 
-        FROM player 
-        WHERE normalized_name = %s
+        SELECT p.player_id FROM player p
+        JOIN player_teams pt ON p.player_id = pt.player_id 
+        WHERE normalized_name LIKE %s AND pt.season = %s AND p.position = %s
     """
     player_id = None
 
@@ -199,7 +255,14 @@ def fetch_player_id_by_normalized_name(normalized_name: str):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (normalized_name,))  # use cleaned name
+            player_name = normalized_name.split(' ')
+            if len(player_name) > 2:
+                player_last_name = player_name[1]
+            else:
+                player_last_name = player_name[-1]
+
+            like_pattern = f"% {player_last_name}"
+            cur.execute(sql, (like_pattern,season, position))  
             row = cur.fetchone()
 
             if row:
@@ -212,6 +275,200 @@ def fetch_player_id_by_normalized_name(normalized_name: str):
         raise e
 
     return player_id
+
+def fetch_team_seasonal_metrics(team_id: int, season: int):
+    """
+    Retrieve team seasonal metrics for a particular season 
+
+    Args:
+        team_id (int): relevant team 
+        season (int): relevant season 
+    """
+    sql = """
+        SELECT 
+            *
+        FROM team_seasonal_general_metrics g
+        LEFT JOIN team_seasonal_kicking_metrics k ON g.team_id = k.team_id AND g.season = k.season
+        LEFT JOIN team_seasonal_punting_metrics pu ON g.team_id = pu.team_id AND g.season = pu.season
+        LEFT JOIN team_seasonal_passing_metrics pa ON g.team_id = pa.team_id AND g.season = pa.season
+        LEFT JOIN team_seasonal_rushing_receiving_metrics rr ON g.team_id = rr.team_id AND g.season = rr.season
+        LEFT JOIN team_seasonal_defensive_metrics d ON g.team_id = d.team_id AND g.season = d.season
+        LEFT JOIN team_seasonal_scoring_metrics s ON g.team_id = s.team_id AND g.season = s.season
+        LEFT JOIN team_seasonal_ranks r ON g.team_id = r.team_id AND g.season = r.season
+        WHERE g.team_id = %s AND g.season = %s
+    """
+
+    metrics = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (team_id, season))
+            row = cur.fetchone()
+
+            if row:
+                colnames = [desc[0] for desc in cur.description]
+                metrics = dict(zip(colnames, row))
+            else:
+                logging.warning(f"No metrics found for team_id={team_id}, season={season}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching team metrics for team_id={team_id}, season={season}: {e}")
+        raise e
+
+    return metrics
+
+
+def fetch_player_seasonal_metrics(season: int):
+    """
+    Retrieve player seasonal metrics for a particular season 
+
+    Args:
+        season (int): relevant season
+    """
+    sql = """
+        SELECT 
+            *
+        FROM player_seasonal_scoring_metrics pssm
+        LEFT JOIN player_seasonal_passing_metrics pspm ON pssm.player_id = pspm.player_id AND pssm.season = pspm.season 
+        LEFT JOIN player_seasonal_rushing_receiving_metrics psrrm ON pssm.player_id = psrrm.player_id AND pssm.season = psrrm.season 
+        WHERE pssm.season = %s
+    """
+
+    metrics = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, ))
+            row = cur.fetchone()
+
+            if row:
+                colnames = [desc[0] for desc in cur.description]
+                metrics = dict(zip(colnames, row))
+            else:
+                logging.warning(f"No seasonal metrics persisted for players for season={season}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching player season metrics; season={season}: {e}")
+        raise e
+
+    return metrics
+
+def fetch_player_id_by_normalized_name(normalized_name: str):
+
+    sql = """
+        SELECT player_id 
+        FROM player 
+        WHERE normalized_name LIKE %s
+    """
+    player_id = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            like_pattern = f"%{normalized_name}%"
+            cur.execute(sql, (like_pattern,))  # use cleaned name
+            row = cur.fetchone()
+
+            if row:
+                player_id = row[0]
+            else:
+                logging.warning(f"Unable to find player ID for {normalized_name}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching player ID for {normalized_name}: {e}")
+        raise e
+
+    return player_id
+
+def fetch_player_id_by_normalized_name(normalized_name: str):
+
+    sql = """
+        SELECT player_id 
+        FROM player 
+        WHERE normalized_name LIKE %s
+    """
+    player_id = None
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            like_pattern = f"%{normalized_name}%"
+            cur.execute(sql, (like_pattern,))  # use cleaned name
+            row = cur.fetchone()
+
+            if row:
+                player_id = row[0]
+            else:
+                logging.warning(f"Unable to find player ID for {normalized_name}")
+
+    except Exception as e:
+        logging.error(f"An error occurred while fetching player ID for {normalized_name}: {e}")
+        raise e
+
+    return player_id
+
+
+def fetch_game_conditions_record_by_pk(pk: dict):
+    """
+    Retrieve game_conditions record by its composite primary key.
+
+    Args:
+        pk (dict): Dictionary with keys 'season', 'week', 'home_team_id', 'visit_team_id'
+
+    Returns:
+        dict or None: The matching game_conditions record as a dictionary, or None if not found
+    """
+    sql = """
+        SELECT 
+            game_date,
+            game_time,
+            kickoff,
+            month,
+            start,
+            surface,
+            weather_icon,
+            temperature,
+            precip_probability,
+            precip_type,
+            wind_speed,
+            wind_bearing
+        FROM game_conditions
+        WHERE season = %s AND week = %s AND home_team_id = %s AND visit_team_id = %s
+    """
+
+    try:
+        connection = get_connection()
+        with connection.cursor() as cur:
+            cur.execute(sql, (
+                pk['season'],
+                pk['week'],
+                pk['home_team_id'],
+                pk['visit_team_id']
+            ))
+            row = cur.fetchone()
+
+            if row:
+                columns = [
+                    "game_date", "game_time", "kickoff", "month", "start",
+                    "surface", "weather_icon", "temperature", "precip_probability",
+                    "precip_type", "wind_speed", "wind_bearing"
+                ]
+                return dict(zip(columns, row))
+            else:
+                return None
+            
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching game_conditions for PK(season={pk['season']}, week={pk['week']}, "
+            f"home_team_id={pk['home_team_id']}, visit_team_id={pk['visit_team_id']})", exc_info=True
+        )
+        raise e
 
 
 """
@@ -279,20 +536,140 @@ def fetch_one_player_game_log():
 
     return player_game_log
 
+def fetch_team_game_logs_by_week_and_season(season: int, week: int):
+    """
+    Retrieve 'team_game_log' records corresponding to particular season / week
 
-"""
-Functionality to retrieve a team's game log by its PK (team_id, week, year)
+    Args:
+        season (int): relevant NFL season
+        week (int): relevant week
+    
+    Returns:
+        list: persisted team game log records corresponding to week / season
+    """
+    sql = """
+        SELECT
+            team_id, week, day, year, rest_days, home_team, distance_traveled,
+            opp, result, points_for, points_allowed, tot_yds, pass_yds, rush_yds,
+            opp_tot_yds, opp_pass_yds, opp_rush_yds, pass_tds, pass_cmp, pass_att,
+            pass_cmp_pct, rush_att, rush_tds, yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att, pass_rate, sacked, sack_yds_lost,
+            rush_yds_per_att, total_off_plays, total_yds, yds_per_play,
+            fga, fgm, xpa, xpm, total_punts, punt_yds,
+            pass_fds, rsh_fds, pen_fds, total_fds,
+            thrd_down_conv, thrd_down_att, fourth_down_conv, fourth_down_att,
+            penalties, penalty_yds, fmbl_lost, int, turnovers, time_of_poss,
+            game_date
+        FROM team_game_log
+        WHERE week = %s AND year = %s
+    """
+    team_game_logs = []
 
-Args:
-   pk (dict): primary key for a given team's game log (team_id, week, year)
+    try:
+        connection = get_connection()
 
-   Returns:
-   team_game_log (dict): the team game log corresponding to the given PK 
-"""
+        with connection.cursor() as cur:
+            cur.execute(sql, (week, season))
+            rows = cur.fetchall()
+            
+            if not rows:
+                logging.warning(f'No team game logs persisted corresponding to week {week} in the {season} NFL season.')
+                return team_game_logs
+            
+            for row in rows:
+                team_game_logs.append({
+                    "team_id": row[0],
+                    "week": row[1],
+                    "day": row[2],
+                    "year": row[3],
+                    "rest_days": row[4],
+                    "home_team": row[5],
+                    "distance_traveled": row[6],
+                    "opp": row[7],
+                    "result": row[8],
+                    "points_for": row[9],
+                    "points_allowed": row[10],
+                    "tot_yds": row[11],
+                    "pass_yds": row[12],
+                    "rush_yds": row[13],
+                    "opp_tot_yds": row[14],
+                    "opp_pass_yds": row[15],
+                    "opp_rush_yds": row[16],
+                    "pass_tds": row[17],
+                    "pass_cmp": row[18],
+                    "pass_att": row[19],
+                    "pass_cmp_pct": row[20],
+                    "rush_att": row[21],
+                    "rush_tds": row[22],
+                    "yds_gained_per_pass_att": row[23],
+                    "adj_yds_gained_per_pass_att": row[24],
+                    "pass_rate": row[25],
+                    "sacked": row[26],
+                    "sack_yds_lost": row[27],
+                    "rush_yds_per_att": row[28],
+                    "total_off_plays": row[29],
+                    "total_yds": row[30],
+                    "yds_per_play": row[31],
+                    "fga": row[32],
+                    "fgm": row[33],
+                    "xpa": row[34],
+                    "xpm": row[35],
+                    "total_punts": row[36],
+                    "punt_yds": row[37],
+                    "pass_fds": row[38],
+                    "rsh_fds": row[39],
+                    "pen_fds": row[40],
+                    "total_fds": row[41],
+                    "thrd_down_conv": row[42],
+                    "thrd_down_att": row[43],
+                    "fourth_down_conv": row[44],
+                    "fourth_down_att": row[45],
+                    "penalties": row[46],
+                    "penalty_yds": row[47],
+                    "fmbl_lost": row[48],
+                    "int": row[49],
+                    "turnovers": row[50],
+                    "time_of_poss": row[51],
+                    "game_date": row[52]
+                })
+
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching the team game log corresponding to PK {pk}: {e}"
+        )
+        raise e
+
+    return team_game_logs
 
 
 def fetch_team_game_log_by_pk(pk: dict):
-    sql = "SELECT * FROM team_game_log WHERE team_id=%s AND week=%s AND year=%s"
+    """
+    Retrieve 'team_game_log' record by its PK 
+
+    Args:
+        pk (dict): primary key of team game log 
+    
+    Returns:
+        dict: persisted DB value or None
+    """
+    sql = """
+        SELECT
+            team_id, week, day, year, rest_days, home_team, distance_traveled,
+            opp, result, points_for, points_allowed, tot_yds, pass_yds, rush_yds,
+            opp_tot_yds, opp_pass_yds, opp_rush_yds, pass_tds, pass_cmp, pass_att,
+            pass_cmp_pct, rush_att, rush_tds, yds_gained_per_pass_att,
+            adj_yds_gained_per_pass_att, pass_rate, sacked, sack_yds_lost,
+            rush_yds_per_att, total_off_plays, total_yds, yds_per_play,
+            fga, fgm, xpa, xpm, total_punts, punt_yds,
+            pass_fds, rsh_fds, pen_fds, total_fds,
+            thrd_down_conv, thrd_down_att, fourth_down_conv, fourth_down_att,
+            penalties, penalty_yds, fmbl_lost, int, turnovers, time_of_poss,
+            game_date
+        FROM team_game_log
+        WHERE team_id = %s AND week = %s AND year = %s
+    """
     team_game_log = None
 
     try:
@@ -303,6 +680,7 @@ def fetch_team_game_log_by_pk(pk: dict):
             row = cur.fetchone()
 
             if row:
+                # Mapping columns to dictionary
                 team_game_log = {
                     "team_id": row[0],
                     "week": row[1],
@@ -321,6 +699,42 @@ def fetch_team_game_log_by_pk(pk: dict):
                     "opp_tot_yds": row[14],
                     "opp_pass_yds": row[15],
                     "opp_rush_yds": row[16],
+                    "pass_tds": row[17],
+                    "pass_cmp": row[18],
+                    "pass_att": row[19],
+                    "pass_cmp_pct": row[20],
+                    "rush_att": row[21],
+                    "rush_tds": row[22],
+                    "yds_gained_per_pass_att": row[23],
+                    "adj_yds_gained_per_pass_att": row[24],
+                    "pass_rate": row[25],
+                    "sacked": row[26],
+                    "sack_yds_lost": row[27],
+                    "rush_yds_per_att": row[28],
+                    "total_off_plays": row[29],
+                    "total_yds": row[30],
+                    "yds_per_play": row[31],
+                    "fga": row[32],
+                    "fgm": row[33],
+                    "xpa": row[34],
+                    "xpm": row[35],
+                    "total_punts": row[36],
+                    "punt_yds": row[37],
+                    "pass_fds": row[38],
+                    "rsh_fds": row[39],
+                    "pen_fds": row[40],
+                    "total_fds": row[41],
+                    "thrd_down_conv": row[42],
+                    "thrd_down_att": row[43],
+                    "fourth_down_conv": row[44],
+                    "fourth_down_att": row[45],
+                    "penalties": row[46],
+                    "penalty_yds": row[47],
+                    "fmbl_lost": row[48],
+                    "int": row[49],
+                    "turnovers": row[50],
+                    "time_of_poss": row[51],
+                    "game_date": row[52]
                 }
 
     except Exception as e:
@@ -379,6 +793,8 @@ def fetch_player_game_log_by_pk(pk: dict):
                     "rec_yd": row[21],
                     "rec_td": row[22],
                     "snap_pct": row[23],
+                    "fantasy_points": row[24],
+                    "off_snps": row[25]
                 }
 
     except Exception as e:
@@ -567,24 +983,70 @@ def fetch_all_teams_game_logs_for_season(team_id: int, year: int):
     return team_game_logs
 
 
-"""
-Functionality to retrieve the needed dependent and independent variables needed 
-to create our predicition models 
+def fetch_player_betting_odds_record_by_pk(player_id: int, week: int, season: int, label: str):
+    """
+    Retrieve a player betting odds record by PK 
 
-Args:
-   None 
+    Args:
+        player_id (int): relevant player ID 
+        week (int): week to retrieve record for 
+        season (int): season to retrieve record for 
+        label (str): label to account for 
 
-Returns:
-   df (pd.DataFrame): data frame containing results of query 
+    Args:
+        dict: persisted record 
+    """
+    
+    sql = "SELECT player_id, label, cost, line, week, season FROM player_betting_odds WHERE player_id = %s AND week= %s AND season = %s AND label = %s"
 
-"""
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, week, season, label))
+            row = cur.fetchone()
+
+            if row:
+                return {
+                    "player_id": row[0],
+                    "label": row[1],
+                    "cost": row[2],
+                    "line": row[3],
+                    "week": row[4],
+                    "season": row[5]
+                }
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching the team game logs corresponding to team {team_id} and year {year}: {e}"
+        )
+        raise e
+
+
+
 
 #TODO: Optimize query so it doesn't take forever to run 
 #TODO: Move SQL that stores this query somewhere outside of string 
-#TODO: Ensure that the we update join statement for previous year data to ensure we don't just exclude all rookies!
-#TODO: Ensure we update weekly agg metrics join to account for previous week (current week will contain )
-def fetch_independent_and_dependent_variables():
-    sql = """
+def fetch_independent_and_dependent_variables(week: int, season: int):
+    """
+    Functionality to retrieve the needed dependent and independent variables needed 
+    to create our predicition models 
+
+    Args:
+        week (int): either the relevant week or None 
+        season (int): the relevant season or None
+
+    Returns:
+    df (pd.DataFrame): data frame containing results of query 
+
+    """
+
+    # generate where clause in the case this is for predictions
+    where_clause = f"WHERE pgl.week = {week} AND pgl.year = {season}" if week is not None and season is not None else ""
+
+    sql = f"""
     WITH PlayerProps AS (
         SELECT 
             pbo.player_name,
@@ -1512,20 +1974,21 @@ def fetch_independent_and_dependent_variables():
       LEFT JOIN
          team_seasonal_ranks opp_tsr ON td.team_id = opp_tsr.team_id AND (pgl.year - 1) = opp_tsr.season -- opposing team seasonal ranks for previous year
       JOIN 
-         team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week = t_tr.week AND pgl.year = t_tr.season -- players team weekly rankings heading into matchup
+         team_ranks t_tr ON t.team_id = t_tr.team_id AND pgl.week - 1 = t_tr.week AND pgl.year = t_tr.season -- players team weekly rankings heading into matchup
       JOIN
-         team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week = t_td.week AND pgl.year = t_td.season -- opposing team weekly rankings heading into matchup
+         team_ranks t_td ON td.team_id = t_td.team_id AND pgl.week - 1 = t_td.week AND pgl.year = t_td.season -- opposing team weekly rankings heading into matchup
       JOIN
          PlayerProps pp ON p.name = pp.player_name AND pgl.week = pp.week AND pgl.year = pp.season -- player betting lines 
       JOIN 
          team_betting_odds tbo -- team betting lines 
       ON (
-        (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week) 
+        (pgl.home_team = TRUE AND tbo.home_team_id = t.team_id AND tbo.away_team_id = td.team_id AND pgl.week = tbo.week AND pgl.year = tbo.season) 
             OR 
-        (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week)
+        (pgl.home_team = FALSE AND tbo.away_team_id = t.team_id AND tbo.home_team_id = td.team_id AND pgl.week = tbo.week AND pgl.year = tbo.season)
       ) 
+      {where_clause}
    """
-
+    
     df = None
 
     try:
@@ -1548,6 +2011,8 @@ def fetch_independent_and_dependent_variables():
 """
 Retrieve relevant inputs for a player in order to make prediction
 TODO: FIX ME SO THAT OFFENSIVE/DEFENSIVE RANKS AREN'T THE SAME 
+
+TODO: This can prob just get removed 
 
 Args:
    week (int): the week corresponding to the matchup we are predicitng for
@@ -1806,7 +2271,7 @@ def fetch_players_on_a_roster_in_specific_year(year: int):
     return players
 
 
-def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int):
+def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int, week: int = None):
     """
     Retrieve player IDs of players who have advanced metrics persisted 
 
@@ -1816,16 +2281,26 @@ def fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year: int):
     Returns:
         dict: set of disitinct players ids that are already persisted
     """
-    
-    sql = """ 
-        SELECT DISTINCT player_id
-        FROM player_advanced_passing
-        WHERE season = %s
-        UNION
-        SELECT DISTINCT player_id
-        FROM player_advanced_rushing_receiving
-        WHERE season = %s;
-    """
+    if week is None: 
+        sql = """ 
+            SELECT DISTINCT player_id
+            FROM player_advanced_passing
+            WHERE season = %s
+            UNION
+            SELECT DISTINCT player_id
+            FROM player_advanced_rushing_receiving
+            WHERE season = %s;
+        """
+    else:
+        sql = """ 
+            SELECT DISTINCT player_id
+            FROM player_advanced_passing
+            WHERE season = %s AND week = %s
+            UNION
+            SELECT DISTINCT player_id
+            FROM player_advanced_rushing_receiving
+            WHERE season = %s AND week = %s;
+        """
     
     try:
         connection = get_connection()
@@ -1936,6 +2411,60 @@ def fetch_max_week_persisted_in_team_betting_odds_table(year: int):
     except Exception as e:
         logging.error(
             f"An error occurred while fetching the latest week persisted in team_betting_odds for year {year}: {e}"
+        )
+        raise e
+
+
+def fetch_team_betting_odds_by_pk(home_team_id: int, away_team_id: int, season: int, week: int):
+    """
+    Retrieve 'team_betting_odds' record from DB by PK if its exists 
+
+    Args:
+        home_team_id (int): team ID corresponding to home team
+        away_team_id (int): team ID corresponding to away team
+        season (int): relevant season 
+        week (int): relevant week 
+
+    Returns:
+        dict: team betting odds record persisted 
+    """
+
+    sql = """
+        SELECT home_team_id, away_team_id, home_team_score, away_team_score, week, season, game_over_under, favorite_team_id, spread, total_points, over_hit, under_hit, favorite_covered, underdog_covered
+        FROM team_betting_odds 
+        WHERE season = %s AND week = %s AND home_team_id = %s AND away_team_id = %s 
+    """
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season,week,home_team_id, away_team_id))
+            row = cur.fetchone()
+
+            if row:
+                return {
+                    "home_team_id": row[0],
+                    "away_team_id": row[1], 
+                    "home_team_score": row[2],
+                    "away_team_score": row[3],
+                    "week": row[4],
+                    "season": row[5],
+                    "game_over_under": row[6],
+                    "favorite_team_id": row[7],
+                    "spread": row[8],
+                    "total_points": row[9],
+                    "over_hit": row[10],
+                    "under_hit": row[11],
+                    "favorite_covered": row[12],
+                    "underdog_covered": row[13]
+                }
+        
+        return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching team betting odds record by PK", exc_info=True
         )
         raise e
 
@@ -2089,6 +2618,41 @@ def fetch_player_teams_record_by_pk(record: dict):
         raise e
 
 
+def fetch_player_teams_records_by_player_and_season(player_id: int, season: int): 
+    """
+    Retrieve player_teams records by player ID / season
+
+    Args:
+        player_id (int): the players ID 
+        season (int): relevant season
+    
+    Returns:
+        record (dict): record in DB 
+    """
+
+    sql = "SELECT player_id, team_id, season, strt_wk, end_wk FROM player_teams WHERE player_id = %s AND season = %s"
+    records = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id, season))
+            rows = cur.fetchall()
+
+            for row in rows:
+                records.append({"player_id": row[0], "team_id": row[1], "season": row[2], "strt_wk": row[3], "end_wk": row[4]})
+
+        return records
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving player_teams record for player_id {player_id} and season {season}: {e}"
+        )
+        raise e
+
+
+
 def fetch_player_fantasy_points(player_id: int, season: int, end_week: int): 
     """
     Functionality to retrieve players fantasy points from beginning of season to specific week
@@ -2128,7 +2692,7 @@ def fetch_player_fantasy_points(player_id: int, season: int, end_week: int):
         raise e
 
 
-def fetch_player_depth_chart_record_by_pk(record: dict): 
+def fetch_player_depth_chart_position_by_pk(record: dict): 
     """
     Retrieve player_depth_chart record by PK 
 
@@ -2136,10 +2700,10 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
         record (dict): mapping of PK's 
     
     Returns:
-        record (dict): record in DB 
+        int: depth chart position
     """
 
-    sql = "SELECT * FROM player_depth_chart WHERE player_id = %s AND season = %s AND week = %s"
+    sql = "SELECT depth_chart_pos FROM player_depth_chart WHERE player_id = %s AND season = %s AND week = %s"
 
     try:
         connection = get_connection()
@@ -2149,7 +2713,7 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
             row = cur.fetchone()
 
             if row:
-                return row[0]
+                return int(row[0])
             else:
                 return None
 
@@ -2158,7 +2722,142 @@ def fetch_player_depth_chart_record_by_pk(record: dict):
             f"An error occurred while retrieving player depth chart: {e}"
         )
         raise e
+    
 
+
+def get_count_player_demographics_records_for_season(season: int): 
+
+    """Functionality to retrieve the count of player_demographcis records for a particular season
+
+    Args:
+        season (int): the season pertaining to the record 
+    
+    Returns:
+        int: number of player demographic records for season
+    """
+
+    sql = "SELECT * FROM player_demographics WHERE season = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, ))
+            rows = cur.fetchall()
+
+            return len(rows)
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving the count of player_demographic records pertaining to season {season}", exc_info=True
+        )
+        raise e
+
+def get_count_player_teams_records_for_season(season: int): 
+
+    """Functionality to retrieve the count of player_teams records for a particular season
+
+    Args:
+        season (int): the season pertaining to the record 
+    
+    Returns:
+        int: number of player_teams records for season
+    """
+
+    sql = "SELECT * FROM player_teams WHERE season = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, ))
+            rows = cur.fetchall()
+
+            return len(rows)
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving the count of player_teams records pertaining to season {season}", exc_info=True
+        )
+        raise e
+    
+
+def fetch_player_teams_by_week_season_and_player_id(season: int, week: int, player_id: int):
+    """
+    Retrieve playe teams record by week/season/player_id
+
+    Args:
+        season (int): relevant season
+        week (int): relevant week
+        player_id (int): relevant player ID 
+    """
+
+    sql = "SELECT team_id FROM player_teams WHERE season = %s AND %s >= strt_wk AND %s <= end_wk AND player_id = %s"
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, week, week, player_id))
+            row = cur.fetchone()
+
+            if not row:
+                logging.warning(f'No players found corresponding to week {week} and player ID {player_id} of the {season} NFL season')
+                return None
+            else:
+                return row[0]
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving players team corresponding to season {season}, week {week}, and player ID {player_id}", exc_info=True
+        )
+        raise e
+    
+    return players
+
+    
+def fetch_players_corresponding_to_season_week_team(season: int, week: int, team_id: int): 
+
+    """
+    Fetch player_ids corresponding to particular season, week, and team_id
+
+    Args:
+        season (int): relevant NFL season
+        week (int): relevant week 
+        team_id (int): relevant teams 
+    
+    Returns:
+        list: player_ids corresponding to this week/season/team
+    """
+
+    sql = "SELECT player_id FROM player_teams WHERE season = %s AND %s >= strt_wk AND %s <= end_wk AND team_id = %s"
+    players = []
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (season, week, week, team_id))
+            rows = cur.fetchall()
+
+            if not rows:
+                logging.warning(f'No players found corresponding to week {week} and team ID {team_id} of the {season} NFL season')
+                return players
+            
+
+            for row in rows:
+                players.append(row[0])
+
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while retrieving players corresponding to season {season}, week {week}, and team_id {team_id}", exc_info=True
+        )
+        raise e
+    
+    return players
 
 def retrieve_player_demographics_record_by_pk(season: int, player_id: int): 
     """Functionality to retrieve a player demographic record by its PK
@@ -2415,5 +3114,39 @@ def fetch_player_date_of_birth(player_id: int):
     except Exception as e:
         logging.error(
             f"An error occurred while fetching player date of birth corresponding to player ID {player_id}: {e}"
+        )
+        raise e
+    
+    
+def fetch_player_name_by_id(player_id: int):
+    """
+    Fetch players name by their ID 
+
+    Args:
+        player_id (int): the player we want to retrieve name for 
+    """
+    
+    sql = """
+        SELECT name
+        FROM player
+        WHERE player_id = %s
+    """
+
+
+    try:
+        connection = get_connection()
+
+        with connection.cursor() as cur:
+            cur.execute(sql, (player_id,))
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return None
+
+    except Exception as e:
+        logging.error(
+            f"An error occurred while fetching player name corresponding to player ID {player_id}: {e}"
         )
         raise e

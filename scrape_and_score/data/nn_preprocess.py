@@ -12,9 +12,22 @@ import time
 # global variable to account for dynamic categorical column names
 injury_feature_names = []
 
-def preprocess(): 
-   logging.info('Attempting to fetch & pre-process our training/testing data for our Neural Networks...')
-   df = fetch_data()
+def preprocess(week: int = None, season: int = None): 
+   """
+   Pre-process relevant data in order to either a) train our neural network models, or b) make predictions utilizing our neural network models 
+
+   Args:
+      week (int): optional parameter that allows us to specify a particular week of data that we are interested in pre-processing 
+      season (int): optional parameter that allows us to specify a particular season of data that we are interested in pre-procesisng 
+
+   Returns:
+      pd.DataFrame: pre-processing data within a pd.DataFrame 
+   """
+
+   week_season_str = f"for Week {week} of the {season} NFL Season" if week is not None and season is not None else ""
+
+   logging.info(f'Attempting to fetch & pre-process our training/testing data for our Neural Networks {week_season_str}...')
+   df = fetch_data(week, season)
 
    parsed_df = parse_player_props(df)
    parsed_df = encode_player_injuries(parsed_df)
@@ -23,7 +36,9 @@ def preprocess():
    manual_feature_engineering(parsed_df)
 
    processed_df = pd.get_dummies(parsed_df, columns=['position'], dtype=int) #encode categorical variable
-   processed_df.drop(columns=['player_id', 'home_team'], inplace=True) # drop un-needed values 
+
+   not_needed_cols = ['player_id', 'home_team'] if week is None and season is None else ['home_team'] # only remove player ID column in the case this isn't for generating predictions
+   processed_df.drop(columns=not_needed_cols, inplace=True) # drop un-needed values 
 
    # independent variables to account for cyclical nature
    cyclical_df = processed_df[['week', 'season']].copy()
@@ -41,6 +56,27 @@ def preprocess():
    processed_df.infer_objects(copy=False)
 
    return processed_df
+
+def add_missing_features(df: pd.DataFrame, cols: list):
+   """
+   Functionality to add missing feautres to input data frame utilized for predictions 
+
+   Args:
+      df (pd.DataFrame): data frame that is potentially missing features 
+      cols (list): list of relevant inputs we expected to find in the data frame 
+   """
+
+   # add necessary columns
+   for col in cols:
+      if col not in df.columns:
+         df[col] = -1
+
+   # reorder columns to be expected order
+   df = df[cols]
+
+   return df
+
+
 
 
 def feature_selection(df: pd.DataFrame, position: str):
@@ -122,8 +158,8 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    global injury_feature_names
    scaler = StandardScaler()
 
-   # store independent variables in seperate data frame 
-   xs = df.drop(columns=['fantasy_points']).copy()
+   # store independent variables in seperate data frame if available 
+   xs = df.drop(columns=['fantasy_points']).copy() if 'fantasy_points' in df.columns else df.copy()
 
    # extract game condition hot encoded features
    columns = df.columns
@@ -257,7 +293,12 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
    df['temperature'] = df['temperature'].fillna(-999)
 
    # remove percent sign from percip probability
-   df['precip_probability'] = df['precip_probability'].replace('', None).fillna(-1)
+   df['precip_probability'] = (
+    df['precip_probability']
+      .replace('', None)
+      .fillna('-1')
+      .infer_objects(copy=False)
+   )
    df['precip_probability'] = df['precip_probability'].str.replace('%', '', regex=False).astype(float)
 
    return df
@@ -411,9 +452,16 @@ def normalize_injury_locations(injuries: list):
 
 
 
-def fetch_data(): 
+def fetch_data(week: int, season: int): 
    """
-      Retrieve indepdenent variables 
+      Retrieve indepdenent variables to either train our neural network or to generate predictions 
+
+      Args:
+         week (int): relevant week
+         season (int): relevant season 
+
+      Returns:
+         dict: relevant data 
    """
    logging.info("Fetching inputs & outputs for Neural Network training & testing")
-   return fetch.fetch_independent_and_dependent_variables()
+   return fetch.fetch_independent_and_dependent_variables(week, season)
