@@ -60,6 +60,7 @@ def predict(week: int, season: int, model: str):
     }
     
     # iterate through relevant positions
+    predictions = {}
     for position in positions: 
 
         # extract position relevant data 
@@ -79,7 +80,10 @@ def predict(week: int, season: int, model: str):
         prediction_data = position_specific_df[position_features]
         X = torch.from_numpy(nn_preprocess.scale_and_transform(prediction_data)).float()
 
-        prediction.generate_predictions(position, week, season, model_mapping[position], players, X)
+        predictions[position] = prediction.generate_predictions(position, week, season, model_mapping[position], players, X)
+
+    prediction.log_predictions(predictions, week, season)
+
 
 
 def upcoming(week: int, season: int):

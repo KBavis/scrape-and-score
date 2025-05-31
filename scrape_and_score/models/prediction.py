@@ -37,9 +37,8 @@ def generate_predictions(position: str, week: int, season: int, model: nn.Module
     # reset players index
     players = players.reset_index(drop=True)
 
-    predictions = {}
-
     # iterate through and generate predictions for each player
+    predictions = {}
     for i, pred in enumerate(preds):
 
         # extract player name this prediction is being made for 
@@ -49,8 +48,29 @@ def generate_predictions(position: str, week: int, season: int, model: nn.Module
 
     sorted_dict = dict(sorted(predictions.items(), key=lambda item: item[1], reverse=True))
 
+    results = []
     for i, (key, value) in enumerate(sorted_dict.items()):
         if i >= 40:
             break
-        print(f"{i+1}. {key}: {value:.2f}") 
+        results.append(f"{i+1}. {key}: {value:.2f}")
+    
+    return results
+
+
+def log_predictions(predictions: dict, week: int, season: int):
+    """
+    Log out relevant top-40 predictions 
+
+    Args:
+        predictions (list): list of predictions
+    """
+
+    for position, ranks in predictions.items(): 
+        
+        print(f"""-----------------------------------------\nTop 40 {position} Predictions – Week {week}, {season} Season\n-----------------------------------------""")
+
+        for rank in ranks:
+            print(f"{rank}")
+        
+        print("\n")
 
