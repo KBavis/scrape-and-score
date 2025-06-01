@@ -3,7 +3,7 @@ import requests
 from service import player_service
 from db import fetch_data, insert_data
 import logging
-from . import rotowire_scraper as rotowire
+from . import rotowire as rotowire
 import time
 from datetime import datetime
 

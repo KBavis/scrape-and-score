@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from db import fetch_data, insert_data
 import logging
-from . import pfr_scraper
+from . import pfr
 from constants import LOCATIONS, CITIES
 
 
@@ -77,7 +77,7 @@ def generate_and_persist(records: list, season: int, week: int):
         away_team_rest_days = calculate_rest_days(away_team_id, season, week, parsed_date)
 
         home_distance_traveled = 0
-        away_distance_traveled = round(pfr_scraper.calculate_distance(LOCATIONS[CITIES[home_team_name]], LOCATIONS[CITIES[away_team_name]]), 2)
+        away_distance_traveled = round(pfr.calculate_distance(LOCATIONS[CITIES[home_team_name]], LOCATIONS[CITIES[away_team_name]]), 2)
 
         # generate two team game log records (one for each team) 
         persistable_records.append({"team_id": home_team_id, "opp": away_team_id, "is_home": True, "game_date": formatted_date, "day": day, "rest_days": home_team_rest_days, "week": week, "year": season, "distance_traveled": home_distance_traveled})

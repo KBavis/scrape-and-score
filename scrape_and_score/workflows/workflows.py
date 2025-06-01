@@ -1,4 +1,5 @@
-from scraping import our_lads, pfr_scraper as pfr, rotowire_scraper, football_db, betting_pros, espn
+from scrape_and_score.scraping import pfr as pfr, rotowire
+from scraping import our_lads, football_db, betting_pros, espn
 from service import team_game_logs_service, player_game_logs_service
 from models.lin_reg import LinReg
 from data import nn_preprocess, linreg_preprocess
@@ -123,7 +124,7 @@ def upcoming(week: int, season: int):
     utils.add_stubbed_player_game_logs(all_player_ids, week, season)
 
     # scrape upcoming team betting odds & game conditions 
-    rotowire_scraper.scrape_upcoming(week, season, all_team_ids)
+    rotowire.scrape_upcoming(week, season, all_team_ids)
 
     # scrape player injuries 
     football_db.scrape_upcoming(week, season, all_player_ids) #TODO: Validate this site is updated throughout week of the NFL game 
@@ -159,7 +160,7 @@ def historical(start_year: int, end_year: int):
 
 
     # fetch & persist team betting odds & game conditions for relevant seasons
-    rotowire_scraper.scrape_all(start_year, end_year) 
+    rotowire.scrape_all(start_year, end_year) 
 
     # fetch & persist player betting odds for relevant season
     for curr_year in range(start_year, end_year + 1):
@@ -196,7 +197,7 @@ def results(week: int, season: int):
     team_game_logs_service.calculate_all_teams_rankings(season, week)
 
     # update 'team_betting_odds' records with results
-    rotowire_scraper.update_recent_betting_records(week, season)
+    rotowire.update_recent_betting_records(week, season)
 
     # insert seasonal rankings if week 18 and not inserted
     if week == FINAL_WEEK:
