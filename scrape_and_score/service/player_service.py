@@ -1,6 +1,11 @@
-from db import fetch_data
 import logging
 import re
+from db.read.players import (
+    fetch_all_players,
+    fetch_player_id_by_normalized_name,
+    fetch_player_name_by_id,
+    fetch_player_id_by_normalized_name_season_and_position
+)
 
 """
 Functionality to retrieve all players persisted within our DB 
@@ -9,7 +14,7 @@ Functionality to retrieve all players persisted within our DB
 
 def get_all_players():
     logging.info(f"Fetching all players persisted within our database")
-    players = fetch_data.fetch_all_players()
+    players = fetch_all_players()
     logging.info(f"Retrieved {len(players)} players from database")
     return players
 
@@ -22,7 +27,7 @@ def get_player_id_by_normalized_name(name: str):
     """
     normalized_name= normalize_name(name)
     logging.info(f"Retrieving the player ID corresponding to the normalized name: {normalized_name}")
-    player_id = fetch_data.fetch_player_id_by_normalized_name(normalized_name)
+    player_id = fetch_player_id_by_normalized_name(normalized_name)
     return player_id
 
 def get_player_name_by_id(id: int):
@@ -35,7 +40,7 @@ def get_player_name_by_id(id: int):
     Returns:
         str: player's name 
     """
-    return fetch_data.fetch_player_name_by_id(id)
+    return fetch_player_name_by_id(id)
     
 
 
@@ -50,7 +55,7 @@ def get_player_id_by_position_season_and_normalized_name(season: int, position: 
     """
 
     logging.info(f"Attempting to retrieve player ID for  player[normalized_name={name},position={position},season={season}]")
-    player_id = fetch_data.fetch_player_id_by_normalized_name_season_and_position(name, position, season)
+    player_id = fetch_player_id_by_normalized_name_season_and_position(name, position, season)
     return player_id
 
 

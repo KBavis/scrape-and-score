@@ -1,4 +1,4 @@
-from db import fetch_data
+from db.read.players import fetch_independent_and_dependent_variables
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -747,7 +747,7 @@ Returns:
 
 
 def get_data():
-    df = fetch_data.fetch_independent_and_dependent_variables()
+    df = fetch_independent_and_dependent_variables()
     dfs_with_player_props = parse_player_props(df)
     updated_df = include_averages(dfs_with_player_props)
     return updated_df

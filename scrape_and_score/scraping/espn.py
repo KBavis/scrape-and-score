@@ -2,10 +2,19 @@ from .util import fetch_page
 from config import props
 from bs4 import BeautifulSoup
 from datetime import datetime
-from db import fetch_data, insert_data
 import logging
 from . import pfr
 from constants import LOCATIONS, CITIES
+from db.read.teams import (
+    fetch_team_name_by_id, 
+    fetch_game_date_from_team_game_log,
+    fetch_team_game_log_by_pk,
+    fetch_all_teams
+)
+from db.insert.teams import (
+    insert_upcoming_team_game_logs,
+    update_team_game_log_game_date
+)
 
 
 
@@ -65,8 +74,8 @@ def generate_and_persist(records: list, season: int, week: int):
         home_team_id = mapping[record['home_team']]
         away_team_id = mapping[record['away_team']]
 
-        home_team_name = fetch_data.fetch_team_name_by_id(home_team_id)
-        away_team_name = fetch_data.fetch_team_name_by_id(away_team_id)
+        home_team_name = fetch_team_name_by_id(home_team_id)
+        away_team_name = fetch_team_name_by_id(away_team_id)
 
         day = record['game_date'].split(',')[0][0:3]
 
@@ -87,7 +96,7 @@ def generate_and_persist(records: list, season: int, week: int):
     filtered_records = filter(persistable_records, season, week)
     if filtered_records:
         logging.info(f'Attempting to insert {len(filtered_records)} upcoming team_game_log records into our database for week {week} of the {season} NFL season.')
-        insert_data.insert_upcoming_team_game_logs(filtered_records) 
+        insert_upcoming_team_game_logs(filtered_records) 
     else:
         logging.info('No new upcoming team_game_log records to be inserted; skipping insertion')
 
@@ -104,11 +113,11 @@ def calculate_rest_days(team_id: int, season: int, week: int, curr_game_date: da
     """
 
     # extract date from last weeks game 
-    prev_game_date = fetch_data.fetch_game_date_from_team_game_log(season, week - 1, team_id)
+    prev_game_date = fetch_game_date_from_team_game_log(season, week - 1, team_id)
 
     if prev_game_date is None:
         # attempt to extract week 18 match game date 
-        prev_game_date = fetch_data.fetch_game_date_from_team_game_log(season - 1, 18, team_id)
+        prev_game_date = fetch_game_date_from_team_game_log(season - 1, 18, team_id)
         if prev_game_date is None:
             return 100  # default rest days to 100 if no previous date persisted. NOTE: This will be the case for all week 1 games of 2025 season. 
         
@@ -136,7 +145,7 @@ def filter(records: list, season: int, week: int):
     
     for record in records:
         pk = {"team_id": record['team_id'], "week": week, "year": season}
-        team_game_log = fetch_data.fetch_team_game_log_by_pk(pk)
+        team_game_log = fetch_team_game_log_by_pk(pk)
 
         if team_game_log is None:
             logging.info(f'Team Game Log [team_id={record['team_id']},week={week},season={season}] not persisted; appending to filtered records')
@@ -157,7 +166,7 @@ def filter(records: list, season: int, week: int):
         
         # update game date in DB if changed since last insertion
         logging.info(f"Team Game Log [team_id={record['team_id']},week={week},season={season}] has a game_date persisted of {persisted_game_date}, but the scraped date was {scraped_game_date}; updating team game log record with up-to-date game date.")
-        insert_data.update_team_game_log_game_date(scraped_game_date, pk) 
+        update_team_game_log_game_date(scraped_game_date, pk) 
     
     return filtered_records
 
@@ -175,7 +184,7 @@ def generate_team_id_mapping():
         dict: mapping of a team name to a team ID 
     """
 
-    teams = fetch_data.fetch_all_teams()
+    teams = fetch_all_teams()
     return {record["name"].split(" ")[-1].lower(): record["team_id"] for record in teams}
 
 

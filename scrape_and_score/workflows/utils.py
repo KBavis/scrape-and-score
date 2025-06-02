@@ -1,10 +1,24 @@
-from db import fetch_data, insert_data
 from datetime import datetime
 import logging
 import random
 from service import team_service
 from config import props
 import os
+from db.read.players import (
+    get_count_player_demographics_records_for_season, 
+    get_count_player_teams_records_for_season,
+    fetch_player_seasonal_metrics,
+    fetch_player_game_log_by_pk,
+    fetch_player_teams_by_week_season_and_player_id,
+    fetch_players_corresponding_to_season_week_team
+)
+from db.read.teams import (
+    fetch_team_seasonal_metrics,
+    fetch_team_game_logs_by_week_and_season,
+)
+from db.insert.players import (
+    insert_upcoming_player_game_logs
+)
 
 
 def is_player_demographics_persisted(season: int):
@@ -18,7 +32,7 @@ def is_player_demographics_persisted(season: int):
         bool: flag indicating if necessary data still needs to be persisted
     """ 
     # player demographics
-    num_pd_records = fetch_data.get_count_player_demographics_records_for_season(season)
+    num_pd_records = get_count_player_demographics_records_for_season(season)
 
     return num_pd_records != 0
 
@@ -33,7 +47,7 @@ def is_player_records_persisted(season: int):
         bool: flag indicating if necessary data still needs to be persisted
     """ 
     # player teams 
-    num_pt_records = fetch_data.get_count_player_teams_records_for_season(season) #NOTE: If player_teams is empty, relevant players / depth_chart_position records are also assumed to be lacking for specific season since this is done in a single flow
+    num_pt_records = get_count_player_teams_records_for_season(season) #NOTE: If player_teams is empty, relevant players / depth_chart_position records are also assumed to be lacking for specific season since this is done in a single flow
 
     return num_pt_records != 0
 
@@ -49,7 +63,7 @@ def are_team_seasonal_metrics_persisted(season: int):
     team_ids = [team_service.get_team_id_by_name(team['name']) for team in props.get_config('nfl.teams')]
 
     for id in team_ids:
-        metrics = fetch_data.fetch_team_seasonal_metrics(id, season)
+        metrics = fetch_team_seasonal_metrics(id, season)
         
         if metrics is None:
             return False 
@@ -65,7 +79,7 @@ def are_player_seasonal_metrics_persisted(season: int):
         season (int): relevant season 
     """
 
-    metrics = fetch_data.fetch_player_seasonal_metrics(season)
+    metrics = fetch_player_seasonal_metrics(season)
 
     return True if metrics is not None else False
 
@@ -85,20 +99,20 @@ def add_stubbed_player_game_logs(player_ids: list, week: int, season: int):
     logging.info(f"Attempting to insert 'player_game_log' records for Week {week} and {season} NFL Season")
 
     # randomly check persistence of player game log to determine if we need to persist
-    player_game_log = fetch_data.fetch_player_game_log_by_pk({"player_id": random.choice(player_ids), "week": week, "year": season})
+    player_game_log = fetch_player_game_log_by_pk({"player_id": random.choice(player_ids), "week": week, "year": season})
     if player_game_log is not None:
         logging.info(f"Player Game Logs corresponding to Week {week} of the {season} NFL Season already persisted; skipping insertion")
         return
     
     # fetch relevant game logs 
-    game_logs = fetch_data.fetch_team_game_logs_by_week_and_season(season, week)
+    game_logs = fetch_team_game_logs_by_week_and_season(season, week)
 
     # iterate through each player 
     records = []
     for player_id in player_ids:
 
         # fetch players team
-        team_id = fetch_data.fetch_player_teams_by_week_season_and_player_id(season, week, player_id)
+        team_id = fetch_player_teams_by_week_season_and_player_id(season, week, player_id)
 
         # extract team game log 
         game_log = next((game_log for game_log in game_logs if game_log['team_id'] == team_id), None)
@@ -111,7 +125,7 @@ def add_stubbed_player_game_logs(player_ids: list, week: int, season: int):
 
     # insert records 
     logging.info(f"Attempting to insert {len(records)} player_game_log records into our database")
-    insert_data.insert_upcoming_player_game_logs(records) 
+    insert_upcoming_player_game_logs(records) 
 
 def generate_game_mapping(season: int, week: int): 
     """
@@ -125,7 +139,7 @@ def generate_game_mapping(season: int, week: int):
         list: players/teams corresponding to particular game date 
     """
 
-    team_game_logs = fetch_data.fetch_team_game_logs_by_week_and_season(season, week)
+    team_game_logs = fetch_team_game_logs_by_week_and_season(season, week)
     game_logs = filter_duplicate_games(team_game_logs)
 
     games = []
@@ -138,8 +152,8 @@ def generate_game_mapping(season: int, week: int):
 
         # extract fantasy relevant players corresponding to current game 
         player_ids = []
-        player_ids.extend(fetch_data.fetch_players_corresponding_to_season_week_team(season, week, team_id))
-        player_ids.extend(fetch_data.fetch_players_corresponding_to_season_week_team(season, week, opp_id))
+        player_ids.extend(fetch_players_corresponding_to_season_week_team(season, week, team_id))
+        player_ids.extend(fetch_players_corresponding_to_season_week_team(season, week, opp_id))
 
         # create mapping 
         games.append({

@@ -7,8 +7,20 @@ from config import props
 import logging
 from service import team_service, player_service
 from datetime import datetime
-from db import fetch_data, insert_data
 import re
+from db.read.players import (
+    fetch_player_by_normalized_name,
+    fetch_player_depth_chart_position_by_pk,
+    fetch_player_teams_records_by_player_and_season,
+    fetch_player_teams_record_by_pk
+)
+from db.insert.players import (
+    update_player_depth_chart_postion,
+    insert_player_depth_charts,
+    insert_players,
+    update_player_teams_records_end_dates,
+    insert_player_teams_records
+)
 
 """
 Main entry point for scraping & persisting depth chart information across several years from OurLads 
@@ -114,7 +126,7 @@ def generate_and_persist_depth_chart_records(teams: list, season: int, week: int
         for player_name in relevant_players:
             if player_name not in player_name_id_mapping:
                 normalized_name = player_service.normalize_name(player_name)
-                player = fetch_data.fetch_player_by_normalized_name(normalized_name)
+                player = fetch_player_by_normalized_name(normalized_name)
                 player_name_id_mapping[player_name] = player['player_id']
 
         # update / insert based on flag 
@@ -200,7 +212,7 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
             for player_name in relevant_players:
                 if player_name not in player_name_id_mapping:
                     normalized_name = player_service.normalize_name(player_name)
-                    player = fetch_data.fetch_player_by_normalized_name(normalized_name)
+                    player = fetch_player_by_normalized_name(normalized_name)
                     player_name_id_mapping[player_name] = player['player_id']
 
 
@@ -233,7 +245,7 @@ def upsert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     
     # ensure record is unique (i.e not already inserted, and not a duplicate)
     for record in player_depth_chart_position_records:
-        depth_chart_pos = fetch_data.fetch_player_depth_chart_position_by_pk(record)
+        depth_chart_pos = fetch_player_depth_chart_position_by_pk(record)
 
         # no record exists for player; insert new record
         if depth_chart_pos is None:
@@ -251,14 +263,14 @@ def upsert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     # account for insertions 
     if records_to_insert:
         logging.info(f"'player_depth_chart' records to be inserted:\n\t{records_to_insert}") 
-        insert_data.insert_player_depth_charts(records_to_insert)  
+        insert_player_depth_charts(records_to_insert)  
     else:
         logging.info(f"No new 'player_depth_chart' records; skipping insertion")
 
     # account for updates 
     if records_to_update:
         logging.info(f"'player_depth_chart' records to be updated:\n\t{records_to_update}") 
-        insert_data.update_player_depth_chart_postion(records_to_update) 
+        update_player_depth_chart_postion(records_to_update) 
     else:
         logging.info(f"No 'player_depth_chart' records require updating; skipping updates")
 
@@ -287,7 +299,7 @@ def insert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
     filtered_depth_chart_records = []
     seen_records = set()
     for record in player_depth_chart_position_records:
-        if fetch_data.fetch_player_depth_chart_position_by_pk(record) is None:
+        if fetch_player_depth_chart_position_by_pk(record) is None:
             record_key = (record["player_id"], record["week"], record["season"])
 
             if record_key not in seen_records:
@@ -298,7 +310,7 @@ def insert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
         logging.info(f"No new player depth chart records in the {season} season; skipping insertion")
     else:
         logging.info(f"\n\nPlayer Depth Chart Position Records About to Get Inserted:\n\t{filtered_depth_chart_records}")
-        insert_data.insert_player_depth_charts(filtered_depth_chart_records)
+        insert_player_depth_charts(filtered_depth_chart_records)
 
 
 def generate_player_depth_chart_positions(players: list, date: str, date_week_mapping: dict, player_depth_chart_position_records: list, season: int, week: int = None):
@@ -341,7 +353,7 @@ def upsert_player_teams_records(relevant_players: list, team_id: int, season: in
     for player_name in relevant_players:
 
         # extract players existing player_teams records 
-        player_team_records = fetch_data.fetch_player_teams_records_by_player_and_season(player_name_id_mapping[player_name], season)
+        player_team_records = fetch_player_teams_records_by_player_and_season(player_name_id_mapping[player_name], season)
 
         # if no player_teams record exist for player, add to list of records to be inserted 
         if not player_team_records:
@@ -383,14 +395,14 @@ def upsert_player_teams_records(relevant_players: list, team_id: int, season: in
     # account for insertions 
     if player_teams_records_to_insert:
         logging.info(f"'player_teams' records to be inserted:\n\t{player_teams_records_to_insert}") 
-        # insert_data.insert_player_teams_records(player_teams_records_to_insert) TODO: Uncomment me 
+        insert_player_teams_records(player_teams_records_to_insert) 
     else:
         logging.info(f"No new 'player_teams' records; skipping insertion")
 
     # account for updates 
     if player_teams_records_to_update:
         logging.info(f"'player_teams' records to be updated:\n\t{player_teams_records_to_update}") 
-        # insert_data.update_player_teams_records_end_dates(player_teams_records_to_update) TODO: Uncomment me
+        update_player_teams_records_end_dates(player_teams_records_to_update) 
     else:
         logging.info(f"No 'player_teams' records require updating; skipping updates")
 
@@ -423,12 +435,12 @@ def insert_player_teams_records(relevant_players: list, start_date_mapping: dict
             player_teams_records.append({"player_id": player_name_id_mapping[player_name], "team_id": team_id, "season": season, "strt_wk": week_strt, "end_wk": week_end})
     
 
-    filtered_player_teams_records = [record for record in player_teams_records if fetch_data.fetch_player_teams_record_by_pk(record) == None]
+    filtered_player_teams_records = [record for record in player_teams_records if fetch_player_teams_record_by_pk(record) == None]
     if not filtered_player_teams_records:
         logging.info(f"No new player teams records to insert for the team {team['team']} in the {season} season; skipping insertion")
     else:
         print(f"\n\nPlayer Teams Records About To Get Inserted:\n\t{filtered_player_teams_records}")
-        insert_data.insert_player_teams_records(filtered_player_teams_records)
+        insert_player_teams_records(filtered_player_teams_records)
     
 
 
@@ -448,7 +460,7 @@ def insert_player_records(unique_player_records: list, team: dict, player_name_i
     if not filtered_player_records:
         logging.info(f"No new player records to insert for the team {team['team']} in the {season} season; skipping insertion")
     else:
-        insert_data.insert_players(filtered_player_records)
+        insert_players(filtered_player_records)
 
 
 
@@ -530,7 +542,7 @@ def is_previously_inserted_player(player_name: str, player_name_id_mapping: dict
         bool: whether the record exists or not 
     """
     normalized_name = player_service.normalize_name(player_name)
-    player = fetch_data.fetch_player_by_normalized_name(normalized_name)
+    player = fetch_player_by_normalized_name(normalized_name)
     if player == None: 
         return False
     

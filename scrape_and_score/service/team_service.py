@@ -1,5 +1,5 @@
 import logging
-from db import fetch_data
+from db.read.teams import ( fetch_team_by_name, fetch_all_teams )
 
 """
 Functionality to retrieve a teams ID by their name 
@@ -14,7 +14,7 @@ Returns:
 
 def get_team_id_by_name(name: str):
     logging.info(f"Fetching team ID for team corresponding to name '{name}'")
-    team = fetch_data.fetch_team_by_name(name)
+    team = fetch_team_by_name(name)
 
     if team == None:
         logging.warning(f"Unable to locate team by the name: {name}")
@@ -36,5 +36,5 @@ Returns:
 
 def get_all_teams():
     logging.info(f"Fetching all teams persisted within our DB")
-    teams = fetch_data.fetch_all_teams()
+    teams = fetch_all_teams()
     return teams

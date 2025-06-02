@@ -1,8 +1,20 @@
 import logging
 import pandas as pd
 from . import service_util, team_service
-from db import insert_data, fetch_data
 from config import props
+from db.read.teams import (
+    fetch_team_game_log_by_pk,
+    fetch_all_teams_game_logs_for_season,
+    fetch_pks_for_inserted_team_game_logs,
+    fetch_max_week_rankings_calculated_for_season,
+    check_bye_week_rankings_exists
+)
+from db.insert.teams import (
+    update_team_game_logs,
+    insert_team_game_logs,
+    insert_bye_week_rankings,
+    insert_team_rankings
+)
 
 """
 Functionality to insert multiple teams game logs 
@@ -65,10 +77,10 @@ def insert_or_update_team_game_logs(team_game_logs: list, teams_and_ids: list, y
         # insert team game logs into db
         if is_update:
             tuples = get_team_log_tuples_for_update(df, team_id, year)
-            insert_data.update_team_game_logs(tuples)
+            update_team_game_logs(tuples)
         else:
             tuples = get_insert_team_log_tuples(df, team_id, year)
-            insert_data.insert_team_game_logs(tuples)
+            insert_team_game_logs(tuples)
 
 
 
@@ -250,7 +262,7 @@ Returns:
 
 
 def is_game_log_persisted(game_log_pk: dict):
-    game_log = fetch_data.fetch_team_game_log_by_pk(game_log_pk)
+    game_log = fetch_team_game_log_by_pk(game_log_pk)
 
     if game_log == None:
         return False
@@ -274,7 +286,7 @@ def get_teams_game_logs_for_season(team_id: int, year: int):
     logging.info(
         f"Fetching all game logs for the following team ID: {team_id} and year: {year}"
     )
-    return fetch_data.fetch_all_teams_game_logs_for_season(team_id, year)
+    return fetch_all_teams_game_logs_for_season(team_id, year)
 
 
 """
@@ -293,7 +305,7 @@ Returns:
 
 def filter_previously_inserted_game_logs(team_game_logs: list, teams_and_ids: list, year: int, should_update: bool):
     # generate pks for each team game log
-    persisted_team_game_log_pks = fetch_data.fetch_pks_for_inserted_team_game_logs(year)
+    persisted_team_game_log_pks = fetch_pks_for_inserted_team_game_logs(year)
     
     update_game_logs = []
     insert_game_logs = []
@@ -386,7 +398,7 @@ def calculate_and_persist_weekly_rankings(teams_weekly_aggregate_metrics: list, 
     max_week = max(metrics['week'] for team_metrics in teams_weekly_aggregate_metrics for metrics in team_metrics)
 
     # determine week to start calculating metrics for
-    max_persisted_week = fetch_data.fetch_max_week_rankings_calculated_for_season(season) 
+    max_persisted_week = fetch_max_week_rankings_calculated_for_season(season) 
     curr_week = 1 if max_persisted_week is None else max_persisted_week + 1
 
     if curr_week >= max_week:
@@ -465,7 +477,7 @@ def insert_bye_week_rankings(teams_weekly_aggregate_metrics: list, season: int):
     for curr_team_weekly_metrics in teams_weekly_aggregate_metrics: 
 
         # skip teams with bye weeks already persisted for given season
-        bye_week = fetch_data.check_bye_week_rankings_exists(curr_team_weekly_metrics[0]['team_id'], season)
+        bye_week = check_bye_week_rankings_exists(curr_team_weekly_metrics[0]['team_id'], season)
         if bye_week is not None:
             continue
         
@@ -494,7 +506,7 @@ def insert_bye_week_rankings(teams_weekly_aggregate_metrics: list, season: int):
     if len(team_bye_weeks) == 0:
         logging.info(f"All bye weeks for teams in the season {season} have already been inserted into our DB; skipping insertion")
         return
-    insert_data.insert_bye_week_rankings(team_bye_weeks, season)
+    insert_bye_week_rankings(team_bye_weeks, season)
 
 
 
@@ -730,7 +742,7 @@ def insert_teams_ranks(
     logging.info(
         "Attempting to insert team rankings records"
     )
-    insert_data.insert_team_rankings(records)
+    insert_team_rankings(records)
 
 
 """

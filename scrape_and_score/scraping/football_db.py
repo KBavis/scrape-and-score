@@ -2,8 +2,14 @@ import logging
 from bs4 import BeautifulSoup
 from . import util
 from config import props
-from db import fetch_data, insert_data
 from service import player_service
+from db.read.players import (
+    fetch_pks_for_inserted_player_injury_records
+)
+from db.insert.players import (
+    update_player_injuries,
+    insert_player_injuries
+)
 
 def scrape_historical(start_year: int, end_year: int): 
     """Scrape & persist player injuries for previous seasons throughout each potential week of the NFL season 
@@ -167,7 +173,7 @@ def generate_and_persist_player_injury_records(player_injuries: list, season: in
     """
 
     # fetch previously persisted records in order to determine which records require updates vs insertion 
-    persisted_player_injuries =  fetch_data.fetch_pks_for_inserted_player_injury_records(season, week)
+    persisted_player_injuries = fetch_pks_for_inserted_player_injury_records(season, week)
 
     persistable_records = []
     for record in player_injuries: 
@@ -210,11 +216,11 @@ def generate_and_persist_player_injury_records(player_injuries: list, season: in
 
     if updated_records:
         logging.info(f"Attemtping to update {len(updated_records)} player_injuries records in database.")
-        insert_data.update_player_injuries(updated_records)
+        update_player_injuries(updated_records)
     
     if insert_records:
         logging.info(f"Attemtping to insert {len(insert_records)} player_injuries records into database.")
-        insert_data.insert_player_injuries(insert_records)
+        insert_player_injuries(insert_records)
         
 
         

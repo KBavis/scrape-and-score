@@ -1,14 +1,27 @@
 from config import props
-
-"""
-Module to act as intermediary between business logic & data access layer for player_game_logs 
-
-TODO: Rename this file to something else since its transforming into a larger scope than just player_game_logs
-"""
 import logging
-from db import insert_data, fetch_data
 import pandas as pd
 from . import team_service, service_util
+from db.insert.players import (
+    insert_qb_player_game_logs,
+    insert_rb_player_game_logs,
+    insert_wr_or_te_player_game_logs,
+    add_fantasy_points,
+    insert_player_weekly_aggregate_metrics
+)
+from db.read.players import (
+    fetch_one_player_game_log,
+    fetch_player_game_log_by_pk,
+    fetch_all_player_game_logs_for_recent_week,
+    fetch_all_player_game_logs_for_given_year,
+    fetch_players_active_in_specified_year,
+    fetch_player_fantasy_points
+)
+
+"""
+TODO: Rename this file to something else since its transforming into a larger scope than just player_game_logs
+"""
+
 
 """
 Functionality to insert multiple players game logs 
@@ -51,13 +64,13 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, 
         # iterate through game logs, generate tuples, and insert into db
         if position == "QB":
             tuples = get_qb_game_log_tuples(df, player_id, year)
-            insert_data.insert_qb_player_game_logs(tuples)
+            insert_qb_player_game_logs(tuples)
         elif position == "RB":
             tuples = get_rb_game_log_tuples(df, player_id, year)
-            insert_data.insert_rb_player_game_logs(tuples)
+            insert_rb_player_game_logs(tuples)
         elif position == "TE" or position == "WR":
             tuples = get_wr_or_te_game_log_tuples(df, player_id, year)
-            insert_data.insert_wr_or_te_player_game_logs(tuples)
+            insert_wr_or_te_player_game_logs(tuples)
         else:
             raise Exception(
                 f"Unknown position '{position}'; unable to fetch game log tuples"
@@ -77,7 +90,7 @@ Returns:
 
 
 def is_player_game_logs_empty():
-    player_game_log = fetch_data.fetch_one_player_game_log()
+    player_game_log = fetch_one_player_game_log()
 
     if player_game_log == None:
         return True
@@ -253,7 +266,7 @@ Returns:
 
 
 def is_game_log_persisted(game_log_pk: dict):
-    game_log = fetch_data.fetch_player_game_log_by_pk(game_log_pk)
+    game_log = fetch_player_game_log_by_pk(game_log_pk)
 
     if game_log == None:
         return False
@@ -328,16 +341,16 @@ def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int =
     # determine if this is for recent week, single year, or a range of years
     if recent_game:
         logging.info(f"Recent game flag passed; calculating fantasy points for most recent week in the year {start_year}")
-        player_game_logs = fetch_data.fetch_all_player_game_logs_for_recent_week(start_year)
+        player_game_logs = fetch_all_player_game_logs_for_recent_week(start_year)
     else:
         if end_year == None:
             logging.info(f"Calculating fantasy points for the year {start_year}")
-            player_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(start_year)
+            player_game_logs = fetch_all_player_game_logs_for_given_year(start_year)
         else:
             logging.info(f"Calculating fantasy points from the year {start_year} to the year {end_year}")
             player_game_logs = []
             for curr_year in range(start_year, end_year + 1):
-                curr_year_game_logs = fetch_data.fetch_all_player_game_logs_for_given_year(curr_year)
+                curr_year_game_logs = fetch_all_player_game_logs_for_given_year(curr_year)
                 player_game_logs.extend(curr_year_game_logs)
     
     logging.info(f"Successfully fetched {len(player_game_logs)} player game logs")
@@ -456,7 +469,7 @@ def insert_fantasy_points(points: list):
         return
 
     logging.info(f"Attempting to insert players calculated fantasy points into our DB")
-    insert_data.add_fantasy_points(points)
+    add_fantasy_points(points)
 
 
 """
@@ -476,7 +489,7 @@ Returns:
 """
 def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, season: int): 
     # retrieve active players in specified season 
-    players = fetch_data.fetch_players_active_in_specified_year(season)
+    players = fetch_players_active_in_specified_year(season)
 
     player_agg_metrics = []
 
@@ -490,7 +503,7 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
 
 
             # weekly fantasy point 
-            weekly_fantasy_points = fetch_data.fetch_player_fantasy_points(player_id, season, curr_week)
+            weekly_fantasy_points = fetch_player_fantasy_points(player_id, season, curr_week)
             if not any(record["week"] == curr_week for record in weekly_fantasy_points):
                 logging.info(f"Skipping week {curr_week} for player {player['name']} as no data is available.")
                 continue
@@ -505,7 +518,7 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
     
     # insert aggregate fantasy point avgs per week for specified season 
     logging.info(f"Attempting to insert aggregate fantasy points for the {season} NFL season.")
-    insert_data.insert_player_weekly_aggregate_metrics(player_agg_metrics)
+    insert_player_weekly_aggregate_metrics(player_agg_metrics)
 
 
 

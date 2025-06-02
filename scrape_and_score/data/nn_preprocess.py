@@ -1,9 +1,9 @@
 import pandas as pd
-from db import fetch_data as fetch
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
 from sklearn.linear_model import LassoCV
 from sklearn.feature_selection import SelectFromModel
+from db.read.players import fetch_independent_and_dependent_variables
 import logging
 import re
 from constants import QB_FEATURES, RB_FEATURES, WR_FEATURES, TE_FEATURES
@@ -464,4 +464,4 @@ def fetch_data(week: int, season: int):
          dict: relevant data 
    """
    logging.info("Fetching inputs & outputs for Neural Network training & testing")
-   return fetch.fetch_independent_and_dependent_variables(week, season)
+   return fetch_independent_and_dependent_variables(week, season)

@@ -3,8 +3,15 @@ import requests
 import logging
 from config import props
 from service import team_service
-from db import insert_data
-from db import fetch_data
+from db.read.teams import (
+    fetch_team_betting_odds_by_pk
+)
+from db.insert.teams import (
+    insert_teams_odds,
+    insert_game_conditions,
+    update_team_betting_odds_records_with_outcomes,
+    update_teams_odds
+)
 
 """
 Fetch all historical odds for the current year
@@ -37,10 +44,10 @@ def scrape_all(start_year=None, end_year=None):
 
     # insert into our db
     logging.info("Inserting all teams historical odds into our database")
-    insert_data.insert_teams_odds(team_betting_odds_records) 
+    insert_teams_odds(team_betting_odds_records) 
 
     logging.info(f"Inserting game_conditions into our datbase from year {start_year} to year {end_year}")
-    insert_data.insert_game_conditions(game_conditions)
+    insert_game_conditions(game_conditions)
 
 
 
@@ -193,7 +200,7 @@ def update_recent_betting_records(week: int, season: int):
 
     # insert updates
     records = generate_update_records(recent_data, mapping, season, week)
-    insert_data.update_team_betting_odds_records_with_outcomes(records)
+    update_team_betting_odds_records_with_outcomes(records)
 
 
 """
@@ -287,13 +294,13 @@ def scrape_upcoming(week: int, season: int, team_ids: list = None):
 
     if insert_records:
         logging.info(f"Attempting to insert {len(insert_records)} 'team_betting_odds' records into DB")
-        insert_data.insert_teams_odds(upcoming_betting_odds, True)
+        insert_teams_odds(upcoming_betting_odds, True)
     else:
         logging.info(f"No new 'team_betting_odds' records found for week {week} of the {season} NFL season; skipping insertion")
     
     if update_records:
         logging.info(f"Attempting to update {len(update_records)} 'team_betting_odds' records in DB")
-        insert_data.update_teams_odds(update_records)
+        update_teams_odds(update_records)
     else:
         logging.info(f"No updates made to 'team_betting_odds' records for week {week} of the {season} NFL season; skipping updates")
 
@@ -321,7 +328,7 @@ def filter_existing_records(upcoming_betting_odds: list):
         week = odds['week']
 
         # check if record exists by PK 
-        record = fetch_data.fetch_team_betting_odds_by_pk(home_team_id, away_team_id, year, week)
+        record = fetch_team_betting_odds_by_pk(home_team_id, away_team_id, year, week)
         if record is None:
             logging.info(f'No record persisted corresponding to PK (home_team_id={home_team_id},away_team_id={away_team_id},season={year},week={week}): Insertable record appended.')
             insert_records.append(odds)

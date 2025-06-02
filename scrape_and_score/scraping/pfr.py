@@ -8,8 +8,40 @@ from datetime import date, datetime
 from bs4 import BeautifulSoup, Comment
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
-from db import fetch_data, insert_data
 from datetime import datetime
+from db.read.players import (
+    fetch_players_on_a_roster_in_specific_year,
+    fetch_player_demographic_record,
+    fetch_player_date_of_birth,
+    fetch_players_on_a_roster_in_specific_year_with_hashed_name,
+    fetch_player_ids_of_players_who_have_advanced_metrics_persisted
+)
+from db.insert.players import (
+    update_player_game_log_with_results,
+    update_player_hashed_name,
+    update_player_pfr_availablity_status,
+    insert_player_dob,
+    insert_player_demographics,
+    insert_player_seasonal_passing_metrics,
+    insert_player_seasonal_rushing_and_receiving_metrics,
+    insert_player_seasonal_scoring_metrics,
+    insert_player_advanced_passing_metrics,
+    insert_player_advanced_rushing_receiving_metrics
+)
+from db.read.teams import (
+    fetch_all_teams,
+    fetch_team_game_log_by_pk
+)
+from db.insert.teams import (
+    update_team_game_log_with_results,
+    format_and_insert_team_seasonal_general_metrics,
+    insert_team_seasonal_passing_metrics,
+    insert_team_seasonal_rushing_and_receiving_metrics,
+    insert_team_seasonal_kicking_and_punting_metrics,
+    insert_team_seasonal_defense_and_fumbles_metrics,
+    insert_team_seasonal_scoring_metrics,
+    insert_team_seasonal_rankings_metrics,
+)
 
 
 """
@@ -67,7 +99,7 @@ def scrape_historical(start_year: int, end_year: int):
         team_game_logs_service.insert_multiple_teams_game_logs(season_team_metrics, teams, year, True)
 
         # fetch players relevant to current season 
-        players = fetch_data.fetch_players_on_a_roster_in_specific_year(year)
+        players = fetch_players_on_a_roster_in_specific_year(year)
         
         # fetch player metrics for given season
         season_player_metrics = fetch_player_metrics(players, year) 
@@ -149,7 +181,7 @@ def update_player_game_logs(week: int, season: int):
     logging.info(f"Attempting to update Week {week} of the {season} NFL Season 'player_game_log' records with the results ")
     player_metrics = []
     
-    players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
+    players = fetch_players_on_a_roster_in_specific_year(season)
     player_urls = construct_player_urls(players, season)
 
     # for each player url, fetch relevant metrics
@@ -213,7 +245,7 @@ def update_player_game_logs(week: int, season: int):
 
     if player_metrics:
         logging.info(f"Attempting to update {len(player_metrics)} player_game_log records with results")
-        insert_data.update_player_game_log_with_results(player_metrics)
+        update_player_game_log_with_results(player_metrics)
 
     
 def update_team_game_logs(week: int, season: int):
@@ -225,7 +257,7 @@ def update_team_game_logs(week: int, season: int):
         season (int): relevant season
     """
 
-    teams = fetch_data.fetch_all_teams()
+    teams = fetch_all_teams()
     team_names = [team['name'] for team in teams]
     
     base_url = props.get_config("website.pro-football-reference.urls.team-metrics")
@@ -260,7 +292,7 @@ def update_team_game_logs(week: int, season: int):
     update_records, insert_records = filter_update_team_game_logs(records)
     if update_records:
         logging.info(f"Updating {len(update_records)} 'team_game_log' records with results")
-        insert_data.update_team_game_log_with_results(update_records)
+        update_team_game_log_with_results(update_records)
 
     if insert_records:
         raise Exception(f'Found unique game logs when attempting to update team game logs with results: {insert_records}')
@@ -282,7 +314,7 @@ def filter_update_team_game_logs(records: list):
     for record in records:
         
         pk = {"team_id": record['team_id'], "week": record['week'], "year": record['season']}
-        persisted_team_game_log = fetch_data.fetch_team_game_log_by_pk(pk)
+        persisted_team_game_log = fetch_team_game_log_by_pk(pk)
 
         if not persisted_team_game_log:
             logging.info(f"No 'team_game_log' persisted corresponding to PK=[{pk}]; appending as insertable record")
@@ -467,7 +499,7 @@ def scrape_and_persist_player_demographics(season: int):
     base_url = props.get_config('website.pro-football-reference.urls.player-page')
 
     # fetch relevant players
-    players = fetch_data.fetch_players_on_a_roster_in_specific_year(season)
+    players = fetch_players_on_a_roster_in_specific_year(season)
 
     # construct URLs 
     player_urls = construct_player_urls(players, season, base_url)
@@ -545,9 +577,9 @@ def scrape_and_persist_team_draftees_hashed_names(season: int):
 
     # update db with hashed names
     if players_to_update:
-        insert_data.update_player_hashed_name(players_to_update)
+        update_player_hashed_name(players_to_update)
         player_ids = [id['player_id'] for id in players_to_update]
-        insert_data.update_player_pfr_availablity_status(player_ids, True)
+        update_player_pfr_availablity_status(player_ids, True)
 
 
 
@@ -666,12 +698,12 @@ def parse_and_insert_player_demographics_and_dob(soup: BeautifulSoup, player_nam
     player_id = player_service.get_player_id_by_normalized_name(normalized_name)
 
     # retrieve player demographics record
-    player_demographics_record = fetch_data.fetch_player_demographic_record(player_id, year)
+    player_demographics_record = fetch_player_demographic_record(player_id, year)
 
     if not player_demographics_record:
         logging.info(f'No previously inserted player_demographic record exists for player {player_name} for the {year} NFL season; parsing & inserting record.')
 
-        player_dob = fetch_data.fetch_player_date_of_birth(player_id)
+        player_dob = fetch_player_date_of_birth(player_id)
 
         # parse & insert players date of birth if not already persisted
         if player_dob is None:
@@ -685,7 +717,7 @@ def parse_and_insert_player_demographics_and_dob(soup: BeautifulSoup, player_nam
                 return
             
             player_dob = player_dob_el.get("data-birth")
-            insert_data.insert_player_dob(player_id, player_dob)
+            insert_player_dob(player_id, player_dob)
         
         # calculate age of player for when season starts (9/1/{year})
         season_start = datetime.strptime(f"{year}-09-01", '%Y-%m-%d').date()
@@ -708,7 +740,7 @@ def parse_and_insert_player_demographics_and_dob(soup: BeautifulSoup, player_nam
         player_weight = int(weight.replace('lb', ''))
 
         logging.info(f'Attempting to insert player demographics record for player {player_name} for the {year} season --> Age: {age}, Height: {height}, Weight: {weight}')
-        insert_data.insert_player_demographics(player_id, year, age, player_height, player_weight)
+        insert_player_demographics(player_id, year, age, player_height, player_weight)
 
     else: # skip insertion if record already exists
         logging.info(f"Player_demographics record exists for player '{player_name}' in the {year} NFL season; skipping insertion")
@@ -882,18 +914,18 @@ def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
             #TODO: Consider if we want to acocunt for Touchdown Log & Opponent Touchdown Log in future
 
             # insert team records 
-            insert_data.format_and_insert_team_seasonal_general_metrics(team_stats, team_conversions, team_id, year)
-            insert_data.insert_team_seasonal_passing_metrics(team_passing_stats, team_id, year)
-            insert_data.insert_team_seasonal_rushing_and_receiving_metrics(rushing_receiving_team_stats, team_id, year)
-            insert_data.insert_team_seasonal_kicking_and_punting_metrics(team_punting_stats, team_kicking_stats, team_id, year)
-            insert_data.insert_team_seasonal_defense_and_fumbles_metrics(team_stats, team_defensive_stats, team_conversions, team_id, year)
-            insert_data.insert_team_seasonal_scoring_metrics(team_scoring_summary, team_id, year)
-            insert_data.insert_team_seasonal_rankings_metrics(team_stats, team_conversions, team_id, year)
+            format_and_insert_team_seasonal_general_metrics(team_stats, team_conversions, team_id, year)
+            insert_team_seasonal_passing_metrics(team_passing_stats, team_id, year)
+            insert_team_seasonal_rushing_and_receiving_metrics(rushing_receiving_team_stats, team_id, year)
+            insert_team_seasonal_kicking_and_punting_metrics(team_punting_stats, team_kicking_stats, team_id, year)
+            insert_team_seasonal_defense_and_fumbles_metrics(team_stats, team_defensive_stats, team_conversions, team_id, year)
+            insert_team_seasonal_scoring_metrics(team_scoring_summary, team_id, year)
+            insert_team_seasonal_rankings_metrics(team_stats, team_conversions, team_id, year)
 
             # generate player records 
-            insert_data.insert_player_seasonal_passing_metrics(player_passing_stats, year, team_id)
-            insert_data.insert_player_seasonal_rushing_and_receiving_metrics(rushing_receiving_player_stats, year, team_id)
-            insert_data.insert_player_seasonal_scoring_metrics(player_scoring_summary, year, team_id)
+            insert_player_seasonal_passing_metrics(player_passing_stats, year, team_id)
+            insert_player_seasonal_rushing_and_receiving_metrics(rushing_receiving_player_stats, year, team_id)
+            insert_player_seasonal_scoring_metrics(player_scoring_summary, year, team_id)
 
 
 
@@ -1080,10 +1112,10 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int, week: int = N
         logging.info(f"Scraping player advanced passing, rushing, and receiving metrics for the {year} season")
         
         # NOTE: All players that we want to extract advanced metrics for SHOULD have already had their game logs persisted, thus, the hashed names should be present (O/W, we can skip)
-        players = fetch_data.fetch_players_on_a_roster_in_specific_year_with_hashed_name(year)
+        players = fetch_players_on_a_roster_in_specific_year_with_hashed_name(year)
 
         # filter previously inserted records 
-        players_already_persisted = fetch_data.fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year, week)
+        players_already_persisted = fetch_player_ids_of_players_who_have_advanced_metrics_persisted(year, week)
         players = [player for player in players if player['player_id'] not in players_already_persisted ]
         logging.info(f"Players to fetch metrics for filtered down to length {len(players)} for season {year} of the NFL season")
 
@@ -1118,7 +1150,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int, week: int = N
                     continue
                 
                 filtered_metrics = filter_metrics_by_week(advanced_passing_metrics, week)
-                insert_data.insert_player_advanced_passing_metrics(filtered_metrics, player_url['player_id'], year)
+                insert_player_advanced_passing_metrics(filtered_metrics, player_url['player_id'], year)
 
             # rushing & receiving table 
             advanced_rushing_receiving_table = soup.find("table", {"id": "adv_rushing_and_receiving"})
@@ -1136,7 +1168,7 @@ def scrape_player_advanced_metrics(start_year: int, end_year: int, week: int = N
                     logging.warn(f"No rushing/receiving metrics for player {player_url['player_name']} and season {year} were not retreived; skipping insertion\n\n")
                     continue
                 filtered_metrics = filter_metrics_by_week(advanced_rushing_receiving_metrics, week)
-                insert_data.insert_player_advanced_rushing_receiving_metrics(filtered_metrics, player_url['player_id'], year)
+                insert_player_advanced_rushing_receiving_metrics(filtered_metrics, player_url['player_id'], year)
 
 
 def filter_metrics_by_week(metrics: list, curr_week: int = None):
@@ -1895,11 +1927,11 @@ def get_player_urls(ordered_players: dict, year: int):
                 )  # append each players URL to our list of URLs
 
     # insert player hashed names into database 
-    insert_data.update_player_hashed_name(player_hashed_names)
+    update_player_hashed_name(player_hashed_names)
 
     # update players who are not available in pfr for future optimziations 
     if pfr_unavailable_player_ids is not None:
-        insert_data.update_player_pfr_availablity_status(pfr_unavailable_player_ids)
+        update_player_pfr_availablity_status(pfr_unavailable_player_ids)
 
     return urls
 

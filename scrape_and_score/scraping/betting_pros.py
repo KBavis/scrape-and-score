@@ -1,7 +1,18 @@
 from config import props
 import requests
 from service import player_service
-from db import fetch_data, insert_data
+from db.read.teams import (
+    fetch_max_week_persisted_in_team_betting_odds_table, fetch_game_conditions_record_by_pk
+)
+from db.read.players import (
+    fetch_players_active_in_specified_year, fetch_player_betting_odds_record_by_pk
+)
+from db.insert.players import (
+    insert_player_props, insert_upcoming_player_props, update_upcoming_player_props
+)
+from db.insert.teams import (
+    update_game_conditions, insert_game_conditions
+)
 import logging
 from . import rotowire as rotowire
 import time
@@ -20,14 +31,14 @@ Returns:
 """
 
 def fetch_historical_odds(season: int):
-    max_week = fetch_data.fetch_max_week_persisted_in_team_betting_odds_table(season) 
+    max_week = fetch_max_week_persisted_in_team_betting_odds_table(season) 
     markets = props.get_config("website.betting-pros.market-ids")
 
     #TODO: Only remove 253 market ID in the case that the game has already been played  or else it will throw exception when making request (we can add when game is upcoming)
     if markets.endswith(":253"):
         markets = markets[:-4] # remove last 4 occurence 
 
-    players = fetch_data.fetch_players_active_in_specified_year(season) 
+    players = fetch_players_active_in_specified_year(season) 
 
 
     # iterate through each potential player
@@ -58,7 +69,7 @@ def fetch_historical_odds(season: int):
         # insert season long player props into db 
         if season_odds:
             logging.info(f'Attempting to insert player props for player {player_name} for the {season} season...')  
-            insert_data.insert_player_props(player_props, season)
+            insert_player_props(player_props, season)
         else:
             logging.warn(f"No player props found for player {player_name} and season {season}; skipping insertion")
 
@@ -143,14 +154,14 @@ def fetch_upcoming_game_conditions(week: int, season: int):
     # handle game_conditions insertions
     if insert_records:
         logging.info(f'Attempting to insert {len(insert_records)} game_conditions records for week {week} of the {season} NFL season')  
-        insert_data.insert_game_conditions(insert_records)
+        insert_game_conditions(insert_records)
     else:
         logging.warning(f"No new game conditions retrieved for week {week} of the {season} NFL season; skipping insertion")
 
     # handle game_conditions updates
     if update_records:
         logging.info(f'Attempting to update {len(update_records)} game_conditions records for week {week} of the {season} NFL season')  
-        insert_data.update_game_conditions(update_records)
+        update_game_conditions(update_records)
     else:
         logging.warning(f"No updates to game conditions for week {week} of the {season} NFL season; skipping updates")
 
@@ -174,7 +185,7 @@ def filter_game_conditions(records: list):
         pk = {"season": record['season'], "week": record['week'], "home_team_id": record['home_team_id'], "visit_team_id": record['visit_team_id']}
 
         # Fetch existing record from DB
-        persisted_record = fetch_data.fetch_game_conditions_record_by_pk(pk)
+        persisted_record = fetch_game_conditions_record_by_pk(pk)
 
         if persisted_record is None:
             logging.info(f"No record persisted for PK={pk}; appending as insertable record")
@@ -381,14 +392,14 @@ def fetch_upcoming_player_odds(week:int, season: int, player_ids: list):
     # insert player betting odds
     if insert_records:
         logging.info(f'Attempting to insert {len(insert_records)} player_betting_odds records for week {week} of the {season} NFL season')  
-        insert_data.insert_upcoming_player_props(insert_records)
+        insert_upcoming_player_props(insert_records)
     else:
         logging.warning(f"No new player props retrieved for week {week} of the {season} NFL season; skipping insertion")
 
     # update player betting odds 
     if update_records:
         logging.info(f'Attempting to update {len(update_records)}) player_betting_odds records for week {week} of the {season} NFL season')  
-        insert_data.update_upcoming_player_props(update_records)
+        update_upcoming_player_props(update_records)
     else:
         logging.warning(f"No lines/costs modifications for players betting lines for week {week} of the {season} NFL season; skipping updates")
     
@@ -428,7 +439,7 @@ def filter_upcoming_player_odds(records: list):
                             "line": current_odds["line"], "cost": current_odds["cost"]}
 
             # retrieve player betting odds record by PK 
-            persisted_record = fetch_data.fetch_player_betting_odds_record_by_pk(player_id, week, season, label)
+            persisted_record = fetch_player_betting_odds_record_by_pk(player_id, week, season, label)
             if persisted_record is None:
                 logging.info(f"No record persisted for PK(player_id={player_id},week={week},season={season},label={label}); appending as insertable record")
                 insert_records.append(curr_record)
