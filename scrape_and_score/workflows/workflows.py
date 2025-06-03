@@ -1,3 +1,4 @@
+from nnutils import optimization
 from scraping import pfr, rotowire
 from scraping import our_lads, football_db, betting_pros, espn
 from service import team_game_logs_service, player_game_logs_service
@@ -11,9 +12,9 @@ from torch.utils.data import DataLoader
 from datetime import datetime
 from constants import TRAINING_CONFIGS
 from models.neural_net import NeuralNetwork
-from models import optimization, post_training
+from nnutils import post_training
 from . import utils 
-from models import prediction
+from nnutils import prediction
 
 
 FINAL_WEEK = 18
