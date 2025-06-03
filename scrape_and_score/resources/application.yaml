@@ -32,6 +32,8 @@ website:
 # scraping
 scraping:
    delay: 3
+   betting-pros:
+      delay: 0.25
 
 # weights for feature manipulation
 weights:

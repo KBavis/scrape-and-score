@@ -3,6 +3,14 @@ from torch import nn
 
 class NeuralNetwork(nn.Module):
    def __init__(self, input_dim: int, position: str):
+      """
+      Neural Network model utilized for making predictions on players fantasy points for a givne week
+
+      Args:
+         input_dim (int): input dimension of our Neural Network for training 
+         position (str): relevant position this Neural Network instance pertains to
+      """
+
       super().__init__()
 
       # mapping of position to specific layers 
@@ -25,6 +33,7 @@ class NeuralNetwork(nn.Module):
       Returns:
           torch.Tensor : output of forward pass
       """
+
       logits = self.linear_relu_stack(x)
       return logits
    
@@ -32,6 +41,9 @@ class NeuralNetwork(nn.Module):
    def get_qb_linear_relu_stack(self, input_dim: int):
       """
       Retrieve layers for a QB Neural Network model
+
+      Args:
+         input_dim (int): relevant input dimension to utilize 
       """
 
       return nn.Sequential(
@@ -51,6 +63,9 @@ class NeuralNetwork(nn.Module):
    def get_wr_linear_relu_stack(self, input_dim: int):
       """
       Retrieve layers for a WR Neural Network model
+
+      Args:
+         input_dim (int): relevant input dimension to utilize 
       """
 
       return nn.Sequential(
@@ -74,6 +89,8 @@ class NeuralNetwork(nn.Module):
       """
       Retrieve layers for a TE Neural Network model
       
+      Args:
+         input_dim (int): relevant input dimension to utilize 
       """
 
       return nn.Sequential(
@@ -93,6 +110,8 @@ class NeuralNetwork(nn.Module):
       """
       Retrieve layers for a RB Neural Network model
       
+      Args:
+         input_dim (int): relevant input dimension to utilize 
       """
       return nn.Sequential(
             nn.Linear(input_dim, 512),

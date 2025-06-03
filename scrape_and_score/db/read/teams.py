@@ -6,7 +6,6 @@ from db.connection import get_connection
 def fetch_all_teams():
     """
     Functionality to fetch all teams persisted in database 
-
     """
 
     sql = "SELECT * FROM team"
@@ -140,6 +139,7 @@ def fetch_team_seasonal_metrics(team_id: int, season: int):
         team_id (int): relevant team 
         season (int): relevant season 
     """
+
     sql = """
         SELECT 
             *
@@ -188,6 +188,7 @@ def fetch_game_conditions_record_by_pk(pk: dict):
     Returns:
         dict or None: The matching game_conditions record as a dictionary, or None if not found
     """
+
     sql = """
         SELECT 
             game_date,
@@ -279,6 +280,7 @@ def fetch_team_game_logs_by_week_and_season(season: int, week: int):
     Returns:
         list: persisted team game log records corresponding to week / season
     """
+
     sql = """
         SELECT
             team_id, week, day, year, rest_days, home_team, distance_traveled,
@@ -701,14 +703,7 @@ def fetch_teams_home_away_wins_and_losses(season: int, team_id: int):
         team_id (int): team ID to retrieve data for
     
     Returns:
-        dict: Dictionary containing:
-            wins (int): number of wins
-            losses (int): number of losses  
-            home_wins (int): number of home wins
-            home_losses (int): number of home losses
-            away_wins (int): number of away wins 
-            away_losses (int): number of away losses
-            win_pct (float): win percentage
+        dict: number of wins / losses for respective team
     """
 
     sql = """

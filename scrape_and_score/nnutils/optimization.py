@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_loader: torch.utils.data.DataLoader, model: nn.Module, device: str, learning_rate: float):
-   """Generate optimization loop used to train and test our neural netwokr 
+   """Generate optimization loop used to train and test our Neural Network
 
    Args:
       train_data_loader (torch.utils.data.DataLoader): training data loader 
@@ -42,7 +42,7 @@ def optimization_loop(train_data_loader: torch.utils.data.DataLoader, test_data_
    
    
 def train_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn: nn.MSELoss, optimizer: torch.optim.SGD, device: str): 
-   """Loop for training our neural network 
+   """Loop for training our Neural Network 
 
    Args:
        dataloader (torch.utils.data.DataLoader): our dataloader containing training data 
@@ -51,6 +51,7 @@ def train_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_f
        optimizer (torch.optim.SGD): optimizer to perform gradient descent (optimize our weights/biases)
        device (str): the device to move tensors to
    """
+
    size = len(dataloader.dataset)
    model.train() 
    
@@ -73,7 +74,7 @@ def train_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_f
          print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 def test_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn: nn.MSELoss, device: str, tolerance: float = 3.0): 
-   """Loop for testing our neural network 
+   """Loop for testing our Neural Network
 
    Args:
        dataloader (torch.utils.data.DataLoader): our data loader containing test data
@@ -89,7 +90,7 @@ def test_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn
    correct = 0
    
    
-   with torch.no_grad(): # no need for gradients int testing 
+   with torch.no_grad(): # no need for gradients in testing 
       for X, y in dataloader:
          # move tensors to correct device
          X = X.to(device)
@@ -103,7 +104,7 @@ def test_loop(dataloader: torch.utils.data.DataLoader, model: nn.Module, loss_fn
    test_loss /= num_batches 
    accuracy = 100 * (correct / size) 
 
-    # Print final metrics
+    # print final metrics
    print(f"Test Error: \n Accuracy: {accuracy:>0.1f}%, Avg loss: {test_loss:>8f} \n")
    
    # return test loss for early stops

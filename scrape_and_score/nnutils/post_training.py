@@ -16,6 +16,7 @@ def feature_importance(model: torch.nn.Module, training_data_set: torch.utils.da
         position (str): the specific position this model corresponds to 
         device (str): the device to move tensors to
     """
+    
     logging.info(f'Post Training: Determining feature signficance of our {position} model')
 
 

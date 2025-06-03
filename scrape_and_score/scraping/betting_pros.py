@@ -17,20 +17,19 @@ import logging
 from . import rotowire as rotowire
 import time
 from datetime import datetime
+from constants import MARKET_ID_MAPPING
 
-"""
-Fetch all historical player odds 
-
-TODO: superrrrr slow, need to add some concurrency to this
-
-Args:
-    season (int): season to retrieve player odds for 
-
-Returns:   
-    None
-"""
 
 def fetch_historical_odds(season: int):
+    """
+    Fetch all historical player odds 
+
+    TODO: superrrrr slow, need to add some concurrency to this
+
+    Args:
+        season (int): season to retrieve player odds for 
+    """
+
     max_week = fetch_max_week_persisted_in_team_betting_odds_table(season) 
     markets = props.get_config("website.betting-pros.market-ids")
 
@@ -76,6 +75,14 @@ def fetch_historical_odds(season: int):
 
 
 def fetch_upcoming_player_odds_and_game_conditions(week: int, season: int, player_ids: list):
+    """
+    Retrieve and persist upcoming player odds & game conditions 
+
+    Args:
+        week (int): relevant week to retrieve data for 
+        season (int): reelvant season to retrieve data for 
+        player_ids (list): list of player IDs that we want to account for when scraping
+    """
 
     # fetch & persist player odds 
     fetch_upcoming_player_odds(week, season, player_ids)
@@ -176,6 +183,7 @@ def filter_game_conditions(records: list):
     Returns:
         tuple: (update_records, insert_records)
     """
+
     logging.info("Attempting to filter 'game_conditions' into insertable vs updatable records")
 
     update_records = []
@@ -210,6 +218,7 @@ def are_game_conditions_modified(persisted: dict, current: dict) -> bool:
     Returns:
         bool: True if any tracked field has changed; otherwise False.
     """
+
     keys_to_compare = [
         "game_date",
         "game_time",
@@ -354,8 +363,8 @@ def fetch_upcoming_player_odds(week:int, season: int, player_ids: list):
         week (int): relevant week 
         season (int): relevant season 
         player_ids (list): relevant player IDs we need to fetch odds for 
-
     """
+
     markets = props.get_config("website.betting-pros.market-ids")
 
     # extract event ids corresponding to week / season 
@@ -414,6 +423,7 @@ def filter_upcoming_player_odds(records: list):
     Returns:
         tuple: updateable & insertable records 
     """
+
     logging.info(f"Attempting to filter upcoming 'player_betting_odds' into insertable records vs updateable records")
 
     update_records = [] 
@@ -494,7 +504,6 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
         .replace("{PLAYER_SLUG}", player_name)
         .replace("{EVENT_IDS}", event_ids)
     )  
-    market_id_mapping = generate_market_id_mapping()
 
     # fetch initial data from first page
     data = get_data(parsed_url.replace("{PAGE}", str(1)))
@@ -509,12 +518,12 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
         return None
     
     # account for odds on first page
-    odds = get_odds(data, market_id_mapping)
+    odds = get_odds(data, MARKET_ID_MAPPING)
 
     # loop through each possible page
     for page in range(2, num_pages + 1):
         data = get_data(parsed_url.replace("{PAGE}", str(page)))
-        page_odds = get_odds(data, market_id_mapping)
+        page_odds = get_odds(data, MARKET_ID_MAPPING)
         
         # account for additional odds available 
         odds.extend(page_odds)
@@ -536,71 +545,36 @@ def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
     return filtered_odds
 
 
-"""
-Determine how many pages of data we should iterate through 
-
-Args:
-    data (dict): dictionary containing relevant player odds 
-
-Returns:
-    pages (int): # of pages to iterate through
-"""
-
 
 def determine_number_of_pages(data: dict):
+    """
+    Determine how many pages of data we should iterate through 
+
+    Args:
+        data (dict): dictionary containing relevant player odds 
+
+    Returns:
+        pages (int): # of pages to iterate through
+    """
+
     if data and data.get("_pagination"):
         return data["_pagination"].get("total_pages", 0)
     return 0
 
 
-"""
-Generate mapping of a market ID to its respective betting prop name 
-
-TODO: Move this to application.yaml
-
-Args:   
-    None
-
-Returns:
-    mapping (dict): mapping of market ID to betting prop name 
-"""
-
-
-def generate_market_id_mapping():
-    return {
-        71: "Player To Score The Last Touchdown",
-        253: "Fantasy Points Over/Under",
-        75: "Most Receiving Yards",
-        105: "Receiving Yards Over/Under",
-        104: "Receptions Over/Under",
-        66: "First Touchdown Scorer",
-        78: "Anytime Touchdown Scorer",
-        107: "Rushing Yards Over/Under",
-        106: "Rushing Attempts Over/Under",
-        101: "Interception Over/Under",
-        103: "Passing Yards Over/Under",
-        333: "Passing Attempts Over/Under",
-        102: "Passing Touchdowns Over/Under",
-        76: "Most Rushing Yards",
-        100: "Passing Completions Over/Under",
-        73: "Most Passing Touchdowns",
-        74: "Most Passing Yards",
-    }
-
-
-"""
-Determine relevant odds based on API response 
-
-Args:
-    data (dict): relevant data from API response 
-    market_ids (dict): mapping of a market ID to corresponding props
-
-Returns:
-    odds (dict): relevatn odds for player 
-"""
-
 
 def get_odds(data: dict, market_ids: dict):
+    """
+    Determine relevant odds based on API response 
+
+    Args:
+        data (dict): relevant data from API response 
+        market_ids (dict): mapping of a market ID to corresponding props
+
+    Returns:
+        odds (dict): relevatn odds for player 
+    """
+
     odds = []
     
     # loop through available offers
@@ -643,19 +617,19 @@ def get_odds(data: dict, market_ids: dict):
     return odds
 
 
-"""
-Retrieve JSON data from specified endpoint 
-
-Args:
-    url (str): url to retrieve data from 
-
-Returns:
-    jsonData (dict): json data
-"""
-
 
 def get_data(url: str):
-    time.sleep(.25) #TODO: Make this a config
+    """
+    Retrieve JSON data from specified endpoint 
+
+    Args:
+        url (str): url to retrieve data from 
+
+    Returns:
+        jsonData (dict): json data
+    """
+
+    time.sleep(props.get_config('scraping.betting-pros.delay'))
     headers = {"x-api-key": props.get_config("website.betting-pros.api-key")}
     
     try:
@@ -670,19 +644,19 @@ def get_data(url: str):
     return jsonData
 
 
-"""
-Retrieve event IDs (also known as game ID) for a given week/season
-
-Args:   
-    week (int): week to fetch ids for 
-    year (int): year to fetch ids for 
-
-Returns:
-    ids (str): delimited ids corresponding to particular week/year
-"""
-
 
 def fetch_event_ids_for_week(week: int, year: int):
+    """
+    Retrieve event IDs (also known as game ID) for a given week/season
+
+    Args:   
+        week (int): week to fetch ids for 
+        year (int): year to fetch ids for 
+
+    Returns:
+        ids (str): delimited ids corresponding to particular week/year
+    """
+
     url = props.get_config("website.betting-pros.urls.events")
     parsed_url = url.replace("{WEEK}", str(week)).replace("{YEAR}", str(year))
 

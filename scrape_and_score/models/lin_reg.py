@@ -12,6 +12,16 @@ import os
 
 class LinReg:
     def __init__(self, qb_data, rb_data, wr_data, te_data):
+        """
+        Constructor for our Linear Regression Model
+
+        Args:
+            qb_data (pd.DataFrame): qb specific data 
+            rb_data (pd.DataFrame): rb specific data 
+            wr_data (pd.DataFrame): wr specific data 
+            te_data (pd.DataFrame): te specific data 
+        """
+        
         self.qb_data = qb_data
         self.rb_data = rb_data
         self.wr_data = wr_data
@@ -34,34 +44,36 @@ class LinReg:
 
         self.split_data = None
 
-    """
-   Functionality to scale inputs 
-   
-   Args:
-      df (pd.DataFrmae): data frame to scale inputs for 
-   
-   Returns
-      inputs (pd.DataFrame): inputs from data frame
-   """
 
     def scale_inputs(self, df: pd.DataFrame):
+        """
+        Functionality to scale inputs 
+        
+        Args:
+            df (pd.DataFrmae): data frame to scale inputs for 
+        
+        Returns
+            inputs (pd.DataFrame): inputs from data frame
+        """
+
         inputs = df.drop(["log_fantasy_points"], axis=1)
         scaler = StandardScaler()
         scaler.fit(inputs)
 
         return scaler.transform(inputs)
 
-    """
-   Functionality to split scale inputs into training and testing data 
-   
-   Args:
-      None 
-   
-   Returns: 
-      split_data (dict): dictionary containing split data for each position
-   """
 
     def create_training_and_testing_split(self):
+        """
+        Functionality to split scale inputs into training and testing data 
+        
+        Args:
+            None 
+        
+        Returns: 
+            split_data (dict): dictionary containing split data for each position
+        """
+
         qb_x_train, qb_x_test, qb_y_train, qb_y_test = train_test_split(
             self.qb_inputs_scaled, self.qb_targets, test_size=0.2, random_state=365
         )
@@ -112,17 +124,19 @@ class LinReg:
             },
         }
 
-    """
-   Functionality to create all multiple linear regression models for each NFL relevant position 
-   
-   Args:
-      None
-   
-   Returns:
-      None
-   """
 
     def create_regressions(self):
+
+        """
+        Functionality to create all multiple linear regression models for each NFL relevant position 
+        
+        Args:
+            None
+        
+        Returns:
+            None
+        """
+
         split_data = self.create_training_and_testing_split()
         self.split_data = split_data
 
@@ -144,17 +158,18 @@ class LinReg:
         self.log_regression_metrics()
         self.determine_feature_selection_significance()
 
-    """
-   Log out relevant regression bias/weights associated with model
-   
-   Args:
-      None
-   
-   Returns:
-      None
-   """
 
     def log_regression_metrics(self):
+        """
+        Log out relevant regression bias/weights associated with model
+        
+        Args:
+            None
+        
+        Returns:
+            None
+        """
+
         # Define positions and their corresponding regression models and data
         positions = {
             "QB": (self.qb_regression, self.qb_data),
@@ -181,19 +196,20 @@ class LinReg:
 
             logging.info(f"\n{reg_summary}")
 
-        """
-   Helper function for creating the position specific regression models
-   
-   Args:
-      x_train (pandas.DataFrame): data frame containing x training data 
-      y_train (pandas.DataFrame): data frame containing y training data 
-      position (str): position this model is created for 
-   
-   Returns:
-      regression_model (sklearn.linear_model.LinearRegression): linear regression model used for predictions
-   """
 
     def create_position_regression(self, x_train, y_train, position):
+        """
+        Helper function for creating the position specific regression models
+        
+        Args:
+            x_train (pandas.DataFrame): data frame containing x training data 
+            y_train (pandas.DataFrame): data frame containing y training data 
+            position (str): position this model is created for 
+        
+        Returns:
+            regression_model (sklearn.linear_model.LinearRegression): linear regression model used for predictions
+        """
+
         regression = LassoCV(cv=5, max_iter=10_000)
 
         regression.fit(x_train, y_train)  # train model
@@ -211,18 +227,16 @@ class LinReg:
         )
         return regression
 
-    """
-   Create distribution plot of residuals (predicted - expected)
-   
-   Args:
-      df (pd.DataFrame): data frame containing residuals
-      file_name (str): file name 
-   
-   Returns:
-      None
-   """
 
     def create_residuals_dist(self, df: pd.DataFrame, file_name: str):
+        """
+        Create distribution plot of residuals (predicted - expected)
+        
+        Args:
+            df (pd.DataFrame): data frame containing residuals
+            file_name (str): file name 
+        """
+
         relative_dir = "./data/distributions"
         pdf = f"{file_name}.pdf"
         os.makedirs(relative_dir, exist_ok=True)
@@ -233,19 +247,20 @@ class LinReg:
         plt.savefig(file_path)
         plt.figure()  # create new figure
 
-    """
-   Functionality to create & save scatter plot for model predictions vs actual values 
-   
-   Args:
-      y (pd.DataFrame) : data frame containing actual values 
-      y_hat (pd.DataFrame): data frame containing predicted values 
-      file_name (str): file name to save scatter plot as
-   
-   Returns:
-      None
-   """
 
     def create_prediction_scatter_plot(self, y, y_hat, file_name):
+        """
+        Functionality to create & save scatter plot for model predictions vs actual values 
+        
+        Args:
+            y (pd.DataFrame) : data frame containing actual values 
+            y_hat (pd.DataFrame): data frame containing predicted values 
+            file_name (str): file name to save scatter plot as
+        
+        Returns:
+            None
+        """
+
         relative_dir = "./data/scatter"
         pdf = f"{file_name}.pdf"
         os.makedirs(relative_dir, exist_ok=True)
@@ -259,17 +274,12 @@ class LinReg:
         plt.savefig(file_path)
         plt.figure()
 
-    """
-   Test each of our regressions against our testing data 
-
-   Args:
-      None
-
-   Returns:
-      None
-   """
 
     def test_regressions(self):
+        """
+        Test each of our regressions against our testing data 
+        """
+
         qb_y_test = self.split_data["QB"]["y_test"]
         rb_y_test = self.split_data["RB"]["y_test"]
         wr_y_test = self.split_data["WR"]["y_test"]
@@ -351,18 +361,13 @@ class LinReg:
         print("\n\nTE Testing Predictions")
         print(sorted_te_df_predictions)
 
-    """
-   Determine which features are benefiting our regression model. A feature with a p-value > 0.5 is determined to be a useless 
-   variable in terms of benefitting our regression
-   
-   Args:
-      None
-   
-   Returns:
-      None
-   """
 
     def determine_feature_selection_significance(self):
+        """
+        Determine which features are benefiting our regression model. A feature with a p-value > 0.5 is determined to be a useless 
+        variable in terms of benefitting our regression
+        """
+
         position_data = {
             "QB": self.qb_data,
             "RB": self.rb_data,

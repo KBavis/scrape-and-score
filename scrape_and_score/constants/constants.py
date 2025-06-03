@@ -158,6 +158,27 @@ TRAINING_CONFIGS = {
     }
 }
 
+MARKET_ID_MAPPING = {
+    71: "Player To Score The Last Touchdown",
+    253: "Fantasy Points Over/Under",
+    75: "Most Receiving Yards",
+    105: "Receiving Yards Over/Under",
+    104: "Receptions Over/Under",
+    66: "First Touchdown Scorer",
+    78: "Anytime Touchdown Scorer",
+    107: "Rushing Yards Over/Under",
+    106: "Rushing Attempts Over/Under",
+    101: "Interception Over/Under",
+    103: "Passing Yards Over/Under",
+    333: "Passing Attempts Over/Under",
+    102: "Passing Touchdowns Over/Under",
+    76: "Most Rushing Yards",
+    100: "Passing Completions Over/Under",
+    73: "Most Passing Touchdowns",
+    74: "Most Passing Yards",
+}
+
+
 RELEVANT_PROPS = {
     "QB": [
         "rushing_attempts_over_under",

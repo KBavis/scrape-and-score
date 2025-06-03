@@ -11,6 +11,7 @@ def fetch_all_players():
     Returns:
         players (list): list of players persisted in DB
     """
+
     sql = "SELECT player_id, player_name, position, normalized_name, hashed_name FROM player"
     players = []
 
@@ -88,6 +89,7 @@ def fetch_player_by_normalized_name(normalized_name: str):
     Args:
         normalized_name (str): the players name normalized 
     """
+
     sql = "SELECT player_id, name, position, normalized_name, hashed_name FROM player WHERE normalized_name = %s"
     player = None
 
@@ -171,6 +173,7 @@ def fetch_player_seasonal_metrics(season: int):
     Args:
         season (int): relevant season
     """
+    
     sql = """
         SELECT 
             *
