@@ -2,13 +2,13 @@ import logging
 import os
 from datetime import datetime
 
-"""
-Functionality to configure our logging format 
-
-"""
 
 
 def configure_logging():
+    """
+    Create relevant application log file & directory and setup logging configurations
+    """
+
     # create logging directory if not already created 
     log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../', 'logs')
     os.makedirs(log_dir, exist_ok=True)

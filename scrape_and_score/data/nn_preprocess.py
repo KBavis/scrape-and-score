@@ -78,7 +78,6 @@ def add_missing_features(df: pd.DataFrame, cols: list):
 
 
 
-
 def feature_selection(df: pd.DataFrame, position: str):
    """
    Helper function to select relevant features for training & testing 
@@ -87,6 +86,7 @@ def feature_selection(df: pd.DataFrame, position: str):
       df (pd.DataFrame): data frame to perform feature selection for 
       position (str): the position relating to the data we are performing feature selection on 
    """
+
    logging.info(f"Attempting to determine relevant features for our {position} Neural Network Model")
 
    # extract our inputs/outputs
@@ -124,6 +124,7 @@ def manual_feature_engineering(df: pd.DataFrame):
    Args:
        df (pd.DataFrame): data frame to apply updates to
    """
+
    logging.info('Attempting to manually engineer additional relevant features')
 
    # home team
@@ -153,6 +154,7 @@ def scale_and_transform(df: pd.DataFrame, return_inputs: bool = False):
    Returns:
       np.array: numpy array containing scaled inputs 
    """
+
    logging.info("Scaling and transforming DF in order to utilize in Neural Network training & testing")
 
    global injury_feature_names
@@ -305,6 +307,16 @@ def encode_game_conditions(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def normalize_game_condition(entry: str):
+   """
+   Normalize game condition values (strip spaces, lower case, add underscores)
+
+   Args:
+      entry (str): game condition to normalize 
+
+   Returns:
+      str: normalized game condition value
+   """
+
    if not isinstance(entry, str) or not entry.strip():
       raise Exception(f'Unable to normalize game condition: {entry}')
    
@@ -322,6 +334,7 @@ def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
    Returns:
        pd.DataFrame: data frame with encoded features 
    """
+
    logging.info("Encoding player injuries with relevant numerical values instead of statuses / strings")
 
    global injury_feature_names
@@ -446,9 +459,6 @@ def normalize_injury_locations(injuries: list):
       normalized_injuries.append(injury)
    
    return normalized_injuries
-
-
-
 
 
 

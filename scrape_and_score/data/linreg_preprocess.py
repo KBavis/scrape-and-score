@@ -14,15 +14,10 @@ def pre_process_data():
     """
     Main functionality of module to kick of data fetching and pre-procesing 
 
-Args:
-   None 
+    Returns:
+        qb_data, rb_data, wr_data, te_data (tuple(pd.DataFrame, ...)): tuple containing pre-processed data
+    """
 
-Returns:
-   qb_data, rb_data, wr_data, te_data (tuple(pd.DataFrame, ...)): tuple containing pre-processed data
-J"""
-
-
-def pre_process_data():
     sns.set_theme()
 
     df = get_data()
@@ -82,9 +77,6 @@ def pre_process_data():
         "fantasy_points_over_under_line"
     ]]
 
-    
-  
-    
     # # return tuple of pre-processed data
     return (
         preprocessed_qb_data,
@@ -94,22 +86,21 @@ def pre_process_data():
     )
 
 
-"""
-Functionality to validate multicollinearity & other OLS assumptions 
-
-NOTE: Given current process of using Lasso/Ridge to reguralize data nd handle multicollinearity, this function is not currently being used
-
-
-Args:
-   df (pd.DataFrame): data frame to validate 
-   position (str): position to validate
-
-Returns:
-   updated_df (pd.DataFrame): updated df (if there weren't anym then return original)
-"""
-
-
 def validate_ols_assumptions(df: pd.DataFrame, position: str):
+    """
+    Functionality to validate multicollinearity & other OLS assumptions 
+
+    NOTE: Given current process of using Lasso/Ridge to reguralize data nd handle multicollinearity, this function is not currently being used
+
+
+    Args:
+        df (pd.DataFrame): data frame to validate 
+        position (str): position to validate
+
+    Returns:
+        updated_df (pd.DataFrame): updated df (if there weren't anym then return original)
+    """
+
     extra_cols = []
     if position == "QB":
         extra_cols.append("log_avg_fantasy_points")
@@ -119,7 +110,6 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
         extra_cols.append("passing_attempts_over_under_line")
         extra_cols.append("passing_touchdowns_over_under_line")
         extra_cols.append("fantasy_points_over_under_line")
-        # extra_cols.append("qb_composite_score")
     elif position == "RB":
         extra_cols.append("log_avg_fantasy_points")
         extra_cols.append("rushing_attempts_over_under_line")
@@ -128,14 +118,12 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
         extra_cols.append("receiving_yards_over_under_line")
         extra_cols.append("receptions_over_under_line")
         extra_cols.append("fantasy_points_over_under_line")
-        # extra_cols.append("rb_composite_score")
     elif position == "WR" or position == "TE":
         extra_cols.append("log_avg_fantasy_points")
         extra_cols.append("anytime_touchdown_scorer_line")
         extra_cols.append("receiving_yards_over_under_line")
         extra_cols.append("receptions_over_under_line")
         extra_cols.append("fantasy_points_over_under_line")
-        # extra_cols.append("wr_te_composite_score")
 
     variables = df[["log_ratio_rank", "is_favorited"] + extra_cols]
 
@@ -159,23 +147,21 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
         )
 
     return df.drop(columns=features_to_remove)
-    return df
-
-
-""" 
-Apply manual feature engineering in order to avoid multicollinearity regarding features 
-
-TODO: Consider removing altogether or modifying in a way where weights account for predictive power of lines (currently does not)
-
-Args:
-    df (pd.DataFrame): data frame to apply feature engineering to
-    
-Returns:
-    feature_engineered_df (pd.DataFrame): updated data frame 
-"""
 
 
 def apply_feature_engineering(df: pd.DataFrame, position: str):
+    """ 
+    Apply manual feature engineering in order to avoid multicollinearity regarding features 
+
+    TODO: Consider removing altogether or modifying in a way where weights account for predictive power of lines (currently does not)
+
+    Args:
+        df (pd.DataFrame): data frame to apply feature engineering to
+        
+    Returns:
+        feature_engineered_df (pd.DataFrame): updated data frame 
+    """
+
     logging.info(
         f"Applying feautre engineering for the following position {position} and DataFrame: \n\n {df.head}"
     )
@@ -234,18 +220,17 @@ def apply_feature_engineering(df: pd.DataFrame, position: str):
     return feature_engineered_df
 
 
-""" 
-Calculate composite scores for players based on expected volume, game context, and fantasy potential according to Vegas 
-
-Args:
-    df (pd.DataFrame); data frame to calculate composite scores for 
-
-Returns:
-    None
-"""
-
-
 def calculate_composite_scores(df: pd.DataFrame, position: str):
+    """ 
+    Calculate composite scores for players based on expected volume, game context, and fantasy potential according to Vegas 
+
+    Args:
+        df (pd.DataFrame); data frame to calculate composite scores for 
+
+    Returns:
+        None
+    """
+
     cols_to_drop = []
     if position == "QB":
         weights = ["total_expected_volume_qb", "fantasy_potential", "game_context"]
@@ -263,19 +248,18 @@ def calculate_composite_scores(df: pd.DataFrame, position: str):
     df.drop(columns=cols_to_drop, inplace=True)
 
 
-""" 
-Functionality to calculate the total exepcted volume in given data 
-
-Args:
-    df (pd.DataFrame): data frame to account for 
-    position (str): player position 
-
-Returns:
-    None
-"""
-
-
 def calculate_total_expected_volume(df: pd.DataFrame, position: str):
+    """ 
+    Functionality to calculate the total exepcted volume in given data 
+
+    Args:
+        df (pd.DataFrame): data frame to account for 
+        position (str): player position 
+
+    Returns:
+        None
+    """
+
     if position == "TE" or position == "WR":
         return
 
@@ -324,56 +308,52 @@ def calculate_total_expected_volume(df: pd.DataFrame, position: str):
     df.drop(columns=weight_names, inplace=True)
 
 
-""" 
-Utility function to apply weighted sum computation to a data frame 
-
-Args:
-    df (pd.DataFrame): data frame to apply weighted sum to
-    weights (list): list of weights to apply 
-    outcome_col (str): outcome col in data 
-"""
-
-
 def compute_weighted_sum(df: pd.DataFrame, weights: list, outcome_col: str):
+    """ 
+    Utility function to apply weighted sum computation to a data frame 
+
+    Args:
+        df (pd.DataFrame): data frame to apply weighted sum to
+        weights (list): list of weights to apply 
+        outcome_col (str): outcome col in data 
+    """
+
     weight_mapping = retrieve_weights(outcome_col, weights)
     df[outcome_col] = sum(
         weight_mapping[weight_name] * df[weight_name] for weight_name in weights
     )
 
 
-""" 
-Retrieve weights corresponding to a particular outcome 
-
-Args:
-    outcome (str): the outcome value that these weights will be used to calculate 
-    weight_names (list): list of weight names to retrive from props 
-
-Returns: 
-    weight_mappings (dict): mapping of a weight name to its correspondng value 
-    
-"""
-
-
 def retrieve_weights(outcome: str, weight_names: list):
+    """ 
+    Retrieve weights corresponding to a particular outcome 
+
+    Args:
+        outcome (str): the outcome value that these weights will be used to calculate 
+        weight_names (list): list of weight names to retrive from props 
+
+    Returns: 
+        weight_mappings (dict): mapping of a weight name to its correspondng value 
+    """
+
     return {
         weight: props.get_config(f"weights.{outcome}.{weight}")
         for weight in weight_names
     }
 
 
-"""
-Split dataframes into position specific data due to fantasy points 
-vary signficantly by position and invoke functionality to get ranking ratios
-
-Args:
-   df (pd.DataFrame): dataframe to split 
-
-Returns
-   qb_data, rb_data, te_data, wr_data (tuple): split dataframes by position
-"""
-
-
 def split_data_by_position(df: pd.DataFrame):
+    """
+    Split dataframes into position specific data due to fantasy points 
+    vary signficantly by position and invoke functionality to get ranking ratios
+
+    Args:
+        df (pd.DataFrame): dataframe to split 
+
+    Returns
+        qb_data, rb_data, te_data, wr_data (tuple): split dataframes by position
+    """
+
     # split data by position
     qb_data = df[df["position"] == "QB"]
     rb_data = df[df["position"] == "RB"]
@@ -399,15 +379,16 @@ def split_data_by_position(df: pd.DataFrame):
     )
 
 
-""" 
-Generate relevant player props ratios that reward low COSTS and higher LINES 
+def get_relevant_player_lines(df: pd.DataFrame, position: str):
+    """ 
+    Generate relevant player props ratios that reward low COSTS and higher LINES 
 
-NOTE: Do not use this functionality for props such as interceptions 
+    NOTE: Do not use this functionality for props such as interceptions 
 
-TODO: Remove this functionality and just update prop parsing to only account for over lines 
+    TODO: Remove this functionality and just update prop parsing to only account for over lines 
 
-Args:
-    df (pd.DataFrame): position specific data 
+    Args:
+        df (pd.DataFrame): position specific data 
 
     Returns:
         updated (pd.DataFrame): updated data frame with new ratio columns 
@@ -448,18 +429,18 @@ Args:
     return df[keep_columns].dropna()
 
 
-"""
-Filter out outliers from data 
-
-Args:
-   df (pd.DataFrame): dataframe to filter out records 
-
-Returns:
-   filtered_df (pd.DataFrame): data frame with records filtered
-"""
-
 
 def filter_data(df: pd.DataFrame):
+    """
+    Filter out outliers from data 
+
+    Args:
+        df (pd.DataFrame): dataframe to filter out records 
+
+    Returns:
+        filtered_df (pd.DataFrame): data frame with records filtered
+    """
+
     logging.info(
         "Removing all records where fantasy points equal 0 of avg fantasy points less than 5"
     )
@@ -511,18 +492,6 @@ def filter_data(df: pd.DataFrame):
     return no_outlier_data
 
 
-"""
-Remove any skewed nature from our features 
-
-Args:
-   qb_data (pd.DataFrame): qb dataframe to transform 
-   rb_data (pd.DataFrame): rb dataframe to transform 
-   wr_data (pd.DataFrame): wr dataframe to transform 
-   te_data (pd.DataFrame): te dataframe to transform 
-Returns:
-   None
-"""
-
 
 def transform_data(
     qb_data: pd.DataFrame = None,
@@ -530,6 +499,17 @@ def transform_data(
     wr_data: pd.DataFrame = None,
     te_data: pd.DataFrame = None,
 ):
+
+    """
+    Remove any skewed nature from our features 
+
+    Args:
+        qb_data (pd.DataFrame): qb dataframe to transform 
+        rb_data (pd.DataFrame): rb dataframe to transform 
+        wr_data (pd.DataFrame): wr dataframe to transform 
+        te_data (pd.DataFrame): te dataframe to transform 
+    """
+
     for df in [qb_data, rb_data, wr_data, te_data]:
         if df is None:
             continue
@@ -555,16 +535,6 @@ def transform_data(
     return qb_data, rb_data, wr_data, te_data
 
 
-"""
-Calculate ratio of relevant defensive ranking to relevant offensive ranking 
-
-Args:
-   df (pd.DataFrame): dataframe to generate relevant ranks for 
-   is_rushing (bool): boolean to determine if we are calculating this for rushing or for passing
-
-Returns:
-   updated_df (pd.DataFrame): dataframe with correct rank ratios
-"""
 
 
 def get_rankings_ratios(
@@ -573,6 +543,17 @@ def get_rankings_ratios(
     wr_data: pd.DataFrame,
     te_data: pd.DataFrame,
 ):
+    """
+    Calculate ratio of relevant defensive ranking to relevant offensive ranking 
+
+    Args:
+        df (pd.DataFrame): dataframe to generate relevant ranks for 
+        is_rushing (bool): boolean to determine if we are calculating this for rushing or for passing
+
+    Returns:
+        updated_df (pd.DataFrame): dataframe with correct rank ratios
+    """
+
     # Ensure modifications are applied to a copy, preventing SettingWithCopyWarning
     rb_data = rb_data.copy()
     qb_data = qb_data.copy()
@@ -591,36 +572,35 @@ def get_rankings_ratios(
     return qb_data, rb_data, wr_data, te_data
 
 
-"""
-Addition of avg_fantasy_points feature so historical data is included in model 
-
-Args:
-   df (pd.DataFrame): dataframe to add avg_fantasy_points to 
-
-Returns:
-   df (pd.DataFrame): updated data frame 
-"""
 
 
 def include_averages(df: pd.DataFrame):
+    """
+    Addition of avg_fantasy_points feature so historical data is included in model 
+
+    Args:
+        df (pd.DataFrame): dataframe to add avg_fantasy_points to 
+
+    Returns:
+        df (pd.DataFrame): updated data frame 
+    """
+
     player_avg_points = df.groupby("player_id")["fantasy_points"].mean()
     df["avg_fantasy_points"] = df["player_id"].map(player_avg_points)
     return df
 
 
-"""
-Plot a series in order to determine if outliers exists 
-
-Args:
-   series (pd.Series): series to plot 
-   pdf_name (str): file name for pdf
-
-Returns:
-   None
-"""
 
 
 def plot(series: pd.Series, pdf_name: str):
+    """
+    Plot a series in order to determine if outliers exists 
+
+    Args:
+        series (pd.Series): series to plot 
+        pdf_name (str): file name for pdf
+    """
+
     sns.displot(
         series, kind="hist", kde=True, bins=10, color="skyblue", edgecolor="white"
     )
@@ -634,20 +614,18 @@ def plot(series: pd.Series, pdf_name: str):
     plt.close()
 
 
-"""
-Create scatter plots for features vs dependent variable
-
-Args:
-   data (pd.DataFrame): dataframe to yank tdata from 
-   independet_var (str): value to plot against fantasy points 
-   position (str); position of player 
-
-Returns:
-   None
-"""
 
 
 def create_plot(data: pd.DataFrame, independent_var: str, position: str):
+    """
+    Create scatter plots for features vs dependent variable
+
+    Args:
+        data (pd.DataFrame): dataframe to yank tdata from 
+        independet_var (str): value to plot against fantasy points 
+        position (str); position of player 
+    """
+
     plt.figure(figsize=(8, 6))
 
     plt.scatter(data[independent_var], data["log_fantasy_points"])
@@ -664,18 +642,16 @@ def create_plot(data: pd.DataFrame, independent_var: str, position: str):
     plt.close()
 
 
-"""
-Parse player props retrieved from DB 
-
-Args:
-    df (pd.DataFrame): data frame containing player props 
-
-Returns:
-    df (pd.DataFrame): data frame with relevant player props columns
-"""
-
-
 def parse_player_props(df: pd.DataFrame):
+    """
+    Parse player props retrieved from DB 
+
+    Args:
+        df (pd.DataFrame): data frame containing player props 
+
+    Returns:
+        df (pd.DataFrame): data frame with relevant player props columns
+    """
 
     parsed_data = []
 
@@ -700,18 +676,16 @@ def parse_player_props(df: pd.DataFrame):
     return pd.concat([df, parsed_df], axis=1)
 
 
-"""
-Functionality to retrieve pandas df, containing independent & dependent variable(s)
-
-Args:
-   None
-
-Returns:
-   df (pd.DataFrame): data frame containing inputs/outputs for linear regression model
-"""
-
-
 def get_data():
+    """
+    Functionality to retrieve pandas df, containing independent & dependent variable(s)
+
+    Args:
+    None
+
+    Returns:
+    df (pd.DataFrame): data frame containing inputs/outputs for linear regression model
+    """
     df = fetch_independent_and_dependent_variables()
     dfs_with_player_props = parse_player_props(df)
     updated_df = include_averages(dfs_with_player_props)

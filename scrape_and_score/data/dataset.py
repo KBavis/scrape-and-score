@@ -5,13 +5,14 @@ from .nn_preprocess import scale_and_transform
 
 
 class FantasyDataset(Dataset):
-    """
-    Args:
-       df (pd.DataFrame): data frame containing all relevant indepdent/dependent variables
-       transform (callable, optional): optional transform to be applied
-    """
 
     def __init__(self, df, transform=None):
+        """
+        Args:
+            df (pd.DataFrame): data frame containing all relevant indepdent/dependent variables 
+            transform (callable, optional): optional transform to be applied
+        """
+
         super().__init__()
         self.df = df
         self.transform = transform
@@ -27,6 +28,7 @@ class FantasyDataset(Dataset):
         Returns:
             torch.tensor: relevant item
         """
+
         # account for batching by DataLoader
         if torch.is_tensor(idx):
             idx = idx.tolist()
