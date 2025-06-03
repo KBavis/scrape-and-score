@@ -1,9 +1,9 @@
 from config import configure_logging
 from db import (
-    connection,
-    insert_teams,
-    fetch_all_teams,
+    connection
 )
+from db.insert.teams import insert_teams
+from db.read.teams import fetch_all_teams
 from config import load_configs, get_config
 from datetime import datetime
 from util import args

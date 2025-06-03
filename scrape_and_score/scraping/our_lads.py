@@ -19,7 +19,7 @@ from db.insert.players import (
     insert_player_depth_charts,
     insert_players,
     update_player_teams_records_end_dates,
-    insert_player_teams_records
+    insert_player_teams
 )
 
 """
@@ -395,7 +395,7 @@ def upsert_player_teams_records(relevant_players: list, team_id: int, season: in
     # account for insertions 
     if player_teams_records_to_insert:
         logging.info(f"'player_teams' records to be inserted:\n\t{player_teams_records_to_insert}") 
-        insert_player_teams_records(player_teams_records_to_insert) 
+        insert_player_teams(player_teams_records_to_insert) 
     else:
         logging.info(f"No new 'player_teams' records; skipping insertion")
 
@@ -440,7 +440,7 @@ def insert_player_teams_records(relevant_players: list, start_date_mapping: dict
         logging.info(f"No new player teams records to insert for the team {team['team']} in the {season} season; skipping insertion")
     else:
         print(f"\n\nPlayer Teams Records About To Get Inserted:\n\t{filtered_player_teams_records}")
-        insert_player_teams_records(filtered_player_teams_records)
+        insert_player_teams(filtered_player_teams_records)
     
 
 

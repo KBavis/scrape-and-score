@@ -1,4 +1,4 @@
-from db import get_connection
+from db.connection import get_connection
 import logging
 import pandas as pd
 from datetime import datetime

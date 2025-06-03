@@ -569,7 +569,7 @@ def update_player_teams_records_end_dates(player_teams_records: list):
         )
         raise e
 
-def insert_player_teams_records(player_teams_records: list): 
+def insert_player_teams(player_teams_records: list): 
     """
     Insert new player teams records into datbaase 
 
