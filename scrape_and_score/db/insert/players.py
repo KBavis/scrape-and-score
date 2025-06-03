@@ -33,6 +33,7 @@ def insert_player(player: dict):
     Args: 
         player (dict): player to insert into our db 
     """
+
     query = """
       INSERT INTO player (name, position) 
       VALUES (%s, %s)
@@ -370,6 +371,7 @@ def insert_upcoming_player_props(records: list):
     Args:
         records (list): list of records to insert 
     """
+
     sql = """
         INSERT INTO player_betting_odds (player_id, player_name, label, cost, line, week, season) 
         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -886,6 +888,7 @@ def insert_player_seasonal_rushing_and_receiving_metrics(record: dict, year: int
         year (int): season year
         team_id (int): team id
     """
+
     sql = """
         INSERT INTO player_seasonal_rushing_receiving_metrics (
             player_id, team_id, season, games_started, rush_att, rush_yds_per_att, rush_fd,
@@ -1034,6 +1037,7 @@ def insert_player_advanced_passing_metrics(records: list, player_id: int, season
         player_id (int): ID of the player
         season (int): season year
     """
+
     sql = """
     INSERT INTO player_advanced_passing (
         player_id, week, season, age, first_downs, first_down_passing_per_pass_play,
@@ -1098,6 +1102,7 @@ def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: i
         player_id (int): ID of the player
         season (int): season year
     """
+    
     sql = """
     INSERT INTO player_advanced_rushing_receiving (
         player_id, week, season, age, rush_first_downs, rush_yds_before_contact,

@@ -12,9 +12,9 @@ def insert_teams(teams: list):
     Functionality to persist mutliple teams into our db 
 
     Args: 
-    teams (list): list of teams to insert into our db 
+        teams (list): list of teams to insert into our db 
     Returns: 
-    teams (list): mapping of team names and ids we inserted
+        teams (list): mapping of team names and ids we inserted
 
     """
 
@@ -39,10 +39,10 @@ def insert_team(team_name: str):
     Functionality to persist a single team into our db 
 
     Args: 
-    team_name (str): team to insert into our db 
+        team_name (str): team to insert into our db 
 
     Returns: 
-    team_id (int): id corresponding to a particular team 
+        team_id (int): id corresponding to a particular team 
     """
 
     sql = "INSERT INTO team (name) VALUES (%s) RETURNING team_id"
@@ -195,9 +195,6 @@ def update_team_game_logs(game_logs: list):
 
     Args:
         game_logs (list): list of tuples where each tuple contains all updatable fields followed by team_id, week, and year.
-    
-    Returns:
-        None
     """
 
     sql = """
@@ -551,10 +548,8 @@ def update_team_betting_odds_records_with_outcomes(update_records: list):
     
     Args:
         update_records (list): list of records to update 
-    
-    Returns:
-        None
     """
+
     sql = f"""
             UPDATE team_betting_odds
             SET 
@@ -618,6 +613,7 @@ def insert_bye_week_rankings(team_bye_weeks: list, season: int):
         team_bye_weeks (list): records indicating bye weeks for teams 
         sesaon (int): the relevant season 
     """
+
     sql = f"""
             INSERT INTO team_ranks (team_id, week, season, off_rush_rank, off_pass_rank, def_rush_rank, def_pass_rank)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -930,7 +926,7 @@ def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicki
         team_id (int): team ID
         season (int): season year
     """
-    # Insert punting metrics
+
     punting_sql = """
     INSERT INTO team_seasonal_punting_metrics (
         team_id, season, team_total_punt, team_total_punt_yds, team_total_punt_yds_per_punt,
@@ -957,7 +953,6 @@ def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicki
         int(punting_record['team_total_punt_blocked'])
     )
 
-    # Insert kicking metrics
     kicking_sql = """
     INSERT INTO team_seasonal_kicking_metrics (
         team_id, season, team_total_fga1, team_total_fgm1, team_total_fga2,
@@ -1000,11 +995,9 @@ def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicki
     try:
         connection = get_connection()
         with connection.cursor() as cur:
-            # Insert punting metrics
             cur.execute(punting_sql, punting_params)
             logging.info(f"Successfully inserted team_seasonal_punting_metrics record for team {team_id} season {season}")
 
-            # Insert kicking metrics  
             cur.execute(kicking_sql, kicking_params)
             logging.info(f"Successfully inserted team_seasonal_kicking_metrics record for team {team_id} season {season}")
 
@@ -1081,14 +1074,12 @@ def insert_team_seasonal_defense_and_fumbles_metrics(team_stats: dict, team_defe
         'safety_md': int(team_defensive_stats.get('team_total_safety_md', 0))
     }
 
-    # Convert starting field position from "Own X.X" to numeric
     start_avg = team_stats.get('opp_start_avg', '')
     if start_avg and 'Own ' in start_avg:
         record['start_avg'] = float(start_avg.replace('Own ', ''))
     else:
         record['start_avg'] = 0
 
-    # Add conversion stats
     record['third_down_att'] = int(team_conversions.get('opp_third_down_att', 0))
     record['third_down_success'] = int(team_conversions.get('opp_third_down_success', 0))
     record['third_down_pct'] = float(team_conversions.get('opp_third_down_pct', '0').rstrip('%'))
@@ -1166,6 +1157,7 @@ def insert_team_seasonal_scoring_metrics(record: dict, team_id: int, season: int
     Args:
         record (dict): record containing relevant season team scoring metrics
     """
+
     sql = """
     INSERT INTO team_seasonal_scoring_metrics (
         team_id, season, rush_td, rec_td, punt_ret_td, kick_ret_td, fumbles_rec_td,
@@ -1213,6 +1205,7 @@ def insert_team_seasonal_rankings_metrics(team_stats: dict, team_conversions: di
         team_id (int): Team ID
         season (int): Season year
     """
+
     sql = """
     INSERT INTO team_seasonal_ranks (
         team_id, season,
@@ -1380,6 +1373,7 @@ def update_game_conditions(records: list):
     Args:
         records (list): List of game condition records (dicts)
     """
+    
     sql = """
         UPDATE game_conditions
         SET 
