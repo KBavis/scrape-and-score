@@ -158,6 +158,38 @@ TRAINING_CONFIGS = {
     }
 }
 
+RELEVANT_PROPS = {
+    "QB": [
+        "rushing_attempts_over_under",
+        "rushing_yards_over_under",
+        "anytime_touchdown_scorer",
+        "passing_yards_over_under",
+        "passing_touchdowns_over_under",
+        "passing_attempts_over_under",
+        "fantasy_points_over_under",
+    ],
+    "RB": [
+        "rushing_attempts_over_under",
+        "rushing_yards_over_under",
+        "anytime_touchdown_scorer",
+        "receiving_yards_over_under",
+        "receptions_over_under",
+        "fantasy_points_over_under",
+    ],
+    "WR": [
+        "anytime_touchdown_scorer",
+        "receiving_yards_over_under",
+        "receptions_over_under",
+        "fantasy_points_over_under",
+    ],
+    "TE": [
+        "anytime_touchdown_scorer",
+        "receiving_yards_over_under",
+        "receptions_over_under",
+        "fantasy_points_over_under",
+    ],
+}
+
 # Ensure that relevant features are included by our model via manual selection 
 
 COMMON_FEATURES = [

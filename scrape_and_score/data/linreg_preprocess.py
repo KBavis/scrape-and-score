@@ -7,44 +7,12 @@ import logging
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import os
 from config import props
+from constants import RELEVANT_PROPS
 
 
-# constant
-relevant_props = {
-    "QB": [
-        "rushing_attempts_over_under",
-        "rushing_yards_over_under",
-        "anytime_touchdown_scorer",
-        "passing_yards_over_under",
-        "passing_touchdowns_over_under",
-        "passing_attempts_over_under",
-        "fantasy_points_over_under",
-    ],
-    "RB": [
-        "rushing_attempts_over_under",
-        "rushing_yards_over_under",
-        "anytime_touchdown_scorer",
-        "receiving_yards_over_under",
-        "receptions_over_under",
-        "fantasy_points_over_under",
-    ],
-    "WR": [
-        "anytime_touchdown_scorer",
-        "receiving_yards_over_under",
-        "receptions_over_under",
-        "fantasy_points_over_under",
-    ],
-    "TE": [
-        "anytime_touchdown_scorer",
-        "receiving_yards_over_under",
-        "receptions_over_under",
-        "fantasy_points_over_under",
-    ],
-}
-
-
-"""
-Main functionality of module to kick of data fetching and pre-procesing 
+def pre_process_data():
+    """
+    Main functionality of module to kick of data fetching and pre-procesing 
 
 Args:
    None 
@@ -441,13 +409,10 @@ TODO: Remove this functionality and just update prop parsing to only account for
 Args:
     df (pd.DataFrame): position specific data 
 
-Returns:
-    updated (pd.DataFrame): updated data frame with new ratio columns 
-"""
-
-
-def get_relevant_player_lines(df: pd.DataFrame, position: str):
-    selected_props = relevant_props[position]
+    Returns:
+        updated (pd.DataFrame): updated data frame with new ratio columns 
+    """
+    selected_props = RELEVANT_PROPS[position]
 
     # reconfigure df with relevant lines
     for prop in selected_props:
