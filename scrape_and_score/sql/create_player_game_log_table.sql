@@ -25,7 +25,7 @@ CREATE TABLE player_game_log (
     rec_td INT,
     snap_pct FLOAT,
     off_snps INT,
-    fantasy_points FLOAT, --TODO: Move this to a seperate table
+    fantasy_points FLOAT, --TODO (FFM-317): Move this to a seperate table
     PRIMARY KEY (player_id, week, year),
     FOREIGN KEY (player_id) REFERENCES player(player_id) ON DELETE CASCADE,
     FOREIGN KEY (opp) REFERENCES team(team_id) ON DELETE CASCADE

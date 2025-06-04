@@ -149,77 +149,6 @@ def validate_ols_assumptions(df: pd.DataFrame, position: str):
     return df.drop(columns=features_to_remove)
 
 
-def apply_feature_engineering(df: pd.DataFrame, position: str):
-    """ 
-    Apply manual feature engineering in order to avoid multicollinearity regarding features 
-
-    TODO: Consider removing altogether or modifying in a way where weights account for predictive power of lines (currently does not)
-
-    Args:
-        df (pd.DataFrame): data frame to apply feature engineering to
-        
-    Returns:
-        feature_engineered_df (pd.DataFrame): updated data frame 
-    """
-
-    logging.info(
-        f"Applying feautre engineering for the following position {position} and DataFrame: \n\n {df.head}"
-    )
-
-    combined_weight_names = []
-
-    # calculate fantasy potential for player
-    weight_names = [
-        "log_avg_fantasy_points",
-        "fantasy_points_over_under_line",
-    ]
-    combined_weight_names += weight_names
-    compute_weighted_sum(df, weight_names, "fantasy_potential")
-
-    # calculate game context for player
-    weight_names = [
-        "game_over_under",
-        "anytime_touchdown_scorer_line",
-    ]
-    combined_weight_names += weight_names
-    compute_weighted_sum(df, weight_names, "game_context")
-
-    # calculate expected rushing volume if position applicable
-    if position == "RB" or position == "QB":
-        weight_names = [
-            "rushing_yards_over_under_line",
-            "rushing_attempts_over_under_line",
-        ]
-        combined_weight_names += weight_names
-        compute_weighted_sum(df, weight_names, "expected_rushing_volume")
-
-    # calculate receiving volume if position applicable
-    if position == "WR" or position == "RB" or position == "TE":
-        weight_names = [
-            "receiving_yards_over_under_line",
-            "receptions_over_under_line",
-        ]
-        combined_weight_names += weight_names
-        compute_weighted_sum(df, weight_names, "expected_receiving_volume")
-
-    # calculate passing volume if posiiton applicable
-    if position == "QB":
-        weight_names = [
-            "passing_touchdowns_over_under_line",
-            "passing_attempts_over_under_line",
-            "passing_yards_over_under_line",
-        ]
-        combined_weight_names += weight_names
-        compute_weighted_sum(df, weight_names, "expected_passing_volume")
-
-    # combine calculated volumes based on position
-    calculate_total_expected_volume(df, position)
-    calculate_composite_scores(df, position)
-
-    feature_engineered_df = df.drop(columns=combined_weight_names)
-    return feature_engineered_df
-
-
 def calculate_composite_scores(df: pd.DataFrame, position: str):
     """ 
     Calculate composite scores for players based on expected volume, game context, and fantasy potential according to Vegas 
@@ -385,8 +314,6 @@ def get_relevant_player_lines(df: pd.DataFrame, position: str):
 
     NOTE: Do not use this functionality for props such as interceptions 
 
-    TODO: Remove this functionality and just update prop parsing to only account for over lines 
-
     Args:
         df (pd.DataFrame): position specific data 
 
@@ -401,11 +328,9 @@ def get_relevant_player_lines(df: pd.DataFrame, position: str):
         outcome_col = f"{prop}_line"
 
         if prop == "anytime_touchdown_scorer":
-            # line_col = f"{prop}_line"
             line_col = "anytime_touchdown_scorer_cost" #account for cost rather than line for anytime TD
 
         if line_col in df.columns:
-            # TODO: remove ratio column altogether as this is hurting predictive value rather than helping
             df[outcome_col] = df[line_col]
 
             df.drop(columns=[line_col])

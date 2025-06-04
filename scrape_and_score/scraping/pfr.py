@@ -165,7 +165,7 @@ def update_player_game_logs(week: int, season: int):
     """"
     Functionality to update player game logs with relevant outcomes OR remove unecessary stubbed player game logs 
 
-    TODO: If player game log not found, and not a bye week, and run date > game date --> pfr_available --> 0 , remove player_game_log corresponding to player 
+    TODO (FFM-311): Remove Stubbed Player Game Log if No Metrics Retrieved in Results Workflow 
 
     Args: 
         week (int): relevant week 
@@ -407,7 +407,7 @@ def extract_team_game_log_updates(soup: BeautifulSoup, week: int, season: int):
         def_rush_yds = extract_int(games[i], "rush_yds_def")
         
         # extract advanced team metrics 
-        #TODO: Seems like pfr removed these metrics. Continue to check if PFR returns to adding these or extract from other sources 
+        #TODO (FFM-312): Account for pro-football-reference no longer supplying these metrics 
         (
             pass_tds, pass_cmp, pass_att, pass_cmp_pct,
             rush_att, rush_tds, yds_gained_per_pass_att,
@@ -851,7 +851,6 @@ def fetch_team_game_logs(teams: list, url_template: str, year: int, recent_games
 
     return team_metrics
 
-#TODO: UPDATE THIS LOGIC TO ACCOUNT FOR CHANGING KEYS OVER YEARS OF DATA-STAT 
 def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
     """
     Fetch teams and player seasonal metrics
@@ -932,8 +931,6 @@ def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
                 player_tbody = table_soup.find('tbody')
                 team_tfoot = table_soup.find('tfoot')
                 player_scoring_summary, team_scoring_summary = parse_player_and_team_totals(player_tbody, team_tfoot)
-
-            #TODO: Consider if we want to acocunt for Touchdown Log & Opponent Touchdown Log in future
 
             # insert team records 
             format_and_insert_team_seasonal_general_metrics(team_stats, team_conversions, team_id, year)
@@ -1390,10 +1387,6 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
     """
     Functionality to fetch relevant metrics corresponding to a specific NFL team
 
-    Some subtle modifications were made to fix the repositories bug and to fit our use case.    
-
-    TODO: REFACTOR THIS::: pro-football-reference made a UI update, breaking a lot of this code and now theres a bunch of conditionals and ugly code that we should fix in the future 
-    
     Args: 
         team (str) - NFL team full name
         raw_html (str) - raw HTML fetch for specified team

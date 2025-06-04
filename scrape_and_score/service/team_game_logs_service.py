@@ -553,7 +553,7 @@ def calculate_rankings(metrics: list):
     """
     Functionality to calculate the rankings of teams based on relevant metric accumulations
 
-    TODO: Account for the break down of scoring (i.e rushing tds for, rushing tds against, etc)
+    TODO (FFM-314): Account for the break down of scoring (i.e rushing tds for, rushing tds against, etc)
 
     Args:
         team_game_logs (list): list of game logs for a particular team 
@@ -795,8 +795,6 @@ def apply_weights(normalized_metrics: dict, keys: list, team_id: int):
     Apply weights determined in configurations to normalized aggregate season metrics in order to properly rank 
 
     TODO (FFM-129): Optimize Points_For & Points_Against to account for where points came from when applying weights (i.e passing tds/rushing tds/def tds)
-
-    TODO: Account for history of rankings when applying weights
 
     Args:
     normalized_metrics (dict): normalized metrics to apply weights to 

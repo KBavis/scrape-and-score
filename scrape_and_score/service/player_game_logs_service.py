@@ -18,10 +18,6 @@ from db.read.players import (
     fetch_player_fantasy_points
 )
 
-"""
-TODO: Rename this file to something else since its transforming into a larger scope than just player_game_logs
-"""
-
 
 def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, year: int = None):
     """
@@ -446,54 +442,6 @@ def insert_fantasy_points(points: list):
 
     logging.info(f"Attempting to insert players calculated fantasy points into our DB")
     add_fantasy_points(points)
-
-
-def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, season: int): 
-    """
-    Functionality to calculate and persist the weekly averages for players. The average calculated 
-    will only take into account the current season AND the games that have been played in this current season 
-    based on the current week 
-
-    TODO: Deprecated function with due to the creation of new update_player_weekly_agg DB function
-
-    Args:
-        start_week (int): week to start calculating averages for 
-        end_week (int): week to stop calcualting averages for 
-        season (int): season to calculate averages for 
-    """
-
-    # retrieve active players in specified season 
-    players = fetch_players_active_in_specified_year(season)
-
-    player_agg_metrics = []
-
-    # calculate weekly averages (i.e fantasy points, advanced metrics, etc)
-    for player in players: 
-        player_id = player['id']
-
-        # fetch aggregate fantasy points for each week
-        for curr_week in range(start_week, end_week + 1): 
-            logging.info(f"Calculating weekly fantasy point averages from week 1 to week {curr_week} in the {season} season for player {player['name']}.")
-
-
-            # weekly fantasy point 
-            weekly_fantasy_points = fetch_player_fantasy_points(player_id, season, curr_week)
-            if not any(record["week"] == curr_week for record in weekly_fantasy_points):
-                logging.info(f"Skipping week {curr_week} for player {player['name']} as no data is available.")
-                continue
-            
-            weeks_active = len(weekly_fantasy_points)   
-            total_fpts = sum(record["fantasy_points"] for record in weekly_fantasy_points)
-
-            avg_fpts = round(float(total_fpts) / weeks_active, 2) if weeks_active > 0 else 0.0
-
-            player_agg_metrics.append({"player_id": player_id, "week": curr_week, "season": season, "fantasy_points": avg_fpts})
-    
-    
-    # insert aggregate fantasy point avgs per week for specified season 
-    logging.info(f"Attempting to insert aggregate fantasy points for the {season} NFL season.")
-    insert_player_weekly_aggregate_metrics(player_agg_metrics)
-
 
 
 def get_offensive_point_configs():

@@ -43,7 +43,7 @@ def predict(week: int, season: int, model: str):
     
 
 
-    #TODO: Create linear regression prediction logic 
+    #TODO (FFM-305): Create linear regression prediction logic 
     if model == 'lin_reg':
         raise Exception('Linear regression prediction functionality is currently not implemented')
     
@@ -120,7 +120,7 @@ def upcoming(week: int, season: int):
     all_team_ids = [team_id for game in relevant_games for team_id in game["team_ids"]]
     all_player_ids = [player_id for game in relevant_games for player_id in game['player_ids']]
 
-    #TODO: Filter out 'pfr_unavailable' players 
+    #TODO (FFM-318): Filter out 'pfr_unavailable' players 
 
     # insert strubbed player game logs if necesary 
     utils.add_stubbed_player_game_logs(all_player_ids, week, season)
@@ -129,7 +129,7 @@ def upcoming(week: int, season: int):
     rotowire.scrape_upcoming(week, season, all_team_ids)
 
     # scrape player injuries 
-    football_db.scrape_upcoming(week, season, all_player_ids) #TODO: Validate this site is updated throughout week of the NFL game 
+    football_db.scrape_upcoming(week, season, all_player_ids) #TODO (FFM-319): Validate this site is updated throughout week of the NFL game 
 
     # scrape player betting odds & game conditions 
     betting_pros.fetch_upcoming_player_odds_and_game_conditions(week, season, all_player_ids)
@@ -139,7 +139,7 @@ def historical(start_year: int, end_year: int):
     """
     Invoke necessary functionality to scrape & persist player / team data across multiple seasons
 
-    TODO: Ensure this is resilient for situations where some data may alrady have been persisted
+    TODO (FFM-320): Ensure this is resilient for situations where some data may alrady have been persisted
 
 
     Args:
@@ -153,7 +153,7 @@ def historical(start_year: int, end_year: int):
     # scrape & persist player and team game logs 
     pfr.scrape_historical(start_year, end_year) 
 
-    # calculate & persist fantasy points, TODO: Account for fumbles and 2 PT conversions for better accuracy
+    # calculate & persist fantasy points
     player_game_logs_service.calculate_fantasy_points(False, start_year, end_year) 
 
     # calculate & persist team rankings for relevant years
@@ -211,7 +211,7 @@ def linear_regression():
     """
     Pre-process relevant data, generate linear regression, and test our linear regression against test data
 
-    TODO: This functionality is incomplete as the focus was shifted towards using a NeuralNetwork
+    TODO (FFM-321): This functionality is incomplete as the focus was shifted towards using a NeuralNetwork
     """
 
     # pre-process persisted data

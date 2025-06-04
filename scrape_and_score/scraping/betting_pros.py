@@ -24,7 +24,7 @@ def fetch_historical_odds(season: int):
     """
     Fetch all historical player odds 
 
-    TODO: superrrrr slow, need to add some concurrency to this
+    TODO (FFM-307): Add Concurrency
 
     Args:
         season (int): season to retrieve player odds for 
@@ -33,16 +33,11 @@ def fetch_historical_odds(season: int):
     max_week = fetch_max_week_persisted_in_team_betting_odds_table(season) 
     markets = props.get_config("website.betting-pros.market-ids")
 
-    #TODO: Only remove 253 market ID in the case that the game has already been played  or else it will throw exception when making request (we can add when game is upcoming)
-    if markets.endswith(":253"):
-        markets = markets[:-4] # remove last 4 occurence 
-
     players = fetch_players_active_in_specified_year(season) 
 
 
     # iterate through each potential player
-    #TODO: account for najee harris slug being 'najee-harris-rb'
-    #TODO: get metrics for amari cooper, tim patrick, samjae perine, noah brown, jahan dotson, hassan haskins, peyton hendershot, calvin ridley, jack stoll, jaelon darden, laviska shenault
+    #TODO (FFM-308): Account for player slugs for varying player slugs that aren't just first & last name
     for player in players:
         player_name = player['name']
         logging.info(f'Fetching player props for the player "{player_name}" for the {season} season')
@@ -325,10 +320,7 @@ def extract_game_time_metrics(datetime_str: str):
 def extract_surface(venue: dict): 
     """
     Helper function to normalize the surface we are persisting 
-
-    TODO: Split up logic to have surface_type and stadium_type (i.e Dome or Outdoors vs Artificial or Turf or Grass)
-
-    TODO: Create mapping of venue stadium names to type of turf since I believe there are some incorrect values 
+    TODO (FFM-309): Add mapping of stadium to stadium/surface type and split out surface vs stadium type
 
     Args:
         venue (dict): extracted venue from response 
@@ -357,7 +349,7 @@ def fetch_upcoming_player_odds(week:int, season: int, player_ids: list):
     """
     Fetch relevant player props for upcoming NFL games & insert/update records into our DB
 
-    TODO: Implement some sort of retry functionality for failed requests
+    TODO (FFM-310): Implement Retry Functionality
 
     Args:
         week (int): relevant week 
@@ -366,6 +358,7 @@ def fetch_upcoming_player_odds(week:int, season: int, player_ids: list):
     """
 
     markets = props.get_config("website.betting-pros.market-ids")
+    markets += ":253" # account for projected fantasy points
 
     # extract event ids corresponding to week / season 
     event_ids = fetch_event_ids_for_week(week, season)
@@ -587,11 +580,10 @@ def get_odds(data: dict, market_ids: dict):
         selections = offer['selections']
         for selection in selections:
             
-            # skip under lines, only account for overs TODO: Remove me if needed 
+            # skip under lines, only account for overs 
             if selection['label'] == 'Under':
                 continue
             
-            # TODO: Remove me (no logner account for (over) / (under) as all lines used will simply be the over)
             if selection['label'] == 'Over': 
                 full_prop_name = f"{prop_name} ({selection['label']})"
             else:

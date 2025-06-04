@@ -106,7 +106,7 @@ def get_team_betting_odds_records(data: pd.DataFrame):
         "week": row["week"],
         "year": row["season"],
         "game_over_under": row["game_over_under"],
-        "favorite_team_id": mapping[row["favorite"]] if row["favorite"] != "" else mapping[row["home_team_stats_id"]], #TODO: Update this logic so that the favorite team isn't just the home team if one isn't present in response
+        "favorite_team_id": mapping[row["favorite"]] if row["favorite"] != "" else mapping[row["home_team_stats_id"]], #TODO (FFM-313): Update Impl to not automatically set home team as favorite if none present
         "spread": row["spread"],
         "total_points": row["total"],
         "over_hit": row["over_hit"],

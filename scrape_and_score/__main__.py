@@ -74,8 +74,6 @@ def main():
             model = 'nn' if cl_args.nn else 'lin_reg'
             workflows.predict(week, season, model)
 
-        # TODO: Implement prediction workflows utilizing choosen model above 
-
     except Exception as e:
         logging.error(f"An exception occured while executing the main script: {e}")
     finally:

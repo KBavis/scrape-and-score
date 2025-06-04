@@ -50,7 +50,7 @@ def preprocess(week: int = None, season: int = None):
    # add cyclical features to preprocessed data frame
    processed_df[['week_cos', 'week_sin']] = cyclical_df
 
-   #TODO: Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
+   #TODO (FFM-306): Ensure that features that -1 makes sense for are udpated to use a differnt value (i.,e -100)
    pd.set_option('future.no_silent_downcasting', True) 
    processed_df.fillna(-1, inplace=True) # fill remaining NA values with -1
    processed_df.infer_objects(copy=False)
@@ -244,7 +244,6 @@ def parse_player_props(df: pd.DataFrame):
       for prop in week_props:
          label = prop["label"].lower().replace(" ", "_").replace("/", "_")
          
-         #TODO: Remove this logic as there no longer will be any (over) or (under) labels
          if "(under)" in label:
             break # skip under lines (only account for over for simplicity)
          else :
@@ -342,7 +341,6 @@ def encode_player_injuries(df: pd.DataFrame) -> pd.DataFrame:
    # apply multi lable binaarizer to encode injury locations 
    df['injury_locations'] = df['injury_locations'].apply(preprocess_injury_locations)
 
-   #TODO: The multi label binarizer currently adds a BUNCH of features, but we should remove this logic if doesn't add predictive power (70+ feautres added)
    mlb = MultiLabelBinarizer() 
    injury_locations_encoded = mlb.fit_transform(df['injury_locations'])
 
