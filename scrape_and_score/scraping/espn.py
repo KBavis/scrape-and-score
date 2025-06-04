@@ -17,9 +17,6 @@ from db.insert.teams import (
 )
 
 
-
-
-
 def scrape_upcoming_games(season: int, week: int):
     """
     Functionality to scrape upcoming games from espon.com
@@ -28,6 +25,7 @@ def scrape_upcoming_games(season: int, week: int):
         season (int): season to extract games for 
         week (int): week to extract games for 
     """
+    
     logging.info(f"Attempting to scrape upcoming Team Game Logs for Week {week} of the {season} NFL Season")
 
     url = props.get_config('website.espn.urls.upcoming').format(week, season)
@@ -101,6 +99,7 @@ def generate_and_persist(records: list, season: int, week: int):
         logging.info('No new upcoming team_game_log records to be inserted; skipping insertion')
 
 
+
 def calculate_rest_days(team_id: int, season: int, week: int, curr_game_date: datetime):
     """
     Calculate the number of rest days for a particular team 
@@ -171,8 +170,6 @@ def filter(records: list, season: int, week: int):
     return filtered_records
 
 
-
-    
 def generate_team_id_mapping():
     """
     Generate mapping of team's location to corresponding ID 
@@ -200,6 +197,7 @@ def extract_team_name(team: BeautifulSoup, is_home: bool = False):
     Returns:
         str: team's name
     """
+
     div = team.find_next('div')
     spans = div.find_all('span')
 

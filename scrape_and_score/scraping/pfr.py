@@ -44,21 +44,17 @@ from db.insert.teams import (
 )
 
 
-"""
-Functionality to scrape relevant NFL teams and player data 
-
-Args:
-   team_and_player_data (list[dict]): every relevant fantasy NFL player corresponding to specified NFL season
-   teams (list): list of unique NFL team names
-
-Returns:
-   data (tuple(list[pd.DataFrame], list[pd.DataFrame])) 
-      - metrics for both players and teams
-"""
-
-
 def scrape_all(team_and_player_data: list, teams: list):
-    # TODO (FFM-31): Create logic to determine if new player/team data avaialable. If no new team data available, skip fetching metrics and utilize persisted metrics. If no new player data available, skip fetching metrics for player.
+    """
+    Functionality to scrape relevant NFL teams and player data 
+
+    Args:
+        team_and_player_data (list[dict]): every relevant fantasy NFL player corresponding to specified NFL season
+        teams (list): list of unique NFL team names
+
+    Returns:
+        data (tuple(list[pd.DataFrame], list[pd.DataFrame])) - metrics for both players and teams
+    """
 
     # fetch configs
     team_template_url = props.get_config(
@@ -71,6 +67,7 @@ def scrape_all(team_and_player_data: list, teams: list):
 
     # fetch relevant player metrics
     player_metrics = fetch_player_metrics(team_and_player_data, year)
+    
     # return metrics
     return team_metrics, player_metrics
 
@@ -84,6 +81,7 @@ def scrape_historical(start_year: int, end_year: int):
         start_year (int): the starting year to scrape historical data from 
         end_year (int): the ending year to scrape historical data from 
     """
+
     team_template_url = props.get_config(
         "website.pro-football-reference.urls.team-metrics"
     )
@@ -110,18 +108,14 @@ def scrape_historical(start_year: int, end_year: int):
 
 
 
-"""
-Functionality to scrape the most recent team & player data based on previously persisted teams/players
-
-Args:
-    None 
-
-Returns: 
-    team_metrics, player_metrics (tuple): most recent metrics for both teams & players
-"""
-
-
 def scrape_recent():
+    """
+    Functionality to scrape the most recent team & player data based on previously persisted teams/players
+
+    Returns: 
+        team_metrics, player_metrics (tuple): most recent metrics for both teams & players
+    """
+
     # fetch configs
     team_template_url = props.get_config(
         "website.pro-football-reference.urls.team-metrics"
@@ -308,6 +302,7 @@ def filter_update_team_game_logs(records: list):
     Returns:
         tuple: (update_records, insert_records)
     """
+
     insert_records = []
     update_records = []
 
@@ -478,9 +473,6 @@ def extract_team_game_log_updates(soup: BeautifulSoup, week: int, season: int):
 
 
     
-
-
-
 def scrape_and_persist_player_demographics(season: int): 
     """
     Functionality to scrape & persist 'player_demographic' records for players in an upcoming season
@@ -583,17 +575,16 @@ def scrape_and_persist_team_draftees_hashed_names(season: int):
 
 
 
-"""
-Functionality to fetch the metrics for each relevant player on current 53 man roster of specified year
-
-Args:
-   team_and_player_data (list[dict]) - every relevant fantasy NFL player corresponding to specified NFL season
-   year (int) - year to fetch metrics for 
-   recent_games (bool) - flag to determine if we are fetching metrics for most recent game or not 
-"""
-
-
 def fetch_player_metrics(team_and_player_data, year, recent_games=False):
+    """
+    Functionality to fetch the metrics for each relevant player on current 53 man roster of specified year
+
+    Args:
+        team_and_player_data (list[dict]) - every relevant fantasy NFL player corresponding to specified NFL season
+        year (int) - year to fetch metrics for 
+        recent_games (bool) - flag to determine if we are fetching metrics for most recent game or not 
+    """
+
     logging.info(f"Attempting to scrape player metrics for the year {year}")
     player_metrics = []
 
@@ -633,6 +624,18 @@ def fetch_player_metrics(team_and_player_data, year, recent_games=False):
 
 
 def construct_player_urls(players: list, season: int, base_url: str = None):
+    """
+    Construct relevant player URLs for specific season 
+
+    Args:
+        players (list): players to construct URLs for
+        season (int): relevant season
+        base_url (str, optional): base URL to utilize. Defaults to None.
+
+    Returns:
+        list: corresponding player URLs 
+    """
+
     player_urls = []
 
     # sort players with hashed names persisted or not to optimize URL construction
@@ -670,6 +673,7 @@ def get_player_page_urls(players: list, base_url: str):
         players (list): the list of players to construct URLs for 
         base_url (str): the base URL to construct player page URL for 
     """
+
     player_urls = [
         {
             "player": player['player_name'], 
@@ -770,6 +774,7 @@ def get_player_urls_with_hash(players: list, year: int):
     Returns 
         list : list of player hashes 
     """
+
     base_url = "https://www.pro-football-reference.com/players/{}/{}/gamelog/{}"
     player_urls = [
         {
@@ -783,6 +788,16 @@ def get_player_urls_with_hash(players: list, year: int):
 
 
 def get_last_name_first_initial(player_name: str): 
+    """
+    Get last name first inital of a players name 
+
+    Args:
+        player_name (str): relevant player name
+
+    Returns:
+        str: last name first initial 
+    """
+
     first_and_last = player_name.split(" ")
 
     if len(first_and_last) < 2:
@@ -792,20 +807,19 @@ def get_last_name_first_initial(player_name: str):
     
     
 
-"""
-Functionality to fetch team game logs for each NFL team 
-
-Args:
-   teams (list) - list of team names to fetch metrics for 
-   url_template (str) - template URL used to construct specific teams URL
-   year (int) - year to fetch metrics for 
-   recent_games (bool) - flag to indicate if this for recent games or 
-
-Returns:
-    team_metrics (list) - list of df's containing team metrics
-"""
-
 def fetch_team_game_logs(teams: list, url_template: str, year: int, recent_games=False):
+    """
+    Functionality to fetch team game logs for each NFL team 
+
+    Args:
+        teams (list) - list of team names to fetch metrics for 
+        url_template (str) - template URL used to construct specific teams URL
+        year (int) - year to fetch metrics for 
+        recent_games (bool) - flag to indicate if this for recent games or 
+
+    Returns:
+        team_metrics (list) - list of df's containing team metrics
+    """
     logging.info(f"Attempting to scrape team metrics for the following teams [{teams}]")
 
     team_metrics = []
@@ -839,6 +853,14 @@ def fetch_team_game_logs(teams: list, url_template: str, year: int, recent_games
 
 #TODO: UPDATE THIS LOGIC TO ACCOUNT FOR CHANGING KEYS OVER YEARS OF DATA-STAT 
 def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
+    """
+    Fetch teams and player seasonal metrics
+
+    Args:
+        start_year (int): year to start scraping metrics from
+        end_year (int): year to stop scraping metrics for 
+    """
+
     teams = props.get_config("nfl.teams")
     team_template_url = props.get_config(
         "website.pro-football-reference.urls.team-metrics"
@@ -928,10 +950,6 @@ def fetch_teams_and_players_seasonal_metrics(start_year: int, end_year: int):
             insert_player_seasonal_scoring_metrics(player_scoring_summary, year, team_id)
 
 
-
-
-
-
 def parse_team_totals(team_totals: BeautifulSoup) -> dict:
     """Parse the teams kicking and punting totals
 
@@ -957,8 +975,6 @@ def parse_team_totals(team_totals: BeautifulSoup) -> dict:
             team_totals_stats[key] = value
     
     return team_totals_stats
-
-
 
 
 def parse_player_and_team_totals(players_table: BeautifulSoup, team_totals: BeautifulSoup):
@@ -1035,6 +1051,7 @@ def parse_conversions(team_conversion: BeautifulSoup):
     Returns:
         dict: key-values of teams conversion ratios & rankings
     """
+
     conversions = {} 
     trs = team_conversion.find_all("tr")
     for tr in trs: 
@@ -1073,6 +1090,7 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
     Returns:
         dict: mapping of team stats 
     """
+
     stats = {}
     trs = team_stats_tbody.find_all("tr")
 
@@ -1107,6 +1125,14 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
 
 
 def scrape_player_advanced_metrics(start_year: int, end_year: int, week: int = None): 
+    """
+    Extract player player advanced metrics across multiple years
+
+    Args:
+        start_year (int): year to start scraping metrics for
+        end_year (int): year to stop scraping metrics
+        week (int, optional): relevant week to account for. Defaults to None.
+    """
 
     for year in range(start_year, end_year + 1):
         logging.info(f"Scraping player advanced passing, rushing, and receiving metrics for the {year} season")
@@ -1182,6 +1208,7 @@ def filter_metrics_by_week(metrics: list, curr_week: int = None):
     Returns:
         list: A filtered list with only the first instance for each week.
     """
+
     seen_weeks = set()
     filtered_metrics = []
 
@@ -1210,6 +1237,7 @@ def parse_advanced_passing_table(table: BeautifulSoup):
         list: List of dictionaries containing passing metrics for the entire season,
               or None if no valid data is found.
     """
+
     table_body = table.find_next("tbody")
     if table_body is None:
         logging.warning("Table body for advanced passing table is null")
@@ -1289,6 +1317,7 @@ def parse_advanced_rushing_receiving_table(table: BeautifulSoup):
     args:
         table (BeautifulSoup): advanced rushing and receiving table
     """
+
     table_body = table.find_next("tbody")
     if table_body is None:
         logging.warning("table body for advanced rushing and receiving table is null")
@@ -1355,25 +1384,25 @@ def parse_advanced_rushing_receiving_table(table: BeautifulSoup):
 
     return metrics if metrics else None
 
-"""
-Functionality to fetch relevant metrics corresponding to a specific NFL team
-
-Some subtle modifications were made to fix the repositories bug and to fit our use case.    
-
-TODO: REFACTOR THIS::: pro-football-reference made a UI update, breaking a lot of this code and now theres a bunch of conditionals and ugly code that we should fix in the future 
-   
-Args: 
-    team (str) - NFL team full name
-    raw_html (str) - raw HTML fetch for specified team
-    year (int) - year to fetch metrics for 
-    recent_games (bool) - flag to indicate if we are fetching most recent game or all games
-      
-Returns:
-    pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player     
-"""
 
 
 def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
+    """
+    Functionality to fetch relevant metrics corresponding to a specific NFL team
+
+    Some subtle modifications were made to fix the repositories bug and to fit our use case.    
+
+    TODO: REFACTOR THIS::: pro-football-reference made a UI update, breaking a lot of this code and now theres a bunch of conditionals and ugly code that we should fix in the future 
+    
+    Args: 
+        team (str) - NFL team full name
+        raw_html (str) - raw HTML fetch for specified team
+        year (int) - year to fetch metrics for 
+        recent_games (bool) - flag to indicate if we are fetching most recent game or all games
+        
+    Returns:
+        pandas.DataFrame: A pandas DataFrame with relevant metrics corresponding to the specific player     
+    """
 
     # configure data frame
     data = {
@@ -1551,8 +1580,6 @@ def collect_team_data(team: str, raw_html: str, year: int, recent_games: bool):
             time_of_poss
         ]
 
-
-
     return df
 
 
@@ -1624,6 +1651,7 @@ def convert_time_to_float(time_str: str) -> float:
     Returns:
         int: converted value 
     """
+
     if not time_str:
         return 0.0
     
@@ -1631,21 +1659,17 @@ def convert_time_to_float(time_str: str) -> float:
     return minutes + seconds / 60
 
 
-
-
-"""
-Helper function to calculate the yardage totals for a particular game of a team 
-
-Args: 
-    games (BeautifulSoup): parsed HTML containing game data 
-    index (int): index pertaining to current game 
-
-Returns:
-    tot_yds,pass_yds,rush_yds (tuple): yardage totals of particular game 
-"""
-
-
 def calculate_yardage_totals(games: BeautifulSoup, index: int):
+    """
+    Helper function to calculate the yardage totals for a particular game of a team 
+
+    Args: 
+        games (BeautifulSoup): parsed HTML containing game data 
+        index (int): index pertaining to current game 
+
+    Returns:
+        tot_yds,pass_yds,rush_yds (tuple): yardage totals of particular game 
+    """
     tot_yds = extract_int(games[index], "tot_yds")
     pass_yds = extract_int(games[index], "pass_yds")
     rush_yds = extract_int(games[index], "rush_yds")
@@ -1653,21 +1677,19 @@ def calculate_yardage_totals(games: BeautifulSoup, index: int):
     return tot_yds, pass_yds, rush_yds
 
 
-"""
-Helper function to determine a teams total rest days 
-
-Args:
-    games (BeautifulSoup): parsed HTML containing game data 
-    index (int): index pertaining to current game 
-    year (int): year we are calculating metrics for 
-
-Returns:
-    rest_days (int): total number of rest days since previous game 
-
-"""
-
-
 def calculate_rest_days(games: list, index: int, year: int):
+    """
+    Helper function to determine a teams total rest days 
+
+    Args:
+        games (BeautifulSoup): parsed HTML containing game data 
+        index (int): index pertaining to current game 
+        year (int): year we are calculating metrics for 
+
+    Returns:
+        rest_days (int): total number of rest days since previous game 
+    """
+
     if index == 0:
         return 10  # set rest days to be 10 if first game of year
 
@@ -1682,17 +1704,15 @@ def calculate_rest_days(games: list, index: int, year: int):
     return rest_days
 
 
-"""
-Helper function to remove all canceled/playoff games, bye weeks, 
-and games yet to be played so that they aren't accounted for 
-
-Args: 
-    games (BeautifulSoup): parsed HTML containing game data 
-    year (int): current eyar to account for 
-"""
-
-
 def remove_uneeded_games(games: BeautifulSoup, year: int):
+    """
+    Helper function to remove all canceled/playoff games, bye weeks, 
+    and games yet to be played so that they aren't accounted for 
+
+    Args: 
+        games (BeautifulSoup): parsed HTML containing game data 
+        year (int): current eyar to account for 
+    """
     # remove playoff games
     j = 0
     while j < len(games):
@@ -1751,62 +1771,59 @@ def remove_uneeded_games(games: BeautifulSoup, year: int):
         games.pop(k)
 
 
-"""
-Helper function to generate URL and fetch raw HTML for NFL Team
-
-Args: 
-    team_name (str) - NFL team full name
-    year (int) - year to fetch raw HTML for
-    url (str) - template URL to fetch HTML from
-      
-Returns:
-    str - raw HTML from web page 
-"""
-
-
 def get_team_metrics_html(team_name, year, url):
+    """
+    Helper function to generate URL and fetch raw HTML for NFL Team
+
+    Args: 
+        team_name (str) - NFL team full name
+        year (int) - year to fetch raw HTML for
+        url (str) - template URL to fetch HTML from
+        
+    Returns:
+        str - raw HTML from web page 
+    """
     url = url.replace("{TEAM_ACRONYM}", TEAM_HREFS[team_name]).replace(
         "{CURRENT_YEAR}", str(year)
     )
     return fetch_page(url)
 
 
-"""
-Functionality to calculate the distance between two cities 
-   
-Args: 
-    city1 (dict) - dictionary containing a cities latitude & longitude 
-    city2 (dict) - dictionary containing a cities latitude & longitude 
-      
-Returns:
-    double: value corresponding to the distance between the two cities  
-
-"""
-
 
 def calculate_distance(city1: dict, city2: dict):
+    """
+    Functionality to calculate the distance between two cities 
+    
+    Args: 
+        city1 (dict) - dictionary containing a cities latitude & longitude 
+        city2 (dict) - dictionary containing a cities latitude & longitude 
+        
+    Returns:
+        double: value corresponding to the distance between the two cities  
+
+    """
     coordinates1 = (city1["latitude"], city1["longitude"])
     coordinates2 = (city2["latitude"], city2["longitude"])
     return haversine(coordinates1, coordinates2, unit=Unit.MILES)
 
 
-"""
-Functionality to fetch the game date for a game 
-
-Note: This application should be run on a scheduled basis throughout the football year, 
-starting in August and concluding in Feburary. Therefore, the game date year should account
-for this logic 
-
-Args:
-    game (BeautifulSoup): BeautifulSoup object containing relevant game data 
-    current_date (date) : the current date the application is being run 
-
-Returns:
-    game_date (date) : The date corresponding to the game day    
-"""
-
 
 def get_game_date(game: BeautifulSoup, current_date: date):
+    """
+    Functionality to fetch the game date for a game 
+
+    Note: This application should be run on a scheduled basis throughout the football year, 
+    starting in August and concluding in Feburary. Therefore, the game date year should account
+    for this logic 
+
+    Args:
+        game (BeautifulSoup): BeautifulSoup object containing relevant game data 
+        current_date (date) : the current date the application is being run 
+
+    Returns:
+        game_date (date) : The date corresponding to the game day    
+    """
+
     game_date_str = game.find("td", {"data-stat": "game_date"}).text
     month_date = datetime.strptime(
         game_date_str, "%B %d"
@@ -1829,18 +1846,18 @@ def get_game_date(game: BeautifulSoup, current_date: date):
     return date(game_year, month_date.month, month_date.day)
 
 
-"""
-Functionality to order players into a dictionary based on their last name inital
-
-Args:
-    player_data(dict): dictionary containing unique players in current season
-
-Returns:
-    ordered_players(dict) : dictionary that orders players (i.e 'A': [{<player_data>}, {<player_data>}, ...])
-"""
-
 
 def order_players_by_last_name(player_data: list):
+    """
+    Functionality to order players into a dictionary based on their last name inital
+
+    Args:
+        player_data(dict): dictionary containing unique players in current season
+
+    Returns:
+        ordered_players(dict) : dictionary that orders players (i.e 'A': [{<player_data>}, {<player_data>}, ...])
+    """
+
     logging.info("Ordering retrieved players by their last name's first initial")
 
     ordered_players = {
@@ -1880,20 +1897,20 @@ def order_players_by_last_name(player_data: list):
     return ordered_players
 
 
-"""
-Functionality to fetch all relevant player URLs needed to extract new player metrics 
-
-Args:
-    ordered_players(dict): players ordered by their last name inital, allowing us to construct 
-                            player URLs in bulk rather than one by one
-    year(int): season to fetch players for 
-    
-Returns:
-    urls(list) : list of dictionary containing players URL and name
-"""
-
 
 def get_player_urls(ordered_players: dict, year: int):
+    """
+    Functionality to fetch all relevant player URLs needed to extract new player metrics 
+
+    Args:
+        ordered_players(dict): players ordered by their last name inital, allowing us to construct 
+                                player URLs in bulk rather than one by one
+        year(int): season to fetch players for 
+        
+    Returns:
+        urls(list) : list of dictionary containing players URL and name
+    """
+
     base_url = "https://www.pro-football-reference.com%s/gamelog/%s"
     urls = []
     player_hashed_names = []
@@ -1936,22 +1953,22 @@ def get_player_urls(ordered_players: dict, year: int):
     return urls
 
 
-"""
-Functionality to fetch a specific players href, which is needed to construct their URL
-
-Args:
-    player_name (str): players name to search for 
-    year (int): year corresponding to the season we are searching for metrics for 
-    soup (BeautifulSoup): soup pertaining to raw HTML containing players hrefs
-    player_hashed_names (list): list to add player_hashed_names records to in order to persist 
-    pfr_unavailable_player_ids (list): list of player IDs that correspond to players unavailable in PFR
-
-Returns:
-    href (str): href needed to construct URL 
-"""
-
 
 def get_href(player_name: str, position: str, year: int, soup: BeautifulSoup, player_hashed_names: list, pfr_unavailable_player_ids: list):
+    """
+    Functionality to fetch a specific players href, which is needed to construct their URL
+
+    Args:
+        player_name (str): players name to search for 
+        year (int): year corresponding to the season we are searching for metrics for 
+        soup (BeautifulSoup): soup pertaining to raw HTML containing players hrefs
+        player_hashed_names (list): list to add player_hashed_names records to in order to persist 
+        pfr_unavailable_player_ids (list): list of player IDs that correspond to players unavailable in PFR
+
+    Returns:
+        href (str): href needed to construct URL 
+    """
+
     players = soup.find("div", id="div_players").find_all(
         "p"
     )  # find players HTML element
@@ -2002,6 +2019,7 @@ def update_players_hashed_name(player_name: str, href: str, player_hashed_names:
         href (str): href corresponding to players game logs & advanced metrics 
         player_hashed_names (list): list to update with player hashed name & ID 
     """
+    
     # extract hashed name from href
     hashed_name_index = href.rfind('/')
     hashed_name = href[hashed_name_index + 1:]
@@ -2018,19 +2036,18 @@ def update_players_hashed_name(player_name: str, href: str, player_hashed_names:
     
 
 
-"""
-Helper function to determine the similarity between two names
-
-Args:
-    player_name (str): players name to compare 
-    player_text (str): text from PFR containing players name
-
-Returns:
-    similarity (float): similarity of the two passed in names
-"""
-
-
 def check_name_similarity(player_text: str, player_name: str):
+    """
+    Helper function to determine the similarity between two names
+
+    Args:
+        player_name (str): players name to compare 
+        player_text (str): text from PFR containing players name
+
+    Returns:
+        similarity (float): similarity of the two passed in names
+    """
+
     words = player_text.split()
     name = " ".join(words[:2])
     name = name.title()
@@ -2038,22 +2055,23 @@ def check_name_similarity(player_text: str, player_name: str):
     return fuzz.partial_ratio(name, player_name)
 
 
-"""
-Functionality to get the game log for a player. This function 
-will retrieve relevant player metrics from their game logs based 
-on their position.
-
-Args:
-    soup (BeautifulSoup): parsed HTML containing relevant player metrics 
-    position (str): the players corresponding position
-    recent_games (bool): flag to determine if we only need to fetch game log for most recent game
-
-Returns:
-    data (pd.DataFrame): data frmae containing player game logs 
-"""
 
 
 def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
+    """
+    Functionality to get the game log for a player. This function 
+    will retrieve relevant player metrics from their game logs based 
+    on their position.
+
+    Args:
+        soup (BeautifulSoup): parsed HTML containing relevant player metrics 
+        position (str): the players corresponding position
+        recent_games (bool): flag to determine if we only need to fetch game log for most recent game
+
+    Returns:
+        data (pd.DataFrame): data frmae containing player game logs 
+    """
+
     # data to retrieve for each player, regardless of position
     data = {
         "date": [],
@@ -2114,19 +2132,17 @@ def get_game_log(soup: BeautifulSoup, position: str, recent_games: bool):
     return pd.DataFrame(data=data)
 
 
-"""
-Functionality to retireve game log metrics for a QB
-
-Args:
-    tr (BeautifulSoup): parsed HTML tr containing player metrics 
-    data (dict): dictionary containing players metrics 
-
-Returns:
-    None
-"""
 
 
 def add_qb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
+    """
+    Functionality to retireve game log metrics for a QB
+
+    Args:
+        tr (BeautifulSoup): parsed HTML tr containing player metrics 
+        data (dict): dictionary containing players metrics 
+    """
+
     data["cmp"].append(extract_int(tr, "pass_cmp"))
     data["att"].append(extract_int(tr, "pass_att"))
     data["pass_yds"].append(extract_int(tr, "pass_yds"))
@@ -2139,21 +2155,17 @@ def add_qb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
     data["rush_td"].append(extract_int(tr, "rush_td"))
 
 
-"""
-Functionality to retireve game log metrics for a RB
-
-TODO (FFM-83): Account for RB Snap Percentage Metrics
-
-Args:
-    tr (BeautifulSoup): parsed HTML tr containing player metrics 
-    data (dict): dictionary containing players metrics 
-
-Returns:
-    None
-"""
-
 
 def add_rb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
+    """
+    Functionality to retireve game log metrics for a RB
+
+    TODO (FFM-83): Account for RB Snap Percentage Metrics
+
+    Args:
+        tr (BeautifulSoup): parsed HTML tr containing player metrics 
+        data (dict): dictionary containing players metrics 
+    """
 
     # Add rushing and receiving stats with missing value handling
     data["rush_att"].append(extract_int(tr, "rush_att"))
@@ -2165,38 +2177,34 @@ def add_rb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
     data["rec_td"].append(extract_int(tr, "rec_td"))
 
 
-"""
-Functionality to retrieve game log metrics for a WR
-
-Args:
-    tr (BeautifulSoup): parsed HTML tr containing player metrics 
-    data (dict): dictionary containing players metrics 
-
-Returns:
-    None
-"""
-
 
 def add_wr_specific_game_log_metrics(data: dict, tr: BeautifulSoup):
+    """
+    Functionality to retrieve game log metrics for a WR
+
+    Args:
+        tr (BeautifulSoup): parsed HTML tr containing player metrics 
+        data (dict): dictionary containing players metrics 
+    """
+
     data["tgt"].append(extract_int(tr, "targets"))
     data["rec"].append(extract_int(tr, "rec"))
     data["rec_yds"].append(extract_int(tr, "rec_yds"))
     data["rec_td"].append(extract_int(tr, "rec_td"))
 
 
-"""
-Functionality to retireve common game log metrics for a given player 
-
-Args:
-    tr (BeautifulSoup): parsed HTML tr containing player metrics 
-    data (dict): dictionary containing players metrics 
-
-Returns:
-    None
-"""
-
 
 def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
+    """
+    Functionality to retireve common game log metrics for a given player 
+
+    Args:
+        tr (BeautifulSoup): parsed HTML tr containing player metrics 
+        data (dict): dictionary containing players metrics 
+
+    Returns:
+        None
+    """
     # account for game_date element OR date element
     game_date = tr.find("td", {"data-stat": "game_date"}) 
     data["date"].append(game_date.text if game_date else tr.find("td", {"data-stat": "date"}).text)
@@ -2235,18 +2243,17 @@ def add_common_game_log_metrics(data: dict, tr: BeautifulSoup):
 
 
 
-"""
-Helper function to retrieve additional metric fields needed for a player based on position
-
-Args:
-    position (str): the players corresponding position
-
-Returns:
-    additonal_metrics (dict): additional metrics to account for based on player posiiton
-"""
-
-
 def get_additional_metrics(position):
+    """
+    Helper function to retrieve additional metric fields needed for a player based on position
+
+    Args:
+        position (str): the players corresponding position
+
+    Returns:
+        additonal_metrics (dict): additional metrics to account for based on player posiiton
+    """
+
     if position == "QB":
         additional_fields = {
             "cmp": [],
@@ -2288,18 +2295,16 @@ def get_additional_metrics(position):
     return additional_fields
 
 
-"""
-Helper function to extract int from a speciifc player metric 
-
-Args:
-    tr (BeautifulSoup): table row containing relevant metrics 
-
-Returns:
-    metric (int): derived metric converted to a int
-"""
-
-
 def extract_int(tr, stat):
+    """
+    Helper function to extract int from a speciifc player metric 
+
+    Args:
+        tr (BeautifulSoup): table row containing relevant metrics 
+
+    Returns:
+        metric (int): derived metric converted to a int
+    """
     text = tr.find("td", {"data-stat": stat})
 
     if text == None:
@@ -2332,18 +2337,16 @@ def extract_str(tr, stat):
         return text.text.strip()  
 
 
-"""
-Helper function to extract a float from a speciifc player metric 
-
-Args:
-    tr (BeautifulSoup): table row containing relevant metrics 
-
-Returns:
-    metric (float): derived metric converted to a float 
-"""
-
-
 def extract_float(tr, stat):
+    """
+    Helper function to extract a float from a speciifc player metric 
+
+    Args:
+        tr (BeautifulSoup): table row containing relevant metrics 
+
+    Returns:
+        metric (float): derived metric converted to a float 
+    """
     text = tr.find("td", {"data-stat": stat})
 
     if text == None:

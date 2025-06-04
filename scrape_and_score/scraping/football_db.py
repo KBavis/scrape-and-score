@@ -18,6 +18,7 @@ def scrape_historical(start_year: int, end_year: int):
         start_year (int): year to start scraping metrics for 
         end_year (int): year to stop scraping metrics for 
     """
+
     logging.info(f"Scraping & persisting player_injuries from the year {start_year} to the year {end_year}")
 
     for season in range(start_year, end_year + 1): 
@@ -39,6 +40,7 @@ def scrape_upcoming(week: int, season: int, player_ids: list = None):
         season (int): season to retrieve injuries for 
         player_ids (list): player IDs corresponding to teams that have yet to play their games 
     """
+
     logging.info(f"Scraping & persisting player_injuries for week {week} for the {season} NFL season")
 
     html = get_html(week, season)
@@ -58,6 +60,7 @@ def parse_all_player_injuries(soup: BeautifulSoup):
     Args:
         soup (BeautifulSoup): parsed HTML 
     """
+
     player_injuries = []
 
     team_injuries = soup.find_all("div", class_=["divtable", "divtable-striped", "divtable-mobile"])
@@ -75,6 +78,7 @@ def parse_team_injuries(team_injury_table: BeautifulSoup):
         team_name (str): team name to scrape infomraiton for 
         soup (BeautifulSoup): parsed html 
     """
+
     player_injuries = []
     player_rows = team_injury_table.find_all("div", class_="tr")
 
@@ -96,6 +100,7 @@ def extract_player_statuses_and_injury(player: BeautifulSoup):
     Returns:
        dict: key-value mapping of relevant player injury information 
     """
+
     # extract player name 
     player_name = player.find("a").get_text().strip()
 
@@ -133,6 +138,7 @@ def normalize_status(status):
     Returns:
         str : normalized status 
     """
+
     status = status.strip().lower() 
     return None if status == '--' else status
 
@@ -146,6 +152,7 @@ def extract_game_status(text: str):
     Returns:
         str : game status 
     """
+
     text = text.strip()
     
     if text == "--":
@@ -233,6 +240,7 @@ def filter_persisted_records(records: list, record_pks: list):
         records (list): list of new records we want to persist 
         record_pks (list): list of record pks that we will use to filter 
     """
+
     logging.info("Filtering player_injuries records to determine if they should be updated in database or inserted")
 
     seen_pks = set()
@@ -255,5 +263,14 @@ def filter_persisted_records(records: list, record_pks: list):
 
 
 def get_html(week: int, season: int):
+    """Retrieve raw HTML from Football DB 
+
+    Args:
+        week (int): relevant week
+        season (int): relevant season
+
+    Returns:
+        str : raw html
+    """
     base_url = props.get_config('website.football-db.urls.player-injuries')
     return util.fetch_page(base_url.format(season, week))

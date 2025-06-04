@@ -1,6 +1,3 @@
-"""
-Module for retreving hisorical depth charts from OurLads 
-"""
 from . import util
 from bs4 import BeautifulSoup
 from config import props
@@ -22,16 +19,15 @@ from db.insert.players import (
     insert_player_teams
 )
 
-"""
-Main entry point for scraping & persisting depth chart information across several years from OurLads 
-
-Args:
-    start_year (int): year to start scraping data from
-    end_year (int): year to stop scraping data from 
-Returns:
-    None
-"""
 def scrape_and_persist(start_year: int, end_year: int): 
+    """
+    Main entry point for scraping & persisting depth chart information across several years from OurLads 
+
+    Args:
+        start_year (int): year to start scraping data from
+        end_year (int): year to stop scraping data from 
+    """
+
     # extract relevant teams 
     teams = [ 
         {
@@ -63,8 +59,8 @@ def scrape_and_persist_upcoming(season: int, week: int, is_update: bool = False)
         season (int): the season to scrape & persist data for 
         week (int): the week this program execution is occuring for 
         is_update (bool): determines if this invocation should account for updating existing records or not 
-
     """
+
     # extract relevant teams 
     teams = [ 
         {
@@ -148,7 +144,6 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
         start_year (int): the year to starting fetching data for
         end_year (int): the year to stop fetching data for
         archive_dates (list): mappings of a year to its corresponding archive IDs 
-    
     """
     
     # loop through each potential team
@@ -228,8 +223,6 @@ def upsert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
         player_name_id_mapping (dict): mapping of a player name to an ID 
         player_depth_chart_position_records (list): list of relevant records to insert into our database 
         season (int): relevatn season this corresponds to 
-    
-    Returns: None
     """
 
     logging.info("Attempting to update relevant depth_chart_position records & insert new entries")
@@ -285,9 +278,8 @@ def insert_player_depth_chart_position_records(player_name_id_mapping: dict, pla
         player_name_id_mapping (dict): mapping of a player name to an ID 
         player_depth_chart_position_records (list): list of relevant records to insert into our database 
         season (int): relevatn season this corresponds to 
-    
-    Returns: None
     """
+
     logging.info("Attempting to insert player depth chart position records")
 
     # update records with corresponding player ID 
@@ -324,10 +316,8 @@ def generate_player_depth_chart_positions(players: list, date: str, date_week_ma
         player_depth_chart_position_records: list of player depth chart positions 
         season (int): relevant season this depth chart corresponds to 
         week (int): the week this execution is for 
-    
-    Returns:    
-        None
     """
+
     if date_week_mapping is not None:
         weeks = date_week_mapping.get(date)
         start_week = weeks["strt_wk"]
@@ -347,6 +337,16 @@ def generate_player_depth_chart_positions(players: list, date: str, date_week_ma
 
 
 def upsert_player_teams_records(relevant_players: list, team_id: int, season: int, team: dict, player_name_id_mapping: dict, week: int):
+    """Update or insert player teams records into dataabse
+
+    Args:
+        relevant_players (list): relevant players to insert
+        team_id (int): relevant team
+        season (int): relevant season
+        team (dict): team entry
+        player_name_id_mapping (dict): mapping of player names to respective ids
+        week (int): relevant week
+    """
 
     player_teams_records_to_insert = []
     player_teams_records_to_update = []
@@ -541,6 +541,7 @@ def is_previously_inserted_player(player_name: str, player_name_id_mapping: dict
     Returns:
         bool: whether the record exists or not 
     """
+
     normalized_name = player_service.normalize_name(player_name)
     player = fetch_player_by_normalized_name(normalized_name)
     if player == None: 
@@ -565,6 +566,7 @@ def create_date_week_mapping(season: int):
     Returns:
         dict: mapping of a date to a start & end week 
     """
+
     dates = {
         f"09/01/{season}": { "strt_wk": 1, "end_wk": 4},
         f"10/01/{season}": { "strt_wk": 5, "end_wk": 8},
@@ -653,6 +655,7 @@ def parse_name(name: str, is_injured_reserve: bool = False):
         str: Formatted name if not injured reserve.
         tuple: (Formatted name, Position) if injured reserve.
     """
+
     parts = name.split(", ")
     first_name = parts[1].split()[0]
     last_name = parts[0]
@@ -683,6 +686,7 @@ def extract_archive_dates(archive_dates_soup: BeautifulSoup, start_year: int, en
     Returns:
         list: mapping of season and its corresponding relevant archive dates 
     """
+    
     logging.info(f"Extracting relevant archive dates & ids for the years {start_year} - {end_year}")
     
     archive_dates = {}
