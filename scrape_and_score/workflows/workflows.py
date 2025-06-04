@@ -15,6 +15,7 @@ from models.neural_net import NeuralNetwork
 from nnutils import post_training
 from . import utils 
 from nnutils import prediction
+from config import props
 
 
 FINAL_WEEK = 18
@@ -201,7 +202,7 @@ def results(week: int, season: int):
     rotowire.update_recent_betting_records(week, season)
 
     # insert seasonal rankings if week 18 and not inserted
-    if week == FINAL_WEEK:
+    if week == props.get_config('final-week'):
         if not utils.are_team_seasonal_metrics_persisted(season) or not utils.are_player_seasonal_metrics_persisted(season):
             pfr.fetch_teams_and_players_seasonal_metrics(season, season)
 

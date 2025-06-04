@@ -28,6 +28,8 @@ website:
     urls:
       player-injuries: "https://www.footballdb.com/transactions/injuries.html?yr={}&wk={}&type=reg"
 
+# week 
+final-week: 18
 
 # scraping
 scraping:
