@@ -1,17 +1,14 @@
 import argparse
 
-"""
-Functionality to parse our command line arguments to determine the type of program execution we will be running 
-
-Args:
-    None 
-
-Returns:
-    args (namespace): obj containing arguments
-"""
-
 
 def parse():
+    """
+    Functionality to parse our command line arguments to determine the type of program execution we will be running 
+
+    Returns:
+        args (namespace): obj containing arguments
+    """
+
     parser = argparse.ArgumentParser(prog="Scrape and Score")
 
     # define groups for validation

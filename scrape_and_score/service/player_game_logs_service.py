@@ -23,19 +23,14 @@ TODO: Rename this file to something else since its transforming into a larger sc
 """
 
 
-"""
-Functionality to insert multiple players game logs 
-
-Args:
-   player_metrics (list): list of dictionaries containing player's name, position, and game_logs
-   depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
-
-Returns:
-   None
-"""
-
-
 def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, year: int = None):
+    """
+    Functionality to insert multiple players game logs 
+
+    Args:
+        player_metrics (list): list of dictionaries containing player's name, position, and game_logs
+        depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
+    """
 
     remove_previously_inserted_games(player_metrics, depth_charts, year)
 
@@ -77,19 +72,16 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, 
             )
 
 
-"""
-Utility function to check if a player game logs table is empty
-
-Args:
-   None
-
-Returns:
-   bool: truthy value to determine if table is empty or not
-   
-"""
 
 
 def is_player_game_logs_empty():
+    """
+    Utility function to check if a player game logs table is empty
+
+    Returns:
+        bool: truthy value to determine if table is empty or not
+    """
+
     player_game_log = fetch_one_player_game_log()
 
     if player_game_log == None:
@@ -98,21 +90,18 @@ def is_player_game_logs_empty():
         return False
 
 
-# TODO (FFM-84): Refactor this code so that utility functions in seperate file
-
-"""
-Utility function to retrieve a players ID based on their name 
-
-Args:
-   depth_chart (list): list of dictionary items to iterate through and retrieve id for 
-   player_name (str): the player name to retrieve ID for 
-   
-Returns:
-   player_id (int): id corresponding to the specified player
-"""
-
-
 def get_player_id_by_name(player_name: str, depth_charts: list):
+    """
+    Utility function to retrieve a players ID based on their name 
+
+    Args:
+        depth_chart (list): list of dictionary items to iterate through and retrieve id for 
+        player_name (str): the player name to retrieve ID for 
+    
+    Returns:
+        player_id (int): id corresponding to the specified player
+    """
+
     player = next(
         (player for player in depth_charts if player["player_name"] == player_name),
         None,
@@ -120,20 +109,19 @@ def get_player_id_by_name(player_name: str, depth_charts: list):
     return player["player_id"] if player else None
 
 
-"""
-Utility function to fetch game log tuples to insert into our database for a QB
-
-Args: 
-   df (pd.DataFrame): data frame to extract into tuples
-   player_id (int): player ID to acount for 
-   year (int): season the game log pertains to 
-
-Returns:
-   tuples (list): list of tuples to be directly inserted into our database
-"""
-
-
 def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int, year):
+    """
+    Utility function to fetch game log tuples to insert into our database for a QB
+
+    Args: 
+        df (pd.DataFrame): data frame to extract into tuples
+        player_id (int): player ID to acount for 
+        year (int): season the game log pertains to 
+
+    Returns:
+        tuples (list): list of tuples to be directly inserted into our database
+    """
+
     tuples = []
     for _, row in df.iterrows():
 
@@ -167,22 +155,23 @@ def get_qb_game_log_tuples(df: pd.DataFrame, player_id: int, year):
     return tuples
 
 
-"""
-Utility function to fetch game log tuples to insert into our database for a RB
-
-Args: 
-   df (pd.DataFrame): data frame to extract into tuples
-   player_id (int): player ID to acount for 
-   year (int): season the game log pertains to 
-   team_name_mapping (dict): look up table for team names that have changed over years
-
-
-Returns:
-   tuples (list): list of tuples to be directly inserted into our database
-"""
 
 
 def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
+    """
+    Utility function to fetch game log tuples to insert into our database for a RB
+
+    Args: 
+        df (pd.DataFrame): data frame to extract into tuples
+        player_id (int): player ID to acount for 
+        year (int): season the game log pertains to 
+        team_name_mapping (dict): look up table for team names that have changed over years
+
+
+    Returns:
+        tuples (list): list of tuples to be directly inserted into our database
+    """
+
     tuples = []
     for _, row in df.iterrows():
 
@@ -213,20 +202,19 @@ def get_rb_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
     return tuples
 
 
-"""
-Utility function to fetch game log tuples to insert into our database for a WR or TE
-
-Args: 
-   df (pd.DataFrame): data frame to extract into tuples
-   player_id (int): player ID to acount for 
-   year (int): season the game log pertains to 
-
-Returns:
-   tuples (list): list of tuples to be directly inserted into our database
-"""
-
-
 def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
+    """
+    Utility function to fetch game log tuples to insert into our database for a WR or TE
+
+    Args: 
+        df (pd.DataFrame): data frame to extract into tuples
+        player_id (int): player ID to acount for 
+        year (int): season the game log pertains to 
+
+    Returns:
+        tuples (list): list of tuples to be directly inserted into our database
+    """
+
     tuples = []
     for _, row in df.iterrows():
 
@@ -254,18 +242,16 @@ def get_wr_or_te_game_log_tuples(df: pd.DataFrame, player_id: int, year: int):
     return tuples
 
 
-"""
-Functionality to determine if a game log was persisted for a given week 
-
-Args:
-   game_log_pk (dict): PK to check is persisted in DB 
-
-Returns:
-   game_log (dict): None or persisted game log
-"""
-
-
 def is_game_log_persisted(game_log_pk: dict):
+    """
+    Functionality to determine if a game log was persisted for a given week 
+
+    Args:
+        game_log_pk (dict): PK to check is persisted in DB 
+
+    Returns:
+        game_log (dict): None or persisted game log
+    """
     game_log = fetch_player_game_log_by_pk(game_log_pk)
 
     if game_log == None:
@@ -274,20 +260,16 @@ def is_game_log_persisted(game_log_pk: dict):
         return True
 
 
-"""
-Utility function to remove games that have already been persisted
-
-Args:
-   player_metrics (list): list of dictionaries containing player's name, position, and game_logs
-   depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
-   year (int): season corresponding to game logs
-
-Returns:
-   None
-"""
-
-
 def remove_previously_inserted_games(player_metrics, depth_charts, year):
+    """
+    Utility function to remove games that have already been persisted
+
+    Args:
+        player_metrics (list): list of dictionaries containing player's name, position, and game_logs
+        depth_charts (list): list of dictionaries containing a plyer's name & corresponding player_id
+        year (int): season corresponding to game logs
+    """
+
     player_metric_pks = []
 
     # generate pks for each team game log
@@ -322,22 +304,18 @@ def remove_previously_inserted_games(player_metrics, depth_charts, year):
             index += 1
 
 
-"""
-Functionaltiy to calculate the fantasy points for players 
-
-TODO (FFM-128): Account for 2-Pt Conversions
-
-Args:
-   recent_game (bool): flag to indicate if we should only be accounting for most recent game or all games 
-   start_year (int): either the start year of a range, or the sole year to account for 
-   end_year (int): the end year of the range to calculate fantasy points for 
-
-Returns:
-   None
-"""
-
-
 def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int = None, week: int = None):
+    """
+    Functionaltiy to calculate the fantasy points for players 
+
+    TODO (FFM-128): Account for 2-Pt Conversions
+
+    Args:
+        recent_game (bool): flag to indicate if we should only be accounting for most recent game or all games 
+        start_year (int): either the start year of a range, or the sole year to account for 
+        end_year (int): the end year of the range to calculate fantasy points for 
+    """
+
     # determine if this is for recent week, single year, or a range of years
     if recent_game:
         logging.info(f"Recent game flag passed; calculating fantasy points for most recent week in the year {start_year}")
@@ -406,26 +384,6 @@ def calculate_fantasy_points(recent_game: bool, start_year: int, end_year: int =
     insert_fantasy_points(players_points)
 
 
-"""
-Functionality to calculate the total points a player
-
-
-TODO (FFM-128): Account for 2-Pt Conversions and Fumbles 
-
-Args:
-   player_game_log (dict): item containing all relevant stats needed to make calculations 
-   passing_yd_pts (float): # of fantasy points for a passing yard
-   passing_td_pts (int): # of fantasy points for a passing td 
-   passing_int_pts (int): # of fantasy points for a passing interception
-   rushing_yd_pts (float): # of fantasy points for a rushing yard
-   rushing_td_pts (int): # of fantasy points for a rushing td 
-   receiving_yd_pts (float): # of fantasy points for a receiving yard
-   receiving_td_pts (int): # of fantasy points for a receiving td 
-   receiving_pts (int): # of fantasy points for a reception
-   
-Returns:
-   points (float): total fantasy points for a player based on their game log
-"""
 
 
 def calculate_point_total(
@@ -439,6 +397,27 @@ def calculate_point_total(
     receiving_td_pts,
     receiving_pts,
 ):
+    """
+        Functionality to calculate the total points a player
+
+
+        TODO (FFM-128): Account for 2-Pt Conversions and Fumbles 
+
+        Args:
+        player_game_log (dict): item containing all relevant stats needed to make calculations 
+        passing_yd_pts (float): # of fantasy points for a passing yard
+        passing_td_pts (int): # of fantasy points for a passing td 
+        passing_int_pts (int): # of fantasy points for a passing interception
+        rushing_yd_pts (float): # of fantasy points for a rushing yard
+        rushing_td_pts (int): # of fantasy points for a rushing td 
+        receiving_yd_pts (float): # of fantasy points for a receiving yard
+        receiving_td_pts (int): # of fantasy points for a receiving td 
+        receiving_pts (int): # of fantasy points for a reception
+        
+        Returns:
+        points (float): total fantasy points for a player based on their game log
+    """
+
     return round(
         ((player_game_log.get("interceptions", 0) or 0) * passing_int_pts)
         + ((player_game_log.get("pass_yd", 0) or 0) * passing_yd_pts)
@@ -452,18 +431,15 @@ def calculate_point_total(
     )
 
 
-"""
-Functionality to insert a fantasy points into our DB 
-
-Args:
-   points (list): list of dictionaries containing player_game_log PK & corresponding fantasy points for that week
-
-Returns:
-   None
-"""
-
 
 def insert_fantasy_points(points: list):
+    """
+    Functionality to insert a fantasy points into our DB 
+
+    Args:
+        points (list): list of dictionaries containing player_game_log PK & corresponding fantasy points for that week
+    """
+
     if points == []:
         logging.info("No fantasy points were calculated; skipping insertion")
         return
@@ -472,22 +448,20 @@ def insert_fantasy_points(points: list):
     add_fantasy_points(points)
 
 
-"""
-Functionality to calculate and persist the weekly averages for players. The average calculated 
-will only take into account the current season AND the games that have been played in this current season 
-based on the current week 
-
-TODO: Deprecated function with due to the creation of new update_player_weekly_agg DB function
-
-Args:
-    start_week (int): week to start calculating averages for 
-    end_week (int): week to stop calcualting averages for 
-    season (int): season to calculate averages for 
-
-Returns:
-    None 
-"""
 def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, season: int): 
+    """
+    Functionality to calculate and persist the weekly averages for players. The average calculated 
+    will only take into account the current season AND the games that have been played in this current season 
+    based on the current week 
+
+    TODO: Deprecated function with due to the creation of new update_player_weekly_agg DB function
+
+    Args:
+        start_week (int): week to start calculating averages for 
+        end_week (int): week to stop calcualting averages for 
+        season (int): season to calculate averages for 
+    """
+
     # retrieve active players in specified season 
     players = fetch_players_active_in_specified_year(season)
 
@@ -522,19 +496,17 @@ def calculate_weekly_fantasy_point_averages(start_week: int, end_week: int, seas
 
 
 
-"""
-Utility function to retrieve fantasy points scoring configs 
-
-Args:
-   None
-
-Returns:
-   passing_yd_pts, passing_td_pts, passing_int_pts, rushing_yd_pts, rushing_td_pts, receiving_yd_pts, receiving_td_pts, receiving_pts (tuple): 
-      scoring system for offensive player
-"""
-
-
 def get_offensive_point_configs():
+    """
+    Utility function to retrieve fantasy points scoring configs 
+
+    Args:
+        None
+
+    Returns:
+        tuple: scoring system for offensive player
+    """
+
     passing_yd_pts = props.get_config("scoring.offense.passing.yard")
     passing_td_pts = props.get_config("scoring.offense.passing.td")
     passing_int_pts = props.get_config("scoring.offense.passing.int")

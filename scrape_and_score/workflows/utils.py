@@ -31,6 +31,7 @@ def is_player_demographics_persisted(season: int):
     Returns:
         bool: flag indicating if necessary data still needs to be persisted
     """ 
+
     # player demographics
     num_pd_records = get_count_player_demographics_records_for_season(season)
 
@@ -46,6 +47,7 @@ def is_player_records_persisted(season: int):
     Returns:
         bool: flag indicating if necessary data still needs to be persisted
     """ 
+    
     # player teams 
     num_pt_records = get_count_player_teams_records_for_season(season) #NOTE: If player_teams is empty, relevant players / depth_chart_position records are also assumed to be lacking for specific season since this is done in a single flow
 

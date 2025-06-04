@@ -13,18 +13,13 @@ from db.insert.teams import (
     update_teams_odds
 )
 
-"""
-Fetch all historical odds for the current year
-
-Args:
-   None 
-
-Returns:
-   None
-"""
 
 
 def scrape_all(start_year=None, end_year=None):
+    """
+    Fetch and persist all relevant team betting odds and game conditions spanning across multiple year
+    """
+
     # fetch configs
     url = props.get_config("website.rotowire.urls.historical-odds")
 
@@ -91,18 +86,14 @@ def get_game_conditions(data: pd.DataFrame) -> list:
     return game_condition_records
 
 
-
-
-
-"""
-Generate team betting odds records to persist into our database
-
-Args:
-   data (pd.DataFrame): betting odds corresponding to current year OR to a specified range of years
-"""
-
-
 def get_team_betting_odds_records(data: pd.DataFrame):
+    """
+    Generate team betting odds records to persist into our database
+
+    Args:
+    data (pd.DataFrame): betting odds corresponding to current year OR to a specified range of years
+    """
+
     # create team id mapping
     mapping = create_team_id_mapping()
 
@@ -129,18 +120,18 @@ def get_team_betting_odds_records(data: pd.DataFrame):
     return betting_odds_records 
 
 
-"""
-Create a mapping of a teams acronym to corresponding team ID in our database
-
-Args:
-    is_betting_pros (bool): flag to indicate if we need ot use betting pros 
-
-Returns:
-   mapping (dict): mapping of a teams acronmy to team_id in our db
-"""
-
 
 def create_team_id_mapping(is_betting_pros: bool= False):
+    """
+    Create a mapping of a teams acronym to corresponding team ID in our database
+
+    Args:
+        is_betting_pros (bool): flag to indicate if we need ot use betting pros 
+
+    Returns:
+    mapping (dict): mapping of a teams acronmy to team_id in our db
+    """
+
     # load configs
     teams = props.get_config("nfl.teams")
     mappings = {}
@@ -166,20 +157,16 @@ def create_team_id_mapping(is_betting_pros: bool= False):
     return mappings
 
 
-"""
-Update persisted betting records with relevant information (under/over hit, coverd, total score, etc)
-
-Args:
-    week (int): the week to update records for 
-    season (int): the season to update records for 
-
-
-Returns:
-   None
-"""
-
 
 def update_recent_betting_records(week: int, season: int):
+    """
+    Update persisted betting records with relevant information (under/over hit, coverd, total score, etc)
+
+    Args:
+        week (int): the week to update records for 
+        season (int): the season to update records for 
+    """
+
     # load configs
     url = props.get_config("website.rotowire.urls.historical-odds")
 
@@ -203,23 +190,20 @@ def update_recent_betting_records(week: int, season: int):
     update_team_betting_odds_records_with_outcomes(records)
 
 
-"""
-Generate records to update 'team_betting_odds' records that games have been completed 
-
-Args:
-   recent_data (pd.DataFrame): dataframe containing team betting odds information from most recent week & year 
-   mapping (dict) : mapping of a teams acronym to its corresponding team_id
-   year (int): season the updated records correspond to 
-   week (int): the week these records correspond to
-   
-Returns:
-   None
-"""
-
 
 def generate_update_records(
     recent_data: pd.DataFrame, mapping: dict, year: int, week: int
 ):
+    """
+    Generate records to update 'team_betting_odds' records that games have been completed 
+
+    Args:
+        recent_data (pd.DataFrame): dataframe containing team betting odds information from most recent week & year 
+        mapping (dict) : mapping of a teams acronym to its corresponding team_id
+        year (int): season the updated records correspond to 
+        week (int): the week these records correspond to
+    """
+
     update_records = [
         {
             "home_team_id": mapping[row["home_team_stats_id"]],
@@ -240,19 +224,12 @@ def generate_update_records(
     return update_records
 
 
-"""
-Fetch odds for upcoming game that is to be played so we can make predicitions 
-
-
-Args:
-   None 
-
-Returns:
-   None
-"""
-
 
 def scrape_upcoming(week: int, season: int, team_ids: list = None):
+    """
+    Fetch odds for upcoming game that is to be played so we can make predicitions 
+    """
+
     logging.info(
         f"Attempting to scrape upcoming 'team_betting_odds' for season={season}, week={week}"
         f"{f', team_ids={team_ids}' if team_ids is not None else ''}"
@@ -369,24 +346,25 @@ def are_odds_modified(persisted_record: dict, current_record: dict):
     )
 
 
-"""
-Generate upcoming betting odds records to persist to our DB 
-
-Args:
-   df (pd.DataFrame): data frame containing relevant metrics regarding upcoming game odds 
-   game_ids (list): list of unique game IDs to generate records for 
-   week (int): week corresponding to betting odds 
-   year (int): season correspondign to betting odds 
-   team_ids (list): relevant team IDs to acount for 
-
-Returns:
-   records (list): list of betting odds to persist
-"""
 
 
 def get_upcoming_betting_odds_records(
     df: pd.DataFrame, game_ids: list, week: int, year: int, team_ids: list 
 ):
+    """
+    Generate upcoming betting odds records to persist to our DB 
+
+    Args:
+        df (pd.DataFrame): data frame containing relevant metrics regarding upcoming game odds 
+        game_ids (list): list of unique game IDs to generate records for 
+        week (int): week corresponding to betting odds 
+        year (int): season correspondign to betting odds 
+        team_ids (list): relevant team IDs to acount for 
+
+    Returns:
+        records (list): list of betting odds to persist
+    """
+
     logging.info(
         "Attempting to generate upcoming betting odds records to persist to our DB"
     )
@@ -432,18 +410,19 @@ def get_upcoming_betting_odds_records(
     return records
 
 
-"""
-Funcionality to retrieve the team ID of the favorite based on datafrmae game lines 
-
-Args:
-   game_df (pd.DataFrame): data frame containing team odds 
-
-Returns:
-   team_id (int): ID of the team who is favorited
-"""
 
 
 def get_favorite_team_id(game_df: pd.DataFrame):
+    """
+    Funcionality to retrieve the team ID of the favorite based on datafrmae game lines 
+
+    Args:
+        game_df (pd.DataFrame): data frame containing team odds 
+
+    Returns:
+        team_id (int): ID of the team who is favorited
+    """
+
     bookies = ["betrivers", "mgm", "draftkings", "fanduel", "best"]
 
     for bookie in bookies:
@@ -461,18 +440,17 @@ def get_favorite_team_id(game_df: pd.DataFrame):
     )
 
 
-"""
-Calculate the avg O/U, avg spread, and avg_money line based on each available lines from relevant bookies 
-
-Args:
-   game_df (pd.DataFrame): data frame containing game betting lines for both home & away team
-
-Returns:
-   avg_ou, avg_spread (tuple): calculated avgs
-"""
-
-
 def calculate_avg_lines(game_df: pd.DataFrame):
+    """
+    Calculate the avg O/U, avg spread, and avg_money line based on each available lines from relevant bookies 
+
+    Args:
+        game_df (pd.DataFrame): data frame containing game betting lines for both home & away team
+
+    Returns:
+        avg_ou, avg_spread (tuple): calculated avgs
+    """
+
     # list of possible bookies
     bookies = ["betrivers", "mgm", "draftkings", "fanduel", "best"]
 

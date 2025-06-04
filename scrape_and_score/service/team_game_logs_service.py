@@ -16,20 +16,17 @@ from db.insert.teams import (
     insert_team_rankings
 )
 
-"""
-Functionality to insert multiple teams game logs 
-
-Args: 
-   team_game_logs (list): list of dictionaries containing team's name & game logs 
-   teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
-   should_update (bool): flag to indicate if we want to update previously persisted game logs or not 
-   
-Returns:
-   None
-"""
 
 
 def insert_multiple_teams_game_logs(team_game_logs: list, teams_and_ids: list, year: int = None, should_update: bool = False):
+    """
+    Functionality to insert multiple teams game logs 
+
+    Args: 
+        team_game_logs (list): list of dictionaries containing team's name & game logs 
+        teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
+        should_update (bool): flag to indicate if we want to update previously persisted game logs or not 
+    """
 
     # extract or remove previously inserted game logs 
     update_game_logs, insert_game_logs = filter_previously_inserted_game_logs(team_game_logs, teams_and_ids, year, should_update)
@@ -59,6 +56,7 @@ def insert_or_update_team_game_logs(team_game_logs: list, teams_and_ids: list, y
         year (int) : season game logs correspond to
         is_update (bool): flag to indicate if we are updating or inserting 
     """
+
     # insert game logs 
     for team in team_game_logs:
         team_name = team["team_name"]
@@ -84,18 +82,19 @@ def insert_or_update_team_game_logs(team_game_logs: list, teams_and_ids: list, y
 
 
 
-"""
-Utility function to fetch team game log tuples to insert into our database 
-
-Args: 
-   df (pd.DataFrame): data frame to extract into tuples
-   team_id (int): id corresponding to team to fetch game logs for 
-   year (int): year we are fetching game logs for 
-
-Returns:
-   tuples (list): list of tuples to be directly inserted into our database
-"""
 def get_insert_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
+    """
+    Utility function to fetch team game log tuples to insert into our database 
+
+    Args: 
+        df (pd.DataFrame): data frame to extract into tuples
+        team_id (int): id corresponding to team to fetch game logs for 
+        year (int): year we are fetching game logs for 
+
+    Returns:
+        list: list of tuples to be directly inserted into our database
+    """
+
     tuples = []
 
     opponent_map = {
@@ -164,6 +163,15 @@ def get_insert_team_log_tuples(df: pd.DataFrame, team_id: int, year: int):
 
 
 def get_team_log_tuples_for_update(df: pd.DataFrame, team_id: int, year: int):
+    """
+    Extract reelvant team game log tuples required for updating DB entries 
+
+    Args:
+        df (pd.DataFrame): data frame containing relevant data
+        team_id (int): team ID that corresponds to relevant team 
+        year (int): relevant year 
+    """
+
     tuples = []
 
     opponent_map = {
@@ -232,36 +240,33 @@ def get_team_log_tuples_for_update(df: pd.DataFrame, team_id: int, year: int):
     return tuples
 
 
-
-"""
-Utility function to retrieve a teams ID based on their name 
-
-Args:
-   team_name (str): team name to retrieve ID for 
-   teams_and_ids (list): list of dictionaries containing team names and ids 
-
-Returns: 
-   id (int): ID corresponding to team name
-"""
-
-
 def get_team_id_by_name(team_name: str, teams_and_ids: list):
+    """
+    Utility function to retrieve a teams ID based on their name 
+
+    Args:
+        team_name (str): team name to retrieve ID for 
+        teams_and_ids (list): list of dictionaries containing team names and ids 
+
+    Returns: 
+        id (int): ID corresponding to team name
+    """
+
     team = next((team for team in teams_and_ids if team["name"] == team_name), None)
     return team["team_id"] if team else None
 
 
-"""
-Functionality to determine if a game log was persisted for a given week 
-
-Args:
-   game_log_pk (dict): PK to check is persisted in DB 
-
-Returns:
-   game_log (dict): None or persisted game log
-"""
-
-
 def is_game_log_persisted(game_log_pk: dict):
+
+    """
+    Functionality to determine if a game log was persisted for a given week 
+
+    Args:
+        game_log_pk (dict): PK to check is persisted in DB 
+
+    Returns:
+        game_log (dict): None or persisted game log
+    """
     game_log = fetch_team_game_log_by_pk(game_log_pk)
 
     if game_log == None:
@@ -270,40 +275,34 @@ def is_game_log_persisted(game_log_pk: dict):
         return True
 
 
-"""
-Functionality to retrieve all game logs for a particular season 
-
-Args:
-   team_id (int): team ID to fetch game logs for
-   year (int): year to fetch game logs for 
-
-Returns:
-   game_logs (list): list of game logs corresponding to team
-"""
-
-
 def get_teams_game_logs_for_season(team_id: int, year: int):
+    """
+    Functionality to retrieve all game logs for a particular season 
+
+    Args:
+        team_id (int): team ID to fetch game logs for
+        year (int): year to fetch game logs for 
+
+    Returns:
+        game_logs (list): list of game logs corresponding to team
+    """
     logging.info(
         f"Fetching all game logs for the following team ID: {team_id} and year: {year}"
     )
     return fetch_all_teams_game_logs_for_season(team_id, year)
 
 
-"""
-Utility function to determine if a teams game log has previously been inserted 
-
-Args: 
-   team_metrics (list): list of dictionaries containing team's name & game logs 
-   teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
-   year (int): season pertaining to game log
-   should_update (bool): boolean indicating if we should not remove game logs and instead seperate them
-   
-Returns:
-   None
-"""
-
-
 def filter_previously_inserted_game_logs(team_game_logs: list, teams_and_ids: list, year: int, should_update: bool):
+    """
+    Utility function to determine if a teams game log has previously been inserted 
+
+    Args: 
+        team_metrics (list): list of dictionaries containing team's name & game logs 
+        teams_and_ids (list): list of dictionaries containing team's name & corresponding team ID 
+        year (int): season pertaining to game log
+        should_update (bool): boolean indicating if we should not remove game logs and instead seperate them
+    """
+
     # generate pks for each team game log
     persisted_team_game_log_pks = fetch_pks_for_inserted_team_game_logs(year)
     
@@ -329,19 +328,15 @@ def filter_previously_inserted_game_logs(team_game_logs: list, teams_and_ids: li
     return update_game_logs, insert_game_logs
 
 
-"""
-Functionality to calculate rankings (offense & defense) for a team
-
-Args:
-   year (int): year to take into account when fetching rankings 
-   week (int): optional week parameter
-
-Returns 
-   None 
-"""
-
-
 def calculate_all_teams_rankings(year: int, week: int = None):
+    """
+    Functionality to calculate rankings (offense & defense) for a team
+
+    Args:
+        year (int): year to take into account when fetching rankings 
+        week (int): optional week parameter
+    """
+
     logging.info(
         f"Attemtping to calculate teams off/def rankings based on metrics for {year} season"
     )
@@ -466,9 +461,6 @@ def insert_bye_week_rankings(teams_weekly_aggregate_metrics: list, season: int):
 
     Args:
         teams_weekly_aggregate_metrics (list): list of teams accumualted weekly metrics 
-    
-    Returns: 
-        None 
     """
 
     logging.info(f"Attempting to insert bye week rankings for the season: {season}")
@@ -520,6 +512,7 @@ def get_weekly_aggergate_metrics(season_game_logs: list):
     Returns:
         list: weekly aggregate metrics 
     """
+
     # metrics to account for
     points_for = 0
     points_against = 0
@@ -554,28 +547,21 @@ def get_weekly_aggergate_metrics(season_game_logs: list):
     
     return weekly_aggregate_metrics
 
-    
-
-        
-
-
-    
-
-
-"""
-Functionality to calculate the rankings of teams based on relevant metric accumulations
-
-TODO: Account for the break down of scoring (i.e rushing tds for, rushing tds against, etc)
-
-Args:
-   team_game_logs (list): list of game logs for a particular team 
-
-Returns:
-   off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks (tuple): tuple containing teams respective rankings 
-"""
 
 
 def calculate_rankings(metrics: list):
+    """
+    Functionality to calculate the rankings of teams based on relevant metric accumulations
+
+    TODO: Account for the break down of scoring (i.e rushing tds for, rushing tds against, etc)
+
+    Args:
+        team_game_logs (list): list of game logs for a particular team 
+
+    Returns:
+        tuple: teams respective rankings 
+    """
+
     logging.info(
         "Attempting to calculate offensive/defensive rush/pass rankings for each team based on metrics"
     )
@@ -659,18 +645,17 @@ def calculate_rankings(metrics: list):
     return off_rush_ranks, off_pass_ranks, def_rush_ranks, def_pass_ranks
 
 
-"""
-Determine rankings based on off/def for each team 
-
-Args:
-   weighted_sums (list): list of dictionary items sorted by their weighted sums (lower indicies, higher rank)
-
-Returns: 
-   
-"""
-
-
 def get_rankings(weighted_sums: list):
+    """
+    Determine rankings based on off/def for each team 
+
+    Args:
+    weighted_sums (list): list of dictionary items sorted by their weighted sums (lower indicies, higher rank)
+
+    Returns: 
+        list: rankings of a team 
+    """
+
     ranks = [
         {"team_id": value["team_id"], "rank": index}
         for index, value in enumerate(weighted_sums)
@@ -678,19 +663,26 @@ def get_rankings(weighted_sums: list):
     return ranks
 
 
-"""
-Obtain relevant offensive & defensive aggergated metrics (total tds, total pass yds, total rush_yds) for a team 
-
-Args:
-   team_game_logs (list): list of team game logs to obtain metrics for 
-
-Returns:
-   metrics (dict): dictionary containing following information
-      team_id, points_for, points_against, pass_yards_for, pass_yards_against, rush_yards_for, rush_yards_against 
-"""
 
 
 def get_aggregate_season_metrics(team_game_logs: list):
+    """
+    Obtain relevant offensive & defensive aggergated metrics (total tds, total pass yds, total rush_yds) for a team 
+
+    Args:
+        team_game_logs (list): list of team game logs to obtain metrics for 
+
+    Returns:
+    dict: dictionary containing following information
+            - team_id
+            - points_for
+            - points_against
+            - pass_yards_for
+            - pass_yards_against
+            - rush_yards_for
+            - rush_yards_against 
+    """
+
     # ensure game logs passed
     if not team_game_logs:
         logging.error("Unable to get relevant season metrics for an empty list")
@@ -725,39 +717,34 @@ def get_aggregate_season_metrics(team_game_logs: list):
     }
 
 
-"""
-Persists team rankings 
-
-Args:
-    records (list): list of team ranking records to persist 
-
-Returns:
-   None
-"""
-
-
 def insert_teams_ranks(
     records
 ):
+    """
+    Persists team rankings 
+
+    Args:
+        records (list): list of team ranking records to persist 
+    """
+
     logging.info(
         "Attempting to insert team rankings records"
     )
     insert_team_rankings(records)
 
 
-"""
-Functionality to normalize players season metrics, ensuring metrics 
-like passing_yds & total points are on the same scale
-
-Args:
-   team_metrics (dict):  relevant in season metrics for a team
-
-Returns:
-   normalized (dict): metric with normalized values 
-"""
-
-
 def normalize_metrics_and_apply_weights(team_metrics: list):
+    """
+    Functionality to normalize players season metrics, ensuring metrics 
+    like passing_yds & total points are on the same scale
+
+    Args:
+        team_metrics (dict):  relevant in season metrics for a team
+
+    Returns:
+        normalized (dict): metric with normalized values 
+    """
+
     logging.info(
         f"Attempting to normalize relevant in season metrics and apply corresponding weights based on configurations"
     )
@@ -801,24 +788,25 @@ def normalize_metrics_and_apply_weights(team_metrics: list):
     return weighted_metrics
 
 
-"""
-Apply weights determined in configurations to normalized aggregate season metrics in order to properly rank 
-
-TODO (FFM-129): Optimize Points_For & Points_Against to account for where points came from when applying weights (i.e passing tds/rushing tds/def tds)
-
-TODO: Account for history of rankings when applying weights
-
-Args:
-   normalized_metrics (dict): normalized metrics to apply weights to 
-   keys (list): list of keys corresponding to metrics
-   team_id (int): id corresponding to team metrics apply to
-
-Returns: 
-   weighted_metrics (list): metrics with weights applied 
-"""
 
 
 def apply_weights(normalized_metrics: dict, keys: list, team_id: int):
+    """
+    Apply weights determined in configurations to normalized aggregate season metrics in order to properly rank 
+
+    TODO (FFM-129): Optimize Points_For & Points_Against to account for where points came from when applying weights (i.e passing tds/rushing tds/def tds)
+
+    TODO: Account for history of rankings when applying weights
+
+    Args:
+    normalized_metrics (dict): normalized metrics to apply weights to 
+    keys (list): list of keys corresponding to metrics
+    team_id (int): id corresponding to team metrics apply to
+
+    Returns: 
+    weighted_metrics (list): metrics with weights applied 
+    """
+    
     yd_weight = props.get_config("rankings.weights.yards")
     td_weight = props.get_config("rankings.weights.td")
 

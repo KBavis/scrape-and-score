@@ -244,6 +244,7 @@ def neural_network(should_train: bool, start_time: datetime):
         should_train (bool): flag to indicate if we should re-train our models
         start_time (datetime): start time of our application
     """
+    
     positions = ['RB', 'QB', 'TE', 'WR']
     required_models = [
         'rb_model.pth',

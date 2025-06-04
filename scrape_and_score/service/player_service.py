@@ -7,12 +7,13 @@ from db.read.players import (
     fetch_player_id_by_normalized_name_season_and_position
 )
 
-"""
-Functionality to retrieve all players persisted within our DB 
-"""
 
 
 def get_all_players():
+    """
+    Functionality to retrieve all players persisted within our DB 
+    """
+
     logging.info(f"Fetching all players persisted within our database")
     players = fetch_all_players()
     logging.info(f"Retrieved {len(players)} players from database")
@@ -25,6 +26,7 @@ def get_player_id_by_normalized_name(name: str):
     Args:
         name (str): the name of the player to retrieve player ID for 
     """
+
     normalized_name= normalize_name(name)
     logging.info(f"Retrieving the player ID corresponding to the normalized name: {normalized_name}")
     player_id = fetch_player_id_by_normalized_name(normalized_name)
@@ -40,6 +42,7 @@ def get_player_name_by_id(id: int):
     Returns:
         str: player's name 
     """
+
     return fetch_player_name_by_id(id)
     
 
@@ -60,4 +63,14 @@ def get_player_id_by_position_season_and_normalized_name(season: int, position: 
 
 
 def normalize_name(name: str) -> str:
+    """
+    Normalize a players name in the same manner that we apply to 'normalized_name' in our DB 
+
+    Args:
+        name (str): name to normalize
+    
+    Returns:
+        str: normalized player name
+    """
+    
     return re.sub(r"[^a-zA-Z ]", "", name).lower()
