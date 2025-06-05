@@ -9,7 +9,6 @@ def fetch_player_by_normalized_name(normalized_name: str):
     """
     Fetch player by normalized_name 
     
-
     Args:
         normalized_name (str): the players name normalized 
     """
