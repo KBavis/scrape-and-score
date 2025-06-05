@@ -236,39 +236,6 @@ def fetch_game_conditions_record_by_pk(pk: dict):
         raise e
 
 
-
-def fetch_one_team_game_log():
-    """
-    Functionality to retrieve a single team game log from our DB 
-
-    Returns: 
-        player_game_log (dict): team game log or None if not found 
-    """
-
-    sql = "SELECT * FROM team_game_log FETCH FIRST 1 ROW ONLY"
-    team_game_log = None
-
-    try:
-        connection = get_connection()
-
-        with connection.cursor() as cur:
-            cur.execute(sql)
-            row = cur.fetchone()
-
-            if row:
-                team_game_log = {"team_id": row[0], "week": row[1], "year": row[3]}
-
-    except Exception as e:
-        logging.error(
-            f"An error occurred while fetching one record from team_game_log: {e}"
-        )
-        raise e
-
-    return team_game_log
-
-
-
-
 def fetch_team_game_logs_by_week_and_season(season: int, week: int):
     """
     Retrieve 'team_game_log' records corresponding to particular season / week

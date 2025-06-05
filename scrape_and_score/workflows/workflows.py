@@ -18,14 +18,10 @@ from nnutils import prediction
 from config import props
 
 
-FINAL_WEEK = 18
-
 rb_nn = None
 qb_nn = None
 wr_nn = None
 te_nn = None
-
-
 
 def predict(week: int, season: int, model: str):
     """

@@ -7,15 +7,11 @@ from db.insert.players import (
     insert_rb_player_game_logs,
     insert_wr_or_te_player_game_logs,
     add_fantasy_points,
-    insert_player_weekly_aggregate_metrics
 )
 from db.read.players import (
-    fetch_one_player_game_log,
     fetch_player_game_log_by_pk,
     fetch_all_player_game_logs_for_recent_week,
     fetch_all_player_game_logs_for_given_year,
-    fetch_players_active_in_specified_year,
-    fetch_player_fantasy_points
 )
 
 
@@ -67,23 +63,6 @@ def insert_multiple_players_game_logs(player_metrics: list, depth_charts: list, 
                 f"Unknown position '{position}'; unable to fetch game log tuples"
             )
 
-
-
-
-def is_player_game_logs_empty():
-    """
-    Utility function to check if a player game logs table is empty
-
-    Returns:
-        bool: truthy value to determine if table is empty or not
-    """
-
-    player_game_log = fetch_one_player_game_log()
-
-    if player_game_log == None:
-        return True
-    else:
-        return False
 
 
 def get_player_id_by_name(player_name: str, depth_charts: list):

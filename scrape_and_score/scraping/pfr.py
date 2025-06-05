@@ -107,39 +107,6 @@ def scrape_historical(start_year: int, end_year: int):
     logging.info(f"Successfully inserted all player and team game logs from {start_year} to {end_year}")
 
 
-
-def scrape_recent():
-    """
-    Functionality to scrape the most recent team & player data based on previously persisted teams/players
-
-    Returns: 
-        team_metrics, player_metrics (tuple): most recent metrics for both teams & players
-    """
-
-    # fetch configs
-    team_template_url = props.get_config(
-        "website.pro-football-reference.urls.team-metrics"
-    )
-    year = props.get_config("nfl.current-year")
-
-    # fetch all persisted teams
-    teams = team_service.get_all_teams()
-    team_names = [team["name"] for team in teams]
-
-    # fetch recent game logs for each team
-    team_metrics = fetch_team_game_logs(
-        team_names, team_template_url, year, recent_games=True
-    )
-
-    # fetch all persisted players
-    players = player_service.get_all_players()
-
-    # fetch recent game logs for each players
-    player_metrics = fetch_player_metrics(players, year, recent_games=True)
-
-    return team_metrics, player_metrics
-
-
 def update_game_logs_and_insert_advanced_metrics(week: int, season: int):
     """
     Update 'player_game_log' and 'team_game_log' records with relevant results and insert 

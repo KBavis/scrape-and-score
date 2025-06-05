@@ -612,46 +612,6 @@ def insert_player_teams(player_teams_records: list):
         raise e
 
 
-def insert_player_weekly_aggregate_metrics(player_agg_metrics: list): 
-    """
-    Insert player weekly aggergate metrics into database 
-
-    Args:
-        player_agg_metrics (list): records to insert
-    """
-
-    sql = f"""
-            INSERT INTO player_weekly_agg_metrics (player_id, week, season, avg_fantasy_points)
-            VALUES (%s, %s, %s, %s)
-         """
-
-    try:
-        connection = get_connection()
-
-        params = [
-            (
-                record["player_id"],
-                record["week"],
-                record["season"],
-                record["fantasy_points"]
-            )
-            for record in player_agg_metrics 
-        ]
-
-        with connection.cursor() as cur:
-            cur.executemany(sql, params)
-            connection.commit()
-            logging.info(
-                f"Successfully inserted {len(player_agg_metrics)} player_weekly_agg_metrics records into the database"
-            )
-    except Exception as e:
-        logging.error(
-            f"An exception occurred while inserting the following player_weekly_agg_metrics records into our db: {player_agg_metrics}",
-            exc_info=True,
-        )
-        raise e
-
-
 def update_player_depth_chart_postion(player_depth_chart: list): 
     """
     Functionality to update player depth chart record positions in our DB 

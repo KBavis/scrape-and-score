@@ -817,51 +817,6 @@ def insert_team_seasonal_passing_metrics(record: dict, team_id: int, season: int
         raise e
 
 
-def insert_team_seasonal_rushing_metrics(df: pd.DataFrame, teams: dict):
-    """Insert teams seasonal rushing metrics into our database
-
-    Args:
-        df (pd.DataFrame): dataframe containing relevant season team metrics
-        teams (dict): mapping of a player
-    """
-
-    sql = """
-    INSERT INTO team_seasonal_rushing_metrics (
-        team_id, season, rushing_yards, rush_td
-    ) 
-    VALUES (%s, %s, %s, %s, %s)
-    """
-
-
-    try:
-        connection = get_connection()
-
-        params = [
-            (
-                team_service.get_team_id_by_name(
-                    next(team["team"] for team in teams if team["acronym"] == row["team"])
-                ),  # transform acronym into corresponding ID
-                row["season"],
-                row["rushing_yards"],
-                row["run_fumble"]
-            )
-            for _, row in df.iterrows()
-        ]
-
-        with connection.cursor() as cur:
-            cur.executemany(sql, params)
-            connection.commit()
-            logging.info(
-                f"Successfully inserted {len(df)} team_seasonal_rushing_metrics records into the database"
-            )
-    except Exception as e:
-        logging.error(
-            f"An exception occurred while inserting the following team_seasonal_rushing_metrics records into our db: {params}",
-            exc_info=True,
-        )
-        raise e
-
-
 def insert_team_seasonal_rushing_and_receiving_metrics(record: dict, team_id: int, season: int):
     """Insert team seasonal rushing and receiving metrics into our database
 

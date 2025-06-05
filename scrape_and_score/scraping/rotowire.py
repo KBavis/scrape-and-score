@@ -442,7 +442,7 @@ def get_favorite_team_id(game_df: pd.DataFrame):
 
 def calculate_avg_lines(game_df: pd.DataFrame):
     """
-    Calculate the avg O/U, avg spread, and avg_money line based on each available lines from relevant bookies 
+    Calculate the avg O/U and avg spread based on each available lines from relevant bookies 
 
     Args:
         game_df (pd.DataFrame): data frame containing game betting lines for both home & away team
@@ -458,8 +458,6 @@ def calculate_avg_lines(game_df: pd.DataFrame):
     ou_amount = 0
     spread_count = 0
     spread_amount = 0
-    ml_count = 0
-    ml_amount = 0
 
     for bookie in bookies:
         has_spread = f"{bookie}_has_spread"
@@ -486,6 +484,5 @@ def calculate_avg_lines(game_df: pd.DataFrame):
         # Safely calculate averages to avoid division by zero
     avg_ou = ou_amount / ou_count if ou_count > 0 else None
     avg_spread = spread_amount / spread_count if spread_count > 0 else None
-    avg_ml = ml_amount / ml_count if ml_count > 0 else None
 
     return avg_ou, avg_spread
