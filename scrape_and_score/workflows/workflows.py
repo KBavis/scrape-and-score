@@ -1,5 +1,6 @@
 from nnutils import optimization
-from scraping import pfr, rotowire
+from scraping.pfr import pfr
+from scraping import rotowire
 from scraping import our_lads, football_db, betting_pros, espn
 from service import team_game_logs_service, player_game_logs_service
 from models.lin_reg import LinReg

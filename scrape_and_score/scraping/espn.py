@@ -3,7 +3,7 @@ from config import props
 from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
-from . import pfr
+from .pfr import pfr
 from constants import LOCATIONS, CITIES
 from db.read.teams import (
     fetch_team_name_by_id, 
