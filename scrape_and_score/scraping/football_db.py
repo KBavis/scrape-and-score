@@ -1,6 +1,6 @@
 import logging
 from bs4 import BeautifulSoup
-from . import util
+from . import scraping_util
 from config import props
 from service import player_service
 from db.read.players import (
@@ -273,4 +273,4 @@ def get_html(week: int, season: int):
         str : raw html
     """
     base_url = props.get_config('website.football-db.urls.player-injuries')
-    return util.fetch_page(base_url.format(season, week))
+    return scraping_util.fetch_page(base_url.format(season, week))

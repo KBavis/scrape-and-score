@@ -1,4 +1,4 @@
-from .util import fetch_page
+from .scraping_util import fetch_page
 from config import props
 from bs4 import BeautifulSoup
 from datetime import datetime

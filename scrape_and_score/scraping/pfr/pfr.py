@@ -3,7 +3,7 @@ import pandas as pd
 from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES
 from service import team_service, player_service, player_game_logs_service, team_game_logs_service, service_util
 from config import props
-from ..util import fetch_page
+from ..scraping_util import fetch_page
 from datetime import date, datetime
 from bs4 import BeautifulSoup, Comment
 from datetime import datetime

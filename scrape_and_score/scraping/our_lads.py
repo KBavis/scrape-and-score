@@ -1,4 +1,4 @@
-from . import util
+from . import scraping_util
 from bs4 import BeautifulSoup
 from config import props
 import logging
@@ -39,7 +39,7 @@ def scrape_and_persist(start_year: int, end_year: int):
     logging.info(f"\nScraping & persisting depth charts for the seasons {start_year} - {end_year} and for the following teams: {teams}")
 
     # retrieve first page to extract relevant archive date IDs
-    html = util.fetch_page("https://www.ourlads.com/nfldepthcharts/archive/150/IND")
+    html = scraping_util.fetch_page("https://www.ourlads.com/nfldepthcharts/archive/150/IND")
     
     # parse html
     soup = BeautifulSoup(html, "html.parser")
@@ -101,7 +101,7 @@ def generate_and_persist_depth_chart_records(teams: list, season: int, week: int
         unique_player_records = []
         relevant_players = set() 
         
-        html = util.fetch_page(f"https://www.ourlads.com/nfldepthcharts/depthchart/{team['acronym']}")
+        html = scraping_util.fetch_page(f"https://www.ourlads.com/nfldepthcharts/depthchart/{team['acronym']}")
         soup = BeautifulSoup(html, "html.parser")
 
         # extract depth chart
@@ -178,7 +178,7 @@ def generate_player_and_player_teams_records(teams: list, start_year: int, end_y
                 date = re.sub(r"/\d{2}/", "/01/", date)
 
                 # retrieve depth chart for given month/year 
-                html = util.fetch_page(f"https://www.ourlads.com/nfldepthcharts/archive/{id}/{(team['acronym'])}")
+                html = scraping_util.fetch_page(f"https://www.ourlads.com/nfldepthcharts/archive/{id}/{(team['acronym'])}")
                 soup = BeautifulSoup(html, "html.parser")
 
                  # extract depth chart
