@@ -17,10 +17,28 @@
 - [Contact](#contact)
 
 ---
-
 ## About the Project
 
-This project was implemented to be used throughout NFL seasons to help users make data-driven and AI-supported decisions when setting their fantasy football lineups. As of now, our application is under active development and continuously improving.
+This project was created to assist users throughout the NFL season by helping them make data-driven, AI-supported decisions when setting their fantasy football lineups. The application is *far* from finished and will continue to be enhanced and maintained with new features and improvements.
+
+As of **June 5, 2025**, neural network testing is producing the following results, measured within a threshold of 5 fantasy points:
+
+- **Running Back (RB) Model**
+  - Accuracy: **65%**
+  - Loss: **38.89**
+
+- **Wide Receiver (WR) Model**
+  - Accuracy: **70%**
+  - Loss: **39.02**
+
+- **Tight End (TE) Model**
+  - Accuracy: **75%**
+  - Loss: **26.79**
+
+- **Quarterback (QB) Model**
+  - Accuracy: **50%**
+  - Loss: **52.37**
+
 
 ---
 
