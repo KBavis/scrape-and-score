@@ -5,13 +5,12 @@ from service import player_service
 from db.read.players import retrieve_player_demographics_record_by_pk
 
 
-
 def insert_players(players: list):
     """
-    Functionality to persist a particular player 
+    Functionality to persist a particular player
 
-    Args: 
-        players (list): list of players to persist 
+    Args:
+        players (list): list of players to persist
     """
 
     try:
@@ -28,10 +27,10 @@ def insert_players(players: list):
 
 def insert_player(player: dict):
     """
-    Functionality to persist a single player 
+    Functionality to persist a single player
 
-    Args: 
-        player (dict): player to insert into our db 
+    Args:
+        player (dict): player to insert into our db
     """
 
     query = """
@@ -46,10 +45,8 @@ def insert_player(player: dict):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(
-                query, (player_name, player_position)
-            )  
-            
+            cur.execute(query, (player_name, player_position))
+
             connection.commit()
             logging.info(
                 f"Successfully inserted player {player_name} into the database"
@@ -62,12 +59,12 @@ def insert_player(player: dict):
         raise e
 
 
-def update_player_hashed_name(hashed_names: list): 
+def update_player_hashed_name(hashed_names: list):
     """
     Update player records with a players hashed name (href for pro-football-refernece player pages)
 
     Args:
-        hashed_names (list): list of dictionary elements containing 'player_id' and 'hashed_name' 
+        hashed_names (list): list of dictionary elements containing 'player_id' and 'hashed_name'
     """
 
     query = """
@@ -76,17 +73,16 @@ def update_player_hashed_name(hashed_names: list):
         WHERE player_id = %s
     """
 
-
     try:
-        params = [(player["hashed_name"], player["player_id"]) for player in hashed_names]
+        params = [
+            (player["hashed_name"], player["player_id"]) for player in hashed_names
+        ]
 
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.executemany(
-                query, params
-            )  
-            
+            cur.executemany(query, params)
+
             connection.commit()
             logging.info(
                 f"Successfully updated {len(params)} player records with hashed names"
@@ -94,28 +90,27 @@ def update_player_hashed_name(hashed_names: list):
 
     except Exception as e:
         logging.error(
-            f"An exception occurred while updating player records with hashed names", exc_info=True
+            f"An exception occurred while updating player records with hashed names",
+            exc_info=True,
         )
         raise e
 
 
-
-def update_player_pfr_availablity_status(player_ids: list, is_available: bool = False): 
+def update_player_pfr_availablity_status(player_ids: list, is_available: bool = False):
     """
     Update player records to indicate they are not available in PFR (unable to find HREF)
 
     Args:
-        player_ids (list): list of player_ids to update 
+        player_ids (list): list of player_ids to update
     """
 
     available = 1 if is_available else 0
-        
+
     query = f"""
         UPDATE player 
         SET pfr_available = {available}
         WHERE player_id = %s
     """
-
 
     try:
         params = [(player_id,) for player_id in player_ids]
@@ -123,10 +118,8 @@ def update_player_pfr_availablity_status(player_ids: list, is_available: bool = 
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.executemany(
-                query, params
-            )  
-            
+            cur.executemany(query, params)
+
             # Commit the transaction to persist data
             connection.commit()
             logging.info(
@@ -135,17 +128,18 @@ def update_player_pfr_availablity_status(player_ids: list, is_available: bool = 
 
     except Exception as e:
         logging.error(
-            f"An exception occurred while updating player records with pfr_available status", exc_info=True
+            f"An exception occurred while updating player records with pfr_available status",
+            exc_info=True,
         )
         raise e
-    
+
 
 def insert_rb_player_game_logs(game_logs: list):
     """
-    Functionality to persist multiple game logs for a RB 
+    Functionality to persist multiple game logs for a RB
 
     Args:
-        game_logs (list): list of tuples to insert into player_game_logs 
+        game_logs (list): list of tuples to insert into player_game_logs
     """
 
     sql = """
@@ -177,7 +171,7 @@ def insert_qb_player_game_logs(game_logs: list):
     Functionality to persist multiple game logs for a QB
 
     Args:
-        game_logs (list): list of tuples to insert into player_game_logs 
+        game_logs (list): list of tuples to insert into player_game_logs
     """
 
     sql = """
@@ -205,12 +199,11 @@ def insert_qb_player_game_logs(game_logs: list):
 
 
 def insert_wr_or_te_player_game_logs(game_logs: list):
-
     """
     Functionality to persist multiple game logs for a WR or TE
 
     Args:
-        game_logs (list): list of tuples to insert into player_game_logs 
+        game_logs (list): list of tuples to insert into player_game_logs
     """
 
     sql = """
@@ -253,7 +246,7 @@ def add_fantasy_points(fantasy_points: list):
         params = [
             (log["fantasy_points"], log["player_id"], log["week"], log["year"])
             for log in fantasy_points
-        ]  
+        ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
@@ -275,26 +268,26 @@ def insert_upcoming_player_game_logs(game_logs: list):
     Functionality to insert upcoming 'player_game_logs' into our database
 
     Args:
-        game_logs (list): list of game logs to insert into DB 
-    """ 
+        game_logs (list): list of game logs to insert into DB
+    """
 
     sql = """
         INSERT INTO player_game_log (player_id, week, day, year, home_team, opp) 
         VALUES (%s, %s, %s, %s, %s, %s)
     """
-    
+
     params = [
         (
-            game_log['player_id'],
-            game_log['week'],
-            game_log['day'],
-            game_log['year'],
-            game_log['home_team'],
-            game_log['opp']
+            game_log["player_id"],
+            game_log["week"],
+            game_log["day"],
+            game_log["year"],
+            game_log["home_team"],
+            game_log["opp"],
         )
         for game_log in game_logs
     ]
-    
+
     try:
         connection = get_connection()
 
@@ -315,7 +308,7 @@ def insert_upcoming_player_game_logs(game_logs: list):
 
 def insert_player_props(player_props: dict, season: int):
     """
-    Functionality to insert historical player props into our DB 
+    Functionality to insert historical player props into our DB
 
     Args:
         player_props (dict):  relevant season long player props to persist
@@ -329,23 +322,23 @@ def insert_player_props(player_props: dict, season: int):
         INSERT INTO player_betting_odds (player_id, player_name, label, cost, line, week, season) 
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    player_id = player_props['player_id']
-    player_name = player_props['player_name']
-    
+    player_id = player_props["player_id"]
+    player_name = player_props["player_name"]
+
     params = [
         (
             player_id,
             player_name,
-            odds['label'],
-            odds['cost'],
-            odds['line'],
-            week_data['week'],
-            season
+            odds["label"],
+            odds["cost"],
+            odds["line"],
+            week_data["week"],
+            season,
         )
-        for week_data in player_props['season_odds']
-        for odds in week_data['week_odds']
+        for week_data in player_props["season_odds"]
+        for odds in week_data["week_odds"]
     ]
-    
+
     try:
         connection = get_connection()
 
@@ -362,34 +355,34 @@ def insert_player_props(player_props: dict, season: int):
             exc_info=True,
         )
         raise e
-    
+
 
 def insert_upcoming_player_props(records: list):
     """
-    Insert upcoming player_betting_odds records into our database 
+    Insert upcoming player_betting_odds records into our database
 
     Args:
-        records (list): list of records to insert 
+        records (list): list of records to insert
     """
 
     sql = """
         INSERT INTO player_betting_odds (player_id, player_name, label, cost, line, week, season) 
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    
+
     params = [
         (
-            record['player_id'],
-            record['player_name'],
-            record['label'],
-            record['cost'],
-            record['line'],
-            record['week'],
-            record['season']
+            record["player_id"],
+            record["player_name"],
+            record["label"],
+            record["cost"],
+            record["line"],
+            record["week"],
+            record["season"],
         )
         for record in records
     ]
-    
+
     try:
         connection = get_connection()
 
@@ -405,17 +398,17 @@ def insert_upcoming_player_props(records: list):
             f"An exception occurred while inserting the following upcoming player betting odds: {records}",
             exc_info=True,
         )
-        raise e 
+        raise e
 
 
 def update_upcoming_player_props(records: list):
     """
-        Update upcoming player_betting_odds records in our database 
+    Update upcoming player_betting_odds records in our database
 
-        Args:
-            records (list): list of records to update
+    Args:
+        records (list): list of records to update
     """
-    
+
     sql = """
         UPDATE player_betting_odds 
         SET 
@@ -424,19 +417,19 @@ def update_upcoming_player_props(records: list):
         WHERE 
             week = %s AND season = %s AND label = %s AND player_id = %s
     """
-    
+
     params = [
         (
-            record['cost'],
-            record['line'],
-            record['week'],
-            record['season'],
-            record['label'],
-            record['player_id']
+            record["cost"],
+            record["line"],
+            record["week"],
+            record["season"],
+            record["label"],
+            record["player_id"],
         )
         for record in records
     ]
-    
+
     try:
         connection = get_connection()
 
@@ -452,12 +445,12 @@ def update_upcoming_player_props(records: list):
             f"An exception occurred while updating the following upcoming player betting odds: {records}",
             exc_info=True,
         )
-        raise e 
+        raise e
 
-    
+
 def update_player_game_log_with_results(update_records: list):
     """
-    Update 'player_game_log' records with their respective results 
+    Update 'player_game_log' records with their respective results
 
     Args:
         update_records (list): list of records to updated persisted records in db with
@@ -517,7 +510,7 @@ def update_player_game_log_with_results(update_records: list):
                 record["off_snps"],
                 record["year"],
                 record["player_id"],
-                record["week"]
+                record["week"],
             )
             for record in update_records
         ]
@@ -525,19 +518,23 @@ def update_player_game_log_with_results(update_records: list):
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
-            logging.info(f"Successfully updated {len(update_records)} player game log records in the database")
+            logging.info(
+                f"Successfully updated {len(update_records)} player game log records in the database"
+            )
     except Exception as e:
-        logging.error("An exception occurred while updating player_game_log", exc_info=True)
+        logging.error(
+            "An exception occurred while updating player_game_log", exc_info=True
+        )
         raise e
 
 
-def update_player_teams_records_end_dates(player_teams_records: list): 
+def update_player_teams_records_end_dates(player_teams_records: list):
     """
-    Functionality to end date 'player_teams' records in our database 
+    Functionality to end date 'player_teams' records in our database
 
     Args:
         player_teams_records (list): records requiring updates
-    
+
     """
     sql = f"""
             UPDATE player_teams 
@@ -549,13 +546,8 @@ def update_player_teams_records_end_dates(player_teams_records: list):
         connection = get_connection()
 
         params = [
-            (
-                record["end_wk"],
-                record["player_id"],
-                record["team_id"],
-                record["season"]
-            )
-            for record in player_teams_records 
+            (record["end_wk"], record["player_id"], record["team_id"], record["season"])
+            for record in player_teams_records
         ]
 
         with connection.cursor() as cur:
@@ -571,12 +563,13 @@ def update_player_teams_records_end_dates(player_teams_records: list):
         )
         raise e
 
-def insert_player_teams(player_teams_records: list): 
+
+def insert_player_teams(player_teams_records: list):
     """
-    Insert new player teams records into datbaase 
+    Insert new player teams records into datbaase
 
     Args:
-        player_teams_records (list): records to persist 
+        player_teams_records (list): records to persist
     """
 
     sql = f"""
@@ -593,9 +586,9 @@ def insert_player_teams(player_teams_records: list):
                 record["team_id"],
                 record["season"],
                 record["strt_wk"],
-                record["end_wk"]
+                record["end_wk"],
             )
-            for record in player_teams_records 
+            for record in player_teams_records
         ]
 
         with connection.cursor() as cur:
@@ -612,9 +605,9 @@ def insert_player_teams(player_teams_records: list):
         raise e
 
 
-def update_player_depth_chart_postion(player_depth_chart: list): 
+def update_player_depth_chart_postion(player_depth_chart: list):
     """
-    Functionality to update player depth chart record positions in our DB 
+    Functionality to update player depth chart record positions in our DB
 
     ArgsL
         player_depth_chart (list): players depth charts to update
@@ -634,7 +627,7 @@ def update_player_depth_chart_postion(player_depth_chart: list):
                 record["depth_chart_pos"],
                 record["player_id"],
                 record["season"],
-                record["week"]
+                record["week"],
             )
             for record in player_depth_chart
         ]
@@ -652,12 +645,13 @@ def update_player_depth_chart_postion(player_depth_chart: list):
         )
         raise e
 
-def insert_player_depth_charts(player_depth_chart: list): 
+
+def insert_player_depth_charts(player_depth_chart: list):
     """
-    Functionality to insert player depth chart records into our DB 
+    Functionality to insert player depth chart records into our DB
 
     ArgsL
-        player_depth_chart (list): players depth charts to insert 
+        player_depth_chart (list): players depth charts to insert
     """
 
     sql = """
@@ -673,7 +667,7 @@ def insert_player_depth_charts(player_depth_chart: list):
                 record["player_id"],
                 record["week"],
                 record["season"],
-                record["depth_chart_pos"]
+                record["depth_chart_pos"],
             )
             for record in player_depth_chart
         ]
@@ -690,7 +684,6 @@ def insert_player_depth_charts(player_depth_chart: list):
             exc_info=True,
         )
         raise e
-
 
 
 def insert_player_demographics(df: pd.DataFrame):
@@ -714,9 +707,11 @@ def insert_player_demographics(df: pd.DataFrame):
     try:
         connection = get_connection()
 
-        for _, row in df.iterrows(): 
+        for _, row in df.iterrows():
             try:
-                player_id = player_service.get_player_id_by_normalized_name(row["player_name"])
+                player_id = player_service.get_player_id_by_normalized_name(
+                    row["player_name"]
+                )
 
                 # skip if player ID has already been processed
                 if player_id not in ids:
@@ -726,20 +721,19 @@ def insert_player_demographics(df: pd.DataFrame):
                     continue
 
                 # append data to parameters for insertion
-                params.append((
-                    player_id,
-                    row["season"],
-                    row["age"],
-                    row["height"],
-                    row["weight"]
-                ))
+                params.append(
+                    (player_id, row["season"], row["age"], row["height"], row["weight"])
+                )
             except Exception as e:
-                logging.error(f"The following error occurred while generating tuple for name: {row['player_name']}", exc_info=True)
+                logging.error(
+                    f"The following error occurred while generating tuple for name: {row['player_name']}",
+                    exc_info=True,
+                )
                 continue
-                
-        # filter out existing entries 
-        filtered_params = [] 
-        for param in params: 
+
+        # filter out existing entries
+        filtered_params = []
+        for param in params:
             if retrieve_player_demographics_record_by_pk(param[1], param[0]) is None:
                 filtered_params.append(param)
 
@@ -755,7 +749,7 @@ def insert_player_demographics(df: pd.DataFrame):
             f"An exception occurred while inserting the following player_demographics records into our db: {filtered_params}",
             exc_info=True,
         )
-        raise 
+        raise
 
 
 def insert_player_seasonal_passing_metrics(record: dict, year: int, team_id: int):
@@ -785,40 +779,42 @@ def insert_player_seasonal_passing_metrics(record: dict, year: int, team_id: int
 
         for player_name, stats in record.items():
             player_id = player_service.get_player_id_by_normalized_name(player_name)
-            
+
             if player_id is None:
-                logging.info(f"Skipping insert for player {player_name} - no matching player_id found")
+                logging.info(
+                    f"Skipping insert for player {player_name} - no matching player_id found"
+                )
                 continue
 
             params = (
                 player_id,
                 team_id,
                 year,
-                int(stats.get('games_started', 0)),
-                stats.get('qb_rec', '0-0-0'),
-                int(stats.get('pass_att', 0)),
-                float(stats.get('pass_cmp_pct', 0)),
-                int(stats.get('pass_yds', 0)),
-                int(stats.get('pass_td', 0)), 
-                float(stats.get('pass_td_pct', 0)),
-                int(stats.get('pass_int', 0)),
-                float(stats.get('pass_int_pct', 0)),
-                int(stats.get('pass_first_down', 0)),
-                float(stats.get('pass_success', 0)),
-                int(stats.get('pass_long', 0)),
-                float(stats.get('pass_yds_per_att', 0)),
-                float(stats.get('pass_adj_yds_per_att', 0)),
-                float(stats.get('pass_yds_per_cmp', 0)),
-                float(stats.get('pass_yds_per_g', 0)),
-                float(stats.get('pass_rating', 0)),
-                float(stats.get('qbr', 0)),
-                int(stats.get('pass_sacked', 0)),
-                int(stats.get('pass_sacked_yds', 0)),
-                float(stats.get('pass_sacked_pct', 0)),
-                float(stats.get('pass_net_yds_per_att', 0)),
-                float(stats.get('pass_adj_net_yds_per_att', 0)),
-                int(stats.get('comebacks', 0)),
-                int(stats.get('gwd', 0))
+                int(stats.get("games_started", 0)),
+                stats.get("qb_rec", "0-0-0"),
+                int(stats.get("pass_att", 0)),
+                float(stats.get("pass_cmp_pct", 0)),
+                int(stats.get("pass_yds", 0)),
+                int(stats.get("pass_td", 0)),
+                float(stats.get("pass_td_pct", 0)),
+                int(stats.get("pass_int", 0)),
+                float(stats.get("pass_int_pct", 0)),
+                int(stats.get("pass_first_down", 0)),
+                float(stats.get("pass_success", 0)),
+                int(stats.get("pass_long", 0)),
+                float(stats.get("pass_yds_per_att", 0)),
+                float(stats.get("pass_adj_yds_per_att", 0)),
+                float(stats.get("pass_yds_per_cmp", 0)),
+                float(stats.get("pass_yds_per_g", 0)),
+                float(stats.get("pass_rating", 0)),
+                float(stats.get("qbr", 0)),
+                int(stats.get("pass_sacked", 0)),
+                int(stats.get("pass_sacked_yds", 0)),
+                float(stats.get("pass_sacked_pct", 0)),
+                float(stats.get("pass_net_yds_per_att", 0)),
+                float(stats.get("pass_adj_net_yds_per_att", 0)),
+                int(stats.get("comebacks", 0)),
+                int(stats.get("gwd", 0)),
             )
 
             try:
@@ -826,21 +822,24 @@ def insert_player_seasonal_passing_metrics(record: dict, year: int, team_id: int
                 with connection.cursor() as cur:
                     cur.execute(sql, params)
                     connection.commit()
-                    logging.info(f"Successfully inserted player_seasonal_passing_metrics record for player {player_name} season {year}")
+                    logging.info(
+                        f"Successfully inserted player_seasonal_passing_metrics record for player {player_name} season {year}"
+                    )
             except Exception as e:
                 logging.error(f"Database connection error: {e}")
                 raise e
 
-
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting player_seasonal_passing_metrics records into db: {record}",
-            exc_info=True
+            exc_info=True,
         )
         raise e
 
 
-def insert_player_seasonal_rushing_and_receiving_metrics(record: dict, year: int, team_id: int):
+def insert_player_seasonal_rushing_and_receiving_metrics(
+    record: dict, year: int, team_id: int
+):
     """Insert player seasonal rushing and receiving metrics into our database
 
     Args:
@@ -868,40 +867,42 @@ def insert_player_seasonal_rushing_and_receiving_metrics(record: dict, year: int
             player_id = player_service.get_player_id_by_normalized_name(player_name)
 
             if player_id is None:
-                logging.info(f"Skipping insert for player {player_name} - no matching player_id found")
+                logging.info(
+                    f"Skipping insert for player {player_name} - no matching player_id found"
+                )
                 continue
 
             params = (
                 player_id,
                 team_id,
                 year,
-                int(stats.get('games_started', 0)),
-                int(stats.get('rush_att', 0)),
-                float(stats.get('rush_yds_per_att', 0)),
-                int(stats.get('rush_fd', 0)),
-                float(stats.get('rush_success', 0)),
-                int(stats.get('rush_long', 0)),
-                float(stats.get('rush_yds_per_g', 0)),
-                float(stats.get('rush_att_per_g', 0)),
-                int(stats.get('rush_yds', 0)),
-                int(stats.get('rush_tds', 0)),
-                int(stats.get('targets', 0)),
-                int(stats.get('rec', 0)),
-                int(stats.get('rec_yds', 0)),
-                float(stats.get('rec_yds_per_rec', 0)),
-                int(stats.get('rec_td', 0)),
-                int(stats.get('rec_first_down', 0)),
-                float(stats.get('rec_success', 0)),
-                int(stats.get('rec_long', 0)),
-                float(stats.get('rec_per_g', 0)),
-                float(stats.get('rec_yds_per_g', 0)),
-                float(stats.get('catch_pct', 0)),
-                float(stats.get('rec_yds_per_tgt', 0)),
-                int(stats.get('touches', 0)),
-                float(stats.get('yds_per_touch', 0)),
-                float(stats.get('yds_from_scrimmage', 0)),
-                int(stats.get('rush_receive_td', 0)),
-                int(stats.get('fumbles', 0))
+                int(stats.get("games_started", 0)),
+                int(stats.get("rush_att", 0)),
+                float(stats.get("rush_yds_per_att", 0)),
+                int(stats.get("rush_fd", 0)),
+                float(stats.get("rush_success", 0)),
+                int(stats.get("rush_long", 0)),
+                float(stats.get("rush_yds_per_g", 0)),
+                float(stats.get("rush_att_per_g", 0)),
+                int(stats.get("rush_yds", 0)),
+                int(stats.get("rush_tds", 0)),
+                int(stats.get("targets", 0)),
+                int(stats.get("rec", 0)),
+                int(stats.get("rec_yds", 0)),
+                float(stats.get("rec_yds_per_rec", 0)),
+                int(stats.get("rec_td", 0)),
+                int(stats.get("rec_first_down", 0)),
+                float(stats.get("rec_success", 0)),
+                int(stats.get("rec_long", 0)),
+                float(stats.get("rec_per_g", 0)),
+                float(stats.get("rec_yds_per_g", 0)),
+                float(stats.get("catch_pct", 0)),
+                float(stats.get("rec_yds_per_tgt", 0)),
+                int(stats.get("touches", 0)),
+                float(stats.get("yds_per_touch", 0)),
+                float(stats.get("yds_from_scrimmage", 0)),
+                int(stats.get("rush_receive_td", 0)),
+                int(stats.get("fumbles", 0)),
             )
 
             try:
@@ -909,7 +910,9 @@ def insert_player_seasonal_rushing_and_receiving_metrics(record: dict, year: int
                 with connection.cursor() as cur:
                     cur.execute(sql, params)
                     connection.commit()
-                    logging.info(f"Successfully inserted player_seasonal_rushing_receiving_metrics record for player {player_name} season {year}")
+                    logging.info(
+                        f"Successfully inserted player_seasonal_rushing_receiving_metrics record for player {player_name} season {year}"
+                    )
             except Exception as e:
                 logging.error(f"Database connection error: {e}")
                 raise e
@@ -917,10 +920,10 @@ def insert_player_seasonal_rushing_and_receiving_metrics(record: dict, year: int
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting player_seasonal_rushing_receiving_metrics records into db: {record}",
-            exc_info=True
+            exc_info=True,
         )
         raise e
-    
+
 
 def insert_player_seasonal_scoring_metrics(record: dict, year: int, team_id: int):
     """Insert player seasonal scoring metrics into our database
@@ -944,31 +947,33 @@ def insert_player_seasonal_scoring_metrics(record: dict, year: int, team_id: int
         for player_name, stats in record.items():
             # Get player ID from player service
             player_id = player_service.get_player_id_by_normalized_name(player_name)
-            
+
             if player_id is None:
-                logging.warning(f"Could not find player_id for {player_name}, skipping record")
+                logging.warning(
+                    f"Could not find player_id for {player_name}, skipping record"
+                )
                 continue
 
             params = (
                 player_id,
                 team_id,
                 year,
-                int(stats.get('rush_td', 0)),
-                int(stats.get('rec_td', 0)), 
-                int(stats.get('punt_ret_td', 0)),
-                int(stats.get('kick_ret_td', 0)),
-                int(stats.get('fumbles_rec_td', 0)),
-                int(stats.get('def_int_td', 0)),
-                int(stats.get('other_td', 0)),
-                int(stats.get('total_td', 0)),
-                int(stats.get('two_pt_md', 0)),
-                int(stats.get('def_two_pt', 0)),
-                int(stats.get('xpm', 0)),
-                int(stats.get('xpa', 0)),
-                int(stats.get('fgm', 0)),
-                int(stats.get('fga', 0)),
-                int(stats.get('safety_md', 0)),
-                int(stats.get('scoring', 0))
+                int(stats.get("rush_td", 0)),
+                int(stats.get("rec_td", 0)),
+                int(stats.get("punt_ret_td", 0)),
+                int(stats.get("kick_ret_td", 0)),
+                int(stats.get("fumbles_rec_td", 0)),
+                int(stats.get("def_int_td", 0)),
+                int(stats.get("other_td", 0)),
+                int(stats.get("total_td", 0)),
+                int(stats.get("two_pt_md", 0)),
+                int(stats.get("def_two_pt", 0)),
+                int(stats.get("xpm", 0)),
+                int(stats.get("xpa", 0)),
+                int(stats.get("fgm", 0)),
+                int(stats.get("fga", 0)),
+                int(stats.get("safety_md", 0)),
+                int(stats.get("scoring", 0)),
             )
 
             try:
@@ -976,7 +981,9 @@ def insert_player_seasonal_scoring_metrics(record: dict, year: int, team_id: int
                 with connection.cursor() as cur:
                     cur.execute(sql, params)
                     connection.commit()
-                    logging.info(f"Successfully inserted player_seasonal_scoring_metrics record for player {player_name} season {year}")
+                    logging.info(
+                        f"Successfully inserted player_seasonal_scoring_metrics record for player {player_name} season {year}"
+                    )
             except Exception as e:
                 logging.error(f"Database connection error: {e}")
                 raise e
@@ -984,7 +991,7 @@ def insert_player_seasonal_scoring_metrics(record: dict, year: int, team_id: int
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting player_seasonal_scoring_metrics records into db: {record}",
-            exc_info=True
+            exc_info=True,
         )
         raise e
 
@@ -1014,31 +1021,34 @@ def insert_player_advanced_passing_metrics(records: list, player_id: int, season
 
         params = [
             (
-                player_id, int(record['week']), season,
-                float(record.get('age', -1.0)),
-                int(record.get('first_downs', -1)),
-                float(record.get('first_down_passing_per_pass_play', -1)),
-                float(record.get('intended_air_yards', -1)),
-                float(record.get('intended_air_yards_per_pass_attempt', -1)),
-                float(record.get('completed_air_yards', -1)),
-                float(record.get('completed_air_yards_per_cmp', -1)),
-                float(record.get('completed_air_yards_per_att', -1)),
-                float(record.get('yds_after_catch', -1)),
-                float(record.get('yds_after_catch_per_cmp', -1)),
-                int(record.get('drops', -1)),
-                float(record.get('drop_pct', -1)),
-                int(record.get('poor_throws', -1)),
-                float(record.get('poor_throws_pct', -1)),
-                int(record.get('sacked', -1)),
-                int(record.get('blitzed', -1)),
-                int(record.get('hurried', -1)),
-                int(record.get('hits', -1)),
-                int(record.get('pressured', -1)),
-                float(record.get('pressured_pct', -1)),
-                int(record.get('scrmbl', -1)),
-                float(record.get('yds_per_scrmbl', -1))
+                player_id,
+                int(record["week"]),
+                season,
+                float(record.get("age", -1.0)),
+                int(record.get("first_downs", -1)),
+                float(record.get("first_down_passing_per_pass_play", -1)),
+                float(record.get("intended_air_yards", -1)),
+                float(record.get("intended_air_yards_per_pass_attempt", -1)),
+                float(record.get("completed_air_yards", -1)),
+                float(record.get("completed_air_yards_per_cmp", -1)),
+                float(record.get("completed_air_yards_per_att", -1)),
+                float(record.get("yds_after_catch", -1)),
+                float(record.get("yds_after_catch_per_cmp", -1)),
+                int(record.get("drops", -1)),
+                float(record.get("drop_pct", -1)),
+                int(record.get("poor_throws", -1)),
+                float(record.get("poor_throws_pct", -1)),
+                int(record.get("sacked", -1)),
+                int(record.get("blitzed", -1)),
+                int(record.get("hurried", -1)),
+                int(record.get("hits", -1)),
+                int(record.get("pressured", -1)),
+                float(record.get("pressured_pct", -1)),
+                int(record.get("scrmbl", -1)),
+                float(record.get("yds_per_scrmbl", -1)),
             )
-        for record in records]
+            for record in records
+        ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
@@ -1054,7 +1064,9 @@ def insert_player_advanced_passing_metrics(records: list, player_id: int, season
         raise e
 
 
-def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: int, season: int):
+def insert_player_advanced_rushing_receiving_metrics(
+    records: list, player_id: int, season: int
+):
     """Insert player advanced rushing and receiving metrics into our database
 
     Args:
@@ -1062,7 +1074,7 @@ def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: i
         player_id (int): ID of the player
         season (int): season year
     """
-    
+
     sql = """
     INSERT INTO player_advanced_rushing_receiving (
         player_id, week, season, age, rush_first_downs, rush_yds_before_contact,
@@ -1078,30 +1090,33 @@ def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: i
         connection = get_connection()
 
         params = [
-        (
-            player_id, int(record.get('week', -1)), season,
-            float(record.get('age', -1)),
-            int(record.get('rush_first_downs', -1)),
-            float(record.get('rush_yds_before_contact', -1)),
-            float(record.get('rush_yds_before_contact_per_att', -1)),
-            float(record.get('rush_yds_after_contact', -1)),
-            float(record.get('rush_yds_after_contact_per_att', -1)),
-            int(record.get('rush_brkn_tackles', -1)),
-            float(record.get('rush_att_per_brkn_tackle', -1)),
-            int(record.get('rec_first_downs', -1)),
-            float(record.get('yds_before_catch', -1)),
-            float(record.get('yds_before_catch_per_rec', -1)),
-            float(record.get('yds_after_catch', -1)),
-            float(record.get('yds_after_catch_per_rec', -1)),
-            float(record.get('avg_depth_of_tgt', -1)),
-            int(record.get('rec_brkn_tackles', -1)),
-            float(record.get('rec_per_brkn_tackle', -1)),
-            int(record.get('dropped_passes', -1)),
-            float(record.get('drop_pct', -1)),
-            int(record.get('int_when_tgted', -1)),
-            float(record.get('qbr_when_tgted', -1))
-        )
-        for record in records ]
+            (
+                player_id,
+                int(record.get("week", -1)),
+                season,
+                float(record.get("age", -1)),
+                int(record.get("rush_first_downs", -1)),
+                float(record.get("rush_yds_before_contact", -1)),
+                float(record.get("rush_yds_before_contact_per_att", -1)),
+                float(record.get("rush_yds_after_contact", -1)),
+                float(record.get("rush_yds_after_contact_per_att", -1)),
+                int(record.get("rush_brkn_tackles", -1)),
+                float(record.get("rush_att_per_brkn_tackle", -1)),
+                int(record.get("rec_first_downs", -1)),
+                float(record.get("yds_before_catch", -1)),
+                float(record.get("yds_before_catch_per_rec", -1)),
+                float(record.get("yds_after_catch", -1)),
+                float(record.get("yds_after_catch_per_rec", -1)),
+                float(record.get("avg_depth_of_tgt", -1)),
+                int(record.get("rec_brkn_tackles", -1)),
+                float(record.get("rec_per_brkn_tackle", -1)),
+                int(record.get("dropped_passes", -1)),
+                float(record.get("drop_pct", -1)),
+                int(record.get("int_when_tgted", -1)),
+                float(record.get("qbr_when_tgted", -1)),
+            )
+            for record in records
+        ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
@@ -1118,12 +1133,11 @@ def insert_player_advanced_rushing_receiving_metrics(records: list, player_id: i
 
 
 def insert_player_injuries(records: list):
-
     """
-    Insert new records into our player_injuries db table 
+    Insert new records into our player_injuries db table
 
     Args:
-        records (list): list of records to insert 
+        records (list): list of records to insert
     """
 
     sql = """
@@ -1137,22 +1151,23 @@ def insert_player_injuries(records: list):
         connection = get_connection()
 
         params = [
-        (
-            int(record.get("player_id")), int(record.get('week')), int(record.get('season')),
-            record.get('injury_loc'),
-            record.get('wed_prac_sts'),
-            record.get('thurs_prac_sts'),
-            record.get('fri_prac_sts'),
-            record.get('off_sts'),
-        )
-        for record in records ]
+            (
+                int(record.get("player_id")),
+                int(record.get("week")),
+                int(record.get("season")),
+                record.get("injury_loc"),
+                record.get("wed_prac_sts"),
+                record.get("thurs_prac_sts"),
+                record.get("fri_prac_sts"),
+                record.get("off_sts"),
+            )
+            for record in records
+        ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
-            logging.info(
-                f"Successfully inserted player_injuries records"
-            )
+            logging.info(f"Successfully inserted player_injuries records")
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting the following player_injuries records into our db: {records}",
@@ -1162,12 +1177,11 @@ def insert_player_injuries(records: list):
 
 
 def update_player_injuries(records: list):
-
     """
-    Update existing records in our player_injuries db table 
+    Update existing records in our player_injuries db table
 
     Args:
-        records (list): list of records to insert 
+        records (list): list of records to insert
     """
 
     sql = """
@@ -1186,39 +1200,38 @@ def update_player_injuries(records: list):
         connection = get_connection()
 
         params = [
-        (
-            record.get('injury_loc'),
-            record.get('wed_prac_sts'),
-            record.get('thurs_prac_sts'),
-            record.get('fri_prac_sts'),
-            record.get('off_sts'),
-            int(record.get("player_id")), int(record.get('week')), int(record.get('season'))
-        )
-        for record in records ]
+            (
+                record.get("injury_loc"),
+                record.get("wed_prac_sts"),
+                record.get("thurs_prac_sts"),
+                record.get("fri_prac_sts"),
+                record.get("off_sts"),
+                int(record.get("player_id")),
+                int(record.get("week")),
+                int(record.get("season")),
+            )
+            for record in records
+        ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
-            logging.info(
-                f"Successfully updated player_injuries records"
-            )
+            logging.info(f"Successfully updated player_injuries records")
     except Exception as e:
         logging.error(
             f"An exception occurred while updating the following player_injuries records into our db: {records}",
             exc_info=True,
         )
         raise e
-    
-
 
 
 def insert_player_dob(player_id: int, dob: str):
     """
-    Insert players date of birth 
+    Insert players date of birth
 
     Args:
-        player_id (int): the player id corresponding to player being inserted 
-        dob (str): the players date of birth 
+        player_id (int): the player id corresponding to player being inserted
+        dob (str): the players date of birth
     """
 
     sql = """
@@ -1233,17 +1246,21 @@ def insert_player_dob(player_id: int, dob: str):
         with connection.cursor() as cur:
             cur.execute(sql, (dob, player_id))
             connection.commit()
-            logging.info(f"Successfully updated player with ID {player_id} with the following date of birth: {dob}")
+            logging.info(
+                f"Successfully updated player with ID {player_id} with the following date of birth: {dob}"
+            )
 
     except Exception as e:
         logging.error(
             f"An exception occurred while updating 'player' record with ID {player_id} with the following DOB {dob}",
-            exc_info=True
+            exc_info=True,
         )
-        raise e  
+        raise e
 
 
-def insert_player_demographics(player_id: int, season: int, age: int, height: float, weight: float):
+def insert_player_demographics(
+    player_id: int, season: int, age: int, height: float, weight: float
+):
     """
     Insert a new record into the player_demographics table.
 
@@ -1266,11 +1283,13 @@ def insert_player_demographics(player_id: int, season: int, age: int, height: fl
         with connection.cursor() as cur:
             cur.execute(sql, (player_id, season, age, height, weight))
             connection.commit()
-            logging.info(f"Successfully inserted player_demographics record for player_id={player_id}, season={season}")
+            logging.info(
+                f"Successfully inserted player_demographics record for player_id={player_id}, season={season}"
+            )
 
     except Exception as e:
         logging.error(
             f"An error occurred while inserting into player_demographics for player_id={player_id}, season={season}",
-            exc_info=True
+            exc_info=True,
         )
         raise e

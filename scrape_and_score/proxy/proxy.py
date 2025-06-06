@@ -6,17 +6,16 @@ from datetime import datetime, timedelta
 from random import choice
 
 
-
 def fetch_proxies(url, max=10):
     """
-    Functionality to fetch relevant proxies 
+    Functionality to fetch relevant proxies
 
-    Args: 
+    Args:
         url (str): URL to fetch proxies from
         max (int): max number of proxies to parse
-    
-    Returns: 
-        proxies (json) - json object containing relevant proxies    
+
+    Returns:
+        proxies (json) - json object containing relevant proxies
     """
 
     logging.info(f"Fetching proxies from the URL '{url}'")
@@ -45,15 +44,13 @@ def fetch_proxies(url, max=10):
     return proxies
 
 
-
-
 def cache_proxies(proxies, file_path="./resources/proxies.json"):
     """
-    Functionality to cache the fetched proxies via a 
-    'proxies.json' file  
+    Functionality to cache the fetched proxies via a
+    'proxies.json' file
 
-    Args: 
-        proxies (list(dict)) 
+    Args:
+        proxies (list(dict))
     """
 
     # configure cache data
@@ -66,14 +63,12 @@ def cache_proxies(proxies, file_path="./resources/proxies.json"):
         json.dump(cache_data, f, indent=4)
 
 
-
-
 def is_cache_expired():
     """
-    Helper function to determine if proxies in cache have expired 
+    Helper function to determine if proxies in cache have expired
 
     Returns:
-        is_expired (bool) - truthy value indicating if cache is expired   
+        is_expired (bool) - truthy value indicating if cache is expired
     """
 
     try:
@@ -86,16 +81,15 @@ def is_cache_expired():
         logging.error(f"An error occured while checking the caches expiration: {e}")
 
 
-
 def validate_proxy(proxy):
     """
-    Functionality to determine whether or not our proxy is valid 
+    Functionality to determine whether or not our proxy is valid
 
     Args:
-        proxy (str) - proxy to validate 
-    
+        proxy (str) - proxy to validate
+
     Returns:
-        valid (bool) - validity of proxy   
+        valid (bool) - validity of proxy
     """
 
     try:
@@ -113,10 +107,10 @@ def validate_proxy(proxy):
 
 def get_random_proxy():
     """
-    Utility function to fetch a proxy from our cache at random 
+    Utility function to fetch a proxy from our cache at random
 
     Returns:
-        proxy(dict) - random proxy in format {<protocol>:<proxy}   
+        proxy(dict) - random proxy in format {<protocol>:<proxy}
     """
 
     with open("./resources/proxies.json", "r") as f:
@@ -125,17 +119,15 @@ def get_random_proxy():
     return choice(cache_data["proxies"])
 
 
-
-
 def get_proxy(
     url="https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&protocol=http&proxy_format=ipport&format=json",
-    ):
+):
     """
-    Main function that will initate the logic regarding fetching and setting up of proxies 
+    Main function that will initate the logic regarding fetching and setting up of proxies
 
     Args:
-        url (str) - URL pertaining to where we should be fetching proxies from 
-    
+        url (str) - URL pertaining to where we should be fetching proxies from
+
     Returns:
         proxy (dict) - random proxy in format {<protocol>: <proxy>}
     """

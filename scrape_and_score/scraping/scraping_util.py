@@ -7,18 +7,17 @@ from config import get_config
 session = requests.Session()
 
 
-
 def fetch_page(url: str):
     """
-    Functionality to fetch the raw HTML corresponding to a particular URL 
+    Functionality to fetch the raw HTML corresponding to a particular URL
 
     Args:
         url(str): the URL we want to extract the raw HTML from
 
     Returns:
-        str: raw HTML corresponding to specified URL   
+        str: raw HTML corresponding to specified URL
     """
-    
+
     try:
         logging.info(f"Fetching raw HTML from the following URL: {url}")
 

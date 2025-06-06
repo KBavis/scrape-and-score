@@ -4,12 +4,13 @@ import logging
 
 _config = None
 
+
 def load_configs(file_path="./resources/application.yaml"):
     """
-    Functionality to load our configurations 
+    Functionality to load our configurations
 
-    Args: 
-        file_path(str): path containing configurations 
+    Args:
+        file_path(str): path containing configurations
 
     Returns:
         loaded configurations
@@ -23,14 +24,12 @@ def load_configs(file_path="./resources/application.yaml"):
     return _config
 
 
-
-
 def get_config(key, default=None):
     """
-    Functionality to retrieve a specific configuration value using a dot-seperated key 
+    Functionality to retrieve a specific configuration value using a dot-seperated key
 
     Args:
-        key (str): key to fetch config for 
+        key (str): key to fetch config for
     """
 
     keys = key.split(".")

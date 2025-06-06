@@ -9,8 +9,6 @@ import logging
 from workflows import workflows
 
 
-
-
 def main():
     """
     Main entry point of application that will invoke the necessary workflows based on the command line arguments passed
@@ -25,53 +23,61 @@ def main():
         connection.init()
         start_time = datetime.now()
 
-
-
         # account for teams potentially not being persisted yet
-        teams = fetch_all_teams() 
+        teams = fetch_all_teams()
         if not teams:
-            teams = [
-                team["name"] for team in get_config("nfl.teams")
-            ]             
+            teams = [team["name"] for team in get_config("nfl.teams")]
             insert_teams(teams)
 
-
         # data collection workflows
-        if cl_args.upcoming: 
+        if cl_args.upcoming:
             week, season = cl_args.upcoming
-            logging.info(f"---------------'Upcoming' Wofklow Invoked: Scraping & persisting upcoming player & team data for [Week: {week}, Season: {season}]---------------")
+            logging.info(
+                f"---------------'Upcoming' Wofklow Invoked: Scraping & persisting upcoming player & team data for [Week: {week}, Season: {season}]---------------"
+            )
             workflows.upcoming(week, season)
         elif cl_args.historical:
             start_year, end_year = cl_args.historical
-            logging.info(f"---------------'Historical' Wofklow Invoked: Scraping & persisting player & team data for [Start Year: {start_year}, End Year: {end_year}]---------------")
+            logging.info(
+                f"---------------'Historical' Wofklow Invoked: Scraping & persisting player & team data for [Start Year: {start_year}, End Year: {end_year}]---------------"
+            )
             workflows.historical(start_year, end_year)
-        elif cl_args.results: 
+        elif cl_args.results:
             week, season = cl_args.results
-            logging.info(f"---------------'Results' Wofklow Invoked: Updating player & team data based on game outcomes for [Week: {week}, Season: {season}]---------------")
+            logging.info(
+                f"---------------'Results' Wofklow Invoked: Updating player & team data based on game outcomes for [Week: {week}, Season: {season}]---------------"
+            )
             workflows.results(week, season)
 
-
-        
-        # model workflows 
+        # model workflows
         if cl_args.lin_reg:
-            logging.info(f"---------------'Linear Regression' Wofklow Invoked: Generating Linear Regression for predicting players fantasy points---------------")
+            logging.info(
+                f"---------------'Linear Regression' Wofklow Invoked: Generating Linear Regression for predicting players fantasy points---------------"
+            )
             workflows.linear_regression()
         elif cl_args.nn:
-            logging.info(f"---------------'Neural Network' Wofklow Invoked: Generating Neural Network for predicting players fantasy points---------------")
+            logging.info(
+                f"---------------'Neural Network' Wofklow Invoked: Generating Neural Network for predicting players fantasy points---------------"
+            )
             workflows.neural_network(cl_args.train, start_time)
 
-        
-        # prediction workflows 
+        # prediction workflows
         if cl_args.predict:
-            
-            # verify model selected 
+
+            # verify model selected
             if not cl_args.nn and not cl_args.lin_reg:
-                logging.error(f"Please invoke prediction workflow with either the --nn or --lin_reg command line argument to indicate which model you would like to utilize.")
-                raise Exception("Unable to invoke 'Predict' workflow without necessary model selection argument being passed")
+                logging.error(
+                    f"Please invoke prediction workflow with either the --nn or --lin_reg command line argument to indicate which model you would like to utilize."
+                )
+                raise Exception(
+                    "Unable to invoke 'Predict' workflow without necessary model selection argument being passed"
+                )
 
             week, season = cl_args.predict
-            logging.info(f"---------------'Predict' Wofklow Invoked: Generating top 40 fantasy point predictions for each position for [Week: {week}, Season: {season}]---------------")
-            model = 'nn' if cl_args.nn else 'lin_reg'
+            logging.info(
+                f"---------------'Predict' Wofklow Invoked: Generating top 40 fantasy point predictions for each position for [Week: {week}, Season: {season}]---------------"
+            )
+            model = "nn" if cl_args.nn else "lin_reg"
             workflows.predict(week, season, model)
 
     except Exception as e:

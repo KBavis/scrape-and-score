@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-from .nn_preprocess import scale_and_transform 
-
+from .nn_preprocess import scale_and_transform
 
 
 class FantasyDataset(Dataset):
@@ -9,7 +8,7 @@ class FantasyDataset(Dataset):
     def __init__(self, df, transform=None):
         """
         Args:
-            df (pd.DataFrame): data frame containing all relevant indepdent/dependent variables 
+            df (pd.DataFrame): data frame containing all relevant indepdent/dependent variables
             transform (callable, optional): optional transform to be applied
         """
 

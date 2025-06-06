@@ -9,11 +9,11 @@ from service import team_service
 
 def insert_teams(teams: list):
     """
-    Functionality to persist mutliple teams into our db 
+    Functionality to persist mutliple teams into our db
 
-    Args: 
-        teams (list): list of teams to insert into our db 
-    Returns: 
+    Args:
+        teams (list): list of teams to insert into our db
+    Returns:
         teams (list): mapping of team names and ids we inserted
 
     """
@@ -36,13 +36,13 @@ def insert_teams(teams: list):
 
 def insert_team(team_name: str):
     """
-    Functionality to persist a single team into our db 
+    Functionality to persist a single team into our db
 
-    Args: 
-        team_name (str): team to insert into our db 
+    Args:
+        team_name (str): team to insert into our db
 
-    Returns: 
-        team_id (int): id corresponding to a particular team 
+    Returns:
+        team_id (int): id corresponding to a particular team
     """
 
     sql = "INSERT INTO team (name) VALUES (%s) RETURNING team_id"
@@ -51,7 +51,7 @@ def insert_team(team_name: str):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (team_name,))  
+            cur.execute(sql, (team_name,))
 
             rows = cur.fetchone()
             if rows:
@@ -65,15 +65,15 @@ def insert_team(team_name: str):
             f"An exception occured while inserting the following team '{team_name}' into our db: {e}"
         )
         raise e
-    
+
 
 def insert_team_game_logs(game_logs: list):
     """
-    Functionality to persist multiple game logs for a team 
+    Functionality to persist multiple game logs for a team
 
     Args:
-        game_logs (list): list of tuples to insert into team_game_logs 
-    
+        game_logs (list): list of tuples to insert into team_game_logs
+
     Returns:
         None
     """
@@ -118,12 +118,11 @@ def insert_team_game_logs(game_logs: list):
             exc_info=True,
         )
         raise e
-    
 
 
 def update_team_game_log_game_date(game_date: datetime, pk: dict):
     """
-    Update team game log record with up-to-date game date 
+    Update team game log record with up-to-date game date
 
     Args:
         game_date (datetime): new datetime to assign to team game log record
@@ -141,9 +140,11 @@ def update_team_game_log_game_date(game_date: datetime, pk: dict):
         connection = get_connection()
 
         with connection.cursor() as cur:
-            cur.execute(sql, (game_date, pk['team_id'], pk['week'], pk['year']))
+            cur.execute(sql, (game_date, pk["team_id"], pk["week"], pk["year"]))
             connection.commit()
-            logging.info(f"Successfully updated team game log's (PK={pk}) game_date in the database")
+            logging.info(
+                f"Successfully updated team game log's (PK={pk}) game_date in the database"
+            )
 
     except Exception as e:
         logging.error(
@@ -155,12 +156,12 @@ def update_team_game_log_game_date(game_date: datetime, pk: dict):
 
 def insert_upcoming_team_game_logs(records: list):
     """
-    Functionality to insert upcoming team game logs into our database 
+    Functionality to insert upcoming team game logs into our database
 
     Args:
-        records (list): the records to persist 
+        records (list): the records to persist
     """
-    
+
     sql = """
       INSERT INTO team_game_log (team_id, week, year, rest_days, home_team, distance_traveled, opp, game_date, day)
       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
@@ -170,15 +171,26 @@ def insert_upcoming_team_game_logs(records: list):
         connection = get_connection()
 
         params = [
-            (record["team_id"], record["week"], record["year"], record["rest_days"], record['is_home'], record['distance_traveled'], record['opp'], record['game_date'], record['day'])
-            for record in records 
-        ]  
-
+            (
+                record["team_id"],
+                record["week"],
+                record["year"],
+                record["rest_days"],
+                record["is_home"],
+                record["distance_traveled"],
+                record["opp"],
+                record["game_date"],
+                record["day"],
+            )
+            for record in records
+        ]
 
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
-            logging.info(f"Successfully inserted {len(records)} team game logs for upcoming NFL games in the database")
+            logging.info(
+                f"Successfully inserted {len(records)} team game logs for upcoming NFL games in the database"
+            )
 
     except Exception as e:
         logging.error(
@@ -186,7 +198,6 @@ def insert_upcoming_team_game_logs(records: list):
             exc_info=True,
         )
         raise e
-
 
 
 def update_team_game_logs(game_logs: list):
@@ -254,7 +265,9 @@ def update_team_game_logs(game_logs: list):
         with connection.cursor() as cur:
             cur.executemany(sql, game_logs)
             connection.commit()
-            logging.info(f"Successfully updated {len(game_logs)} team game logs in the database")
+            logging.info(
+                f"Successfully updated {len(game_logs)} team game logs in the database"
+            )
 
     except Exception as e:
         logging.error(
@@ -264,13 +277,12 @@ def update_team_game_logs(game_logs: list):
         raise e
 
 
-
 def insert_team_rankings(rankings: list):
     """
-    Insert record into 'team_ranks' with newly determined rankings 
+    Insert record into 'team_ranks' with newly determined rankings
 
     Args:
-        rankings (list): list of rankings to persist 
+        rankings (list): list of rankings to persist
     """
 
     sql = f"""
@@ -282,7 +294,16 @@ def insert_team_rankings(rankings: list):
         connection = get_connection()
 
         params = [
-            (rank["off_rush_rank"], rank["off_pass_rank"], rank["def_pass_rank"], rank["def_rush_rank"], rank['week'], rank['season'], rank["team_id"]) for rank in rankings
+            (
+                rank["off_rush_rank"],
+                rank["off_pass_rank"],
+                rank["def_pass_rank"],
+                rank["def_rush_rank"],
+                rank["week"],
+                rank["season"],
+                rank["team_id"],
+            )
+            for rank in rankings
         ]  # create tuple needed to update records
 
         with connection.cursor() as cur:
@@ -298,14 +319,14 @@ def insert_team_rankings(rankings: list):
             exc_info=True,
         )
         raise e
-    
+
 
 def insert_teams_odds(betting_odds: list, upcoming=False):
     """
-    Functionality to insert historical betting odds into our DB 
+    Functionality to insert historical betting odds into our DB
 
     Args:
-        betting_odds (list): list of historical betting odds 
+        betting_odds (list): list of historical betting odds
     """
 
     if not upcoming:
@@ -370,12 +391,12 @@ def insert_teams_odds(betting_odds: list, upcoming=False):
 
 def update_teams_odds(betting_odds: list):
     """
-    Update team betting odds within our database 
+    Update team betting odds within our database
 
     Args:
-        betting_odds (list): list of betting odds to update in DB 
+        betting_odds (list): list of betting odds to update in DB
     """
-    
+
     sql = """
         UPDATE team_betting_odds 
         SET 
@@ -415,7 +436,6 @@ def update_teams_odds(betting_odds: list):
             exc_info=True,
         )
         raise e
-    
 
 
 def update_team_game_log_with_results(update_records: list):
@@ -425,7 +445,7 @@ def update_team_game_log_with_results(update_records: list):
     Args:
         update_records (list): list of records to update persisted records with
     """
-    
+
     sql = """
         UPDATE team_game_log
         SET 
@@ -528,7 +548,7 @@ def update_team_game_log_with_results(update_records: list):
                 record["time_of_poss"],
                 record["team_id"],
                 record["year"],
-                record["season"]
+                record["season"],
             )
             for record in update_records
         ]
@@ -536,18 +556,22 @@ def update_team_game_log_with_results(update_records: list):
         with connection.cursor() as cur:
             cur.executemany(sql, params)
             connection.commit()
-            logging.info(f"Successfully updated {len(update_records)} team game log records in the database")
+            logging.info(
+                f"Successfully updated {len(update_records)} team game log records in the database"
+            )
     except Exception as e:
-        logging.error("An exception occurred while updating team_game_log", exc_info=True)
+        logging.error(
+            "An exception occurred while updating team_game_log", exc_info=True
+        )
         raise e
 
 
 def update_team_betting_odds_records_with_outcomes(update_records: list):
     """
     Update exisiting team_betting_odds records with the outcomes of each game
-    
+
     Args:
-        update_records (list): list of records to update 
+        update_records (list): list of records to update
     """
 
     sql = f"""
@@ -604,14 +628,13 @@ def update_team_betting_odds_records_with_outcomes(update_records: list):
         raise e
 
 
-
-def insert_bye_week_rankings(team_bye_weeks: list, season: int): 
+def insert_bye_week_rankings(team_bye_weeks: list, season: int):
     """
-    Insertion of bye week rankings for teams 
+    Insertion of bye week rankings for teams
 
     Args:
-        team_bye_weeks (list): records indicating bye weeks for teams 
-        sesaon (int): the relevant season 
+        team_bye_weeks (list): records indicating bye weeks for teams
+        sesaon (int): the relevant season
     """
 
     sql = f"""
@@ -623,16 +646,8 @@ def insert_bye_week_rankings(team_bye_weeks: list, season: int):
         connection = get_connection()
 
         params = [
-            (
-                record["team_id"],
-                record["week"],
-                season,
-                -1, 
-                -1,
-                -1,
-                -1
-            )
-            for record in team_bye_weeks 
+            (record["team_id"], record["week"], season, -1, -1, -1, -1)
+            for record in team_bye_weeks
         ]
 
         with connection.cursor() as cur:
@@ -649,63 +664,75 @@ def insert_bye_week_rankings(team_bye_weeks: list, season: int):
         raise e
 
 
-
-def format_and_insert_team_seasonal_general_metrics(team_stats: dict, team_conversions: dict, team_id: int, year: int):
+def format_and_insert_team_seasonal_general_metrics(
+    team_stats: dict, team_conversions: dict, team_id: int, year: int
+):
     """
     Combine team stats and conversions into a single record and insert into our database
 
     Args:
         team_stats (dict): team stats
-        team_conversions (dict): team conversions   
+        team_conversions (dict): team conversions
         team_id (int): team ID
         year (int): year
     """
 
-
-    # fetch team home and away wins and losses 
+    # fetch team home and away wins and losses
     record = fetch_teams_home_away_wins_and_losses(year, team_id)
-    record['team_id'] = team_id
-    record['season'] = year
+    record["team_id"] = team_id
+    record["season"] = year
 
     # Add team stats to record
-    record['total_games'] = int(record['wins']) + int(record['losses'])
-    record['total_yards'] = team_stats.get('team_total_yards', 0)
-    record['plays_offense'] = team_stats.get('team_plays_offense', 0)
-    record['yds_per_play'] = team_stats.get('team_yds_per_play_offense', 0)
-    record['turnovers'] = team_stats.get('team_turnovers', 0)
-    record['first_downs'] = team_stats.get('team_first_down', 0)
-    record['penalties'] = team_stats.get('team_penalties', 0)
-    record['penalties_yards'] = team_stats.get('team_penalties_yds', 0)
-    record['penalty_first_downs'] = team_stats.get('team_pen_fd', 0)
-    record['drives'] = team_stats.get('team_drives', 0)
-    record['score_pct'] = team_stats.get('team_score_pct', 0)
-    record['turnover_pct'] = team_stats.get('team_turnover_pct', 0)
-    record['fumble_lost'] = team_stats.get('team_fumbles_lost', 0)
+    record["total_games"] = int(record["wins"]) + int(record["losses"])
+    record["total_yards"] = team_stats.get("team_total_yards", 0)
+    record["plays_offense"] = team_stats.get("team_plays_offense", 0)
+    record["yds_per_play"] = team_stats.get("team_yds_per_play_offense", 0)
+    record["turnovers"] = team_stats.get("team_turnovers", 0)
+    record["first_downs"] = team_stats.get("team_first_down", 0)
+    record["penalties"] = team_stats.get("team_penalties", 0)
+    record["penalties_yards"] = team_stats.get("team_penalties_yds", 0)
+    record["penalty_first_downs"] = team_stats.get("team_pen_fd", 0)
+    record["drives"] = team_stats.get("team_drives", 0)
+    record["score_pct"] = team_stats.get("team_score_pct", 0)
+    record["turnover_pct"] = team_stats.get("team_turnover_pct", 0)
+    record["fumble_lost"] = team_stats.get("team_fumbles_lost", 0)
 
     # Convert starting field position from "Own X.X" to numeric
-    start_avg = team_stats.get('team_start_avg', '')
-    if start_avg and 'Own ' in start_avg:
-        record['start_avg'] = float(start_avg.replace('Own ', ''))
+    start_avg = team_stats.get("team_start_avg", "")
+    if start_avg and "Own " in start_avg:
+        record["start_avg"] = float(start_avg.replace("Own ", ""))
     else:
-        record['start_avg'] = 0
+        record["start_avg"] = 0
 
-
-
-    record['time_avg'] = convert_time_to_seconds(team_stats.get('team_time_avg', '0:00'))
-    record['plays_per_drive'] = team_stats.get('team_plays_per_drive', 0)
-    record['yards_per_drive'] = team_stats.get('team_yds_per_drive', 0)
-    record['points_per_drive'] = team_stats.get('team_points_avg', 0)
+    record["time_avg"] = convert_time_to_seconds(
+        team_stats.get("team_time_avg", "0:00")
+    )
+    record["plays_per_drive"] = team_stats.get("team_plays_per_drive", 0)
+    record["yards_per_drive"] = team_stats.get("team_yds_per_drive", 0)
+    record["points_per_drive"] = team_stats.get("team_points_avg", 0)
 
     # Add team conversion stats to record
-    record['third_down_attempts'] = int(team_conversions.get('team_third_down_att', 0))
-    record['third_down_conversions'] = int(team_conversions.get('team_third_down_success', 0))
-    record['third_down_pct'] = float(team_conversions.get('team_third_down_pct', '0').rstrip('%'))
-    record['fourth_down_attempts'] = int(team_conversions.get('team_fourth_down_att', 0))
-    record['fourth_down_conversions'] = int(team_conversions.get('team_fourth_down_success', 0))
-    record['fourth_down_pct'] = float(team_conversions.get('team_fourth_down_pct', '0').rstrip('%'))
-    record['red_zone_attempts'] = int(team_conversions.get('team_red_zone_att', 0))
-    record['red_zone_scores'] = int(team_conversions.get('team_red_zone_scores', 0))
-    record['red_zone_pct'] = float(team_conversions.get('team_red_zone_pct', '0').rstrip('%'))
+    record["third_down_attempts"] = int(team_conversions.get("team_third_down_att", 0))
+    record["third_down_conversions"] = int(
+        team_conversions.get("team_third_down_success", 0)
+    )
+    record["third_down_pct"] = float(
+        team_conversions.get("team_third_down_pct", "0").rstrip("%")
+    )
+    record["fourth_down_attempts"] = int(
+        team_conversions.get("team_fourth_down_att", 0)
+    )
+    record["fourth_down_conversions"] = int(
+        team_conversions.get("team_fourth_down_success", 0)
+    )
+    record["fourth_down_pct"] = float(
+        team_conversions.get("team_fourth_down_pct", "0").rstrip("%")
+    )
+    record["red_zone_attempts"] = int(team_conversions.get("team_red_zone_att", 0))
+    record["red_zone_scores"] = int(team_conversions.get("team_red_zone_scores", 0))
+    record["red_zone_pct"] = float(
+        team_conversions.get("team_red_zone_pct", "0").rstrip("%")
+    )
 
     # insert record into database
     insert_team_seasonal_general_metrics(record)
@@ -717,7 +744,6 @@ def insert_team_seasonal_general_metrics(record: dict):
     Args:
         record (dict): record containing relevant season team metrics
     """
-
 
     sql = """
     INSERT INTO team_seasonal_general_metrics (
@@ -736,19 +762,42 @@ def insert_team_seasonal_general_metrics(record: dict):
         connection = get_connection()
 
         params = (
-            record['team_id'], record['season'], record['fumble_lost'], 
-            record['home_wins'], record['home_losses'], record['away_wins'], 
-            record['away_losses'], record['wins'], record['losses'], record['win_pct'],
-            record['total_games'], record['total_yards'], record['plays_offense'],
-            record['yds_per_play'], record['turnovers'], record['first_downs'],
-            record['penalties'], record['penalties_yards'], record['penalty_first_downs'],
-            record['drives'], record['score_pct'], record['turnover_pct'],
-            record['start_avg'], record['time_avg'], record['plays_per_drive'],
-            record['yards_per_drive'], record['points_per_drive'],
-            record['third_down_attempts'], record['third_down_conversions'],
-            record['third_down_pct'], record['fourth_down_attempts'],
-            record['fourth_down_conversions'], record['fourth_down_pct'],
-            record['red_zone_attempts'], record['red_zone_scores'], record['red_zone_pct']
+            record["team_id"],
+            record["season"],
+            record["fumble_lost"],
+            record["home_wins"],
+            record["home_losses"],
+            record["away_wins"],
+            record["away_losses"],
+            record["wins"],
+            record["losses"],
+            record["win_pct"],
+            record["total_games"],
+            record["total_yards"],
+            record["plays_offense"],
+            record["yds_per_play"],
+            record["turnovers"],
+            record["first_downs"],
+            record["penalties"],
+            record["penalties_yards"],
+            record["penalty_first_downs"],
+            record["drives"],
+            record["score_pct"],
+            record["turnover_pct"],
+            record["start_avg"],
+            record["time_avg"],
+            record["plays_per_drive"],
+            record["yards_per_drive"],
+            record["points_per_drive"],
+            record["third_down_attempts"],
+            record["third_down_conversions"],
+            record["third_down_pct"],
+            record["fourth_down_attempts"],
+            record["fourth_down_conversions"],
+            record["fourth_down_pct"],
+            record["red_zone_attempts"],
+            record["red_zone_scores"],
+            record["red_zone_pct"],
         )
 
         with connection.cursor() as cur:
@@ -789,18 +838,32 @@ def insert_team_seasonal_passing_metrics(record: dict, team_id: int, season: int
         connection = get_connection()
 
         params = (
-            team_id, season, record['team_total_pass_att'], 
-            record['team_total_pass_cmp'], int(record['team_total_pass_att']) - int(record['team_total_pass_cmp']), record['team_total_pass_yds'],
-            record['team_total_pass_td'], record['team_total_pass_int'], record['team_total_pass_net_yds_per_att'],
-            record['team_total_pass_first_down'], float(record['team_total_pass_cmp_pct'].rstrip('%')),
-            float(record['team_total_pass_td_pct'].rstrip('%')), float(record['team_total_pass_int_pct'].rstrip('%')),
-            record['team_total_pass_success'], record['team_total_pass_long'],
-            record['team_total_pass_yds_per_att'], record['team_total_pass_adj_yds_per_att'],
-            record['team_total_pass_yds_per_cmp'], record['team_total_pass_yds_per_g'],
-            record['team_total_pass_rating'], record['team_total_pass_sacked'],
-            record['team_total_pass_sacked_yds'], float(record['team_total_pass_sacked_pct'].rstrip('%')),
-            record['team_total_pass_adj_net_yds_per_att'], record['team_total_comebacks'],
-            record['team_total_gwd']
+            team_id,
+            season,
+            record["team_total_pass_att"],
+            record["team_total_pass_cmp"],
+            int(record["team_total_pass_att"]) - int(record["team_total_pass_cmp"]),
+            record["team_total_pass_yds"],
+            record["team_total_pass_td"],
+            record["team_total_pass_int"],
+            record["team_total_pass_net_yds_per_att"],
+            record["team_total_pass_first_down"],
+            float(record["team_total_pass_cmp_pct"].rstrip("%")),
+            float(record["team_total_pass_td_pct"].rstrip("%")),
+            float(record["team_total_pass_int_pct"].rstrip("%")),
+            record["team_total_pass_success"],
+            record["team_total_pass_long"],
+            record["team_total_pass_yds_per_att"],
+            record["team_total_pass_adj_yds_per_att"],
+            record["team_total_pass_yds_per_cmp"],
+            record["team_total_pass_yds_per_g"],
+            record["team_total_pass_rating"],
+            record["team_total_pass_sacked"],
+            record["team_total_pass_sacked_yds"],
+            float(record["team_total_pass_sacked_pct"].rstrip("%")),
+            record["team_total_pass_adj_net_yds_per_att"],
+            record["team_total_comebacks"],
+            record["team_total_gwd"],
         )
 
         with connection.cursor() as cur:
@@ -817,7 +880,9 @@ def insert_team_seasonal_passing_metrics(record: dict, team_id: int, season: int
         raise e
 
 
-def insert_team_seasonal_rushing_and_receiving_metrics(record: dict, team_id: int, season: int):
+def insert_team_seasonal_rushing_and_receiving_metrics(
+    record: dict, team_id: int, season: int
+):
     """Insert team seasonal rushing and receiving metrics into our database
 
     Args:
@@ -842,20 +907,37 @@ def insert_team_seasonal_rushing_and_receiving_metrics(record: dict, team_id: in
         connection = get_connection()
 
         params = (
-            team_id, season,
-            int(record['team_total_rush_att']), float(float(record['team_total_rush_yds'])/int(record['team_total_rush_att'])),
-            int(record['team_total_rush_first_down']), float(record['team_total_rush_success']),
-            int(record['team_total_rush_long']), float(record['team_total_rush_yds_per_g']),
-            float(record['team_total_rush_att_per_g']), int(record['team_total_rush_yds']),
-            int(record['team_total_rush_td']), int(record['team_total_targets']),
-            int(record['team_total_rec']), int(record['team_total_rec_yds']),
-            float(record['team_total_rec_yds_per_rec']), int(record['team_total_rec_td']),
-            int(record['team_total_rec_first_down']), float(record['team_total_rec_success']),
-            int(record['team_total_rec_long']), float(record['team_total_rec_per_g']),
-            float(record['team_total_rec_yds_per_g']), float(record['team_total_catch_pct']),
-            float(record['team_total_rec_yds_per_tgt']), int(record['team_total_touches']),
-            float(record['team_total_yds_per_touch']), float(record['team_total_yds_from_scrimmage']),
-            int(record['team_total_rush_receive_td']), int(record['team_total_fumbles'])
+            team_id,
+            season,
+            int(record["team_total_rush_att"]),
+            float(
+                float(record["team_total_rush_yds"])
+                / int(record["team_total_rush_att"])
+            ),
+            int(record["team_total_rush_first_down"]),
+            float(record["team_total_rush_success"]),
+            int(record["team_total_rush_long"]),
+            float(record["team_total_rush_yds_per_g"]),
+            float(record["team_total_rush_att_per_g"]),
+            int(record["team_total_rush_yds"]),
+            int(record["team_total_rush_td"]),
+            int(record["team_total_targets"]),
+            int(record["team_total_rec"]),
+            int(record["team_total_rec_yds"]),
+            float(record["team_total_rec_yds_per_rec"]),
+            int(record["team_total_rec_td"]),
+            int(record["team_total_rec_first_down"]),
+            float(record["team_total_rec_success"]),
+            int(record["team_total_rec_long"]),
+            float(record["team_total_rec_per_g"]),
+            float(record["team_total_rec_yds_per_g"]),
+            float(record["team_total_catch_pct"]),
+            float(record["team_total_rec_yds_per_tgt"]),
+            int(record["team_total_touches"]),
+            float(record["team_total_yds_per_touch"]),
+            float(record["team_total_yds_from_scrimmage"]),
+            int(record["team_total_rush_receive_td"]),
+            int(record["team_total_fumbles"]),
         )
 
         with connection.cursor() as cur:
@@ -871,8 +953,10 @@ def insert_team_seasonal_rushing_and_receiving_metrics(record: dict, team_id: in
         )
         raise e
 
-    
-def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicking_record: dict, team_id: int, season: int):
+
+def insert_team_seasonal_kicking_and_punting_metrics(
+    punting_record: dict, kicking_record: dict, team_id: int, season: int
+):
     """Insert team seasonal kicking and punting metrics into our database
 
     Args:
@@ -893,19 +977,20 @@ def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicki
     """
 
     punting_params = (
-        team_id, season,
-        int(punting_record['team_total_punt']),
-        int(punting_record['team_total_punt_yds']),
-        float(punting_record['team_total_punt_yds_per_punt']),
-        int(punting_record['team_total_punt_ret_yds_opp']),
-        int(punting_record['team_total_punt_net_yds']),
-        float(punting_record['team_total_punt_net_yds_per_punt']),
-        int(punting_record.get('team_total_punt_long', 0)),
-        int(punting_record['team_total_punt_tb']),
-        float(punting_record['team_total_punt_tb_pct']),
-        int(punting_record['team_total_punt_in_20']),
-        float(punting_record['team_total_punt_in_20_pct']),
-        int(punting_record['team_total_punt_blocked'])
+        team_id,
+        season,
+        int(punting_record["team_total_punt"]),
+        int(punting_record["team_total_punt_yds"]),
+        float(punting_record["team_total_punt_yds_per_punt"]),
+        int(punting_record["team_total_punt_ret_yds_opp"]),
+        int(punting_record["team_total_punt_net_yds"]),
+        float(punting_record["team_total_punt_net_yds_per_punt"]),
+        int(punting_record.get("team_total_punt_long", 0)),
+        int(punting_record["team_total_punt_tb"]),
+        float(punting_record["team_total_punt_tb_pct"]),
+        int(punting_record["team_total_punt_in_20"]),
+        float(punting_record["team_total_punt_in_20_pct"]),
+        int(punting_record["team_total_punt_blocked"]),
     )
 
     kicking_sql = """
@@ -922,39 +1007,44 @@ def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicki
     """
 
     kicking_params = (
-        team_id, season,
-        int(kicking_record['team_total_fga1']),
-        int(kicking_record['team_total_fgm1']),
-        int(kicking_record['team_total_fga2']),
-        int(kicking_record['team_total_fgm2']), 
-        int(kicking_record['team_total_fga3']),
-        int(kicking_record['team_total_fgm3']),
-        int(kicking_record['team_total_fga4']),
-        int(kicking_record['team_total_fgm4']),
-        int(kicking_record['team_total_fga5']),
-        int(kicking_record.get('team_total_fgm5', 0)),
-        int(kicking_record['team_total_fga']),
-        int(kicking_record['team_total_fgm']),
-        int(kicking_record['team_total_fg_long']),
-        float(kicking_record['team_total_fg_pct']),
-        int(kicking_record['team_total_xpa']),
-        int(kicking_record['team_total_xpm']),
-        float(kicking_record['team_total_xp_pct']),
-        int(kicking_record['team_total_kickoff']),
-        int(kicking_record['team_total_kickoff_yds']),
-        int(kicking_record.get('team_total_kickoff_tb', 0)),
-        float(kicking_record['team_total_kickoff_tb_pct']),
-        float(kicking_record['team_total_kickoff_yds_avg'])
+        team_id,
+        season,
+        int(kicking_record["team_total_fga1"]),
+        int(kicking_record["team_total_fgm1"]),
+        int(kicking_record["team_total_fga2"]),
+        int(kicking_record["team_total_fgm2"]),
+        int(kicking_record["team_total_fga3"]),
+        int(kicking_record["team_total_fgm3"]),
+        int(kicking_record["team_total_fga4"]),
+        int(kicking_record["team_total_fgm4"]),
+        int(kicking_record["team_total_fga5"]),
+        int(kicking_record.get("team_total_fgm5", 0)),
+        int(kicking_record["team_total_fga"]),
+        int(kicking_record["team_total_fgm"]),
+        int(kicking_record["team_total_fg_long"]),
+        float(kicking_record["team_total_fg_pct"]),
+        int(kicking_record["team_total_xpa"]),
+        int(kicking_record["team_total_xpm"]),
+        float(kicking_record["team_total_xp_pct"]),
+        int(kicking_record["team_total_kickoff"]),
+        int(kicking_record["team_total_kickoff_yds"]),
+        int(kicking_record.get("team_total_kickoff_tb", 0)),
+        float(kicking_record["team_total_kickoff_tb_pct"]),
+        float(kicking_record["team_total_kickoff_yds_avg"]),
     )
 
     try:
         connection = get_connection()
         with connection.cursor() as cur:
             cur.execute(punting_sql, punting_params)
-            logging.info(f"Successfully inserted team_seasonal_punting_metrics record for team {team_id} season {season}")
+            logging.info(
+                f"Successfully inserted team_seasonal_punting_metrics record for team {team_id} season {season}"
+            )
 
             cur.execute(kicking_sql, kicking_params)
-            logging.info(f"Successfully inserted team_seasonal_kicking_metrics record for team {team_id} season {season}")
+            logging.info(
+                f"Successfully inserted team_seasonal_kicking_metrics record for team {team_id} season {season}"
+            )
 
             connection.commit()
 
@@ -966,7 +1056,13 @@ def insert_team_seasonal_kicking_and_punting_metrics(punting_record: dict, kicki
         raise e
 
 
-def insert_team_seasonal_defense_and_fumbles_metrics(team_stats: dict, team_defensive_stats: dict, team_conversions: dict, team_id: int, season: int):
+def insert_team_seasonal_defense_and_fumbles_metrics(
+    team_stats: dict,
+    team_defensive_stats: dict,
+    team_conversions: dict,
+    team_id: int,
+    season: int,
+):
     """Insert team seasonal defense and fumbles metrics into our database
 
     Args:
@@ -979,71 +1075,87 @@ def insert_team_seasonal_defense_and_fumbles_metrics(team_stats: dict, team_defe
 
     # Create record dictionary
     record = {
-        'team_id': team_id,
-        'season': season,
-        'points': team_stats.get('opp_points', 0),
-        'total_yards': team_stats.get('opp_total_yards', 0),
-        'plays_offense': team_stats.get('opp_plays_offense', 0),
-        'yds_per_play_offense': team_stats.get('opp_yds_per_play_offense', 0),
-        'turnovers': team_stats.get('opp_turnovers', 0),
-        'fumbles_lost': team_stats.get('opp_fumbles_lost', 0),
-        'first_down': team_stats.get('opp_first_down', 0),
-        'pass_cmp': team_stats.get('opp_pass_cmp', 0),
-        'pass_att': team_stats.get('opp_pass_att', 0),
-        'pass_yds': team_stats.get('opp_pass_yds', 0),
-        'pass_td': team_stats.get('opp_pass_td', 0),
-        'pass_int': team_stats.get('opp_pass_int', 0),
-        'pass_net_yds_per_att': team_stats.get('opp_pass_net_yds_per_att', 0),
-        'pass_fd': team_stats.get('opp_pass_fd', 0),
-        'rush_att': team_stats.get('opp_rush_att', 0),
-        'rush_yds': team_stats.get('opp_rush_yds', 0),
-        'rush_td': team_stats.get('opp_rush_td', 0),
-        'rush_yds_per_att': team_stats.get('opp_rush_yds_per_att', 0),
-        'rush_fd': team_stats.get('opp_rush_fd', 0),
-        'penalties': team_stats.get('opp_penalties', 0),
-        'penalties_yds': team_stats.get('opp_penalties_yds', 0),
-        'pen_fd': team_stats.get('opp_pen_fd', 0),
-        'drives': team_stats.get('opp_drives', 0),
-        'score_pct': team_stats.get('opp_score_pct', 0),
-        'turnover_pct': team_stats.get('opp_turnover_pct', 0),
-        'plays_per_drive': team_stats.get('opp_plays_per_drive', 0),
-        'yds_per_drive': team_stats.get('opp_yds_per_drive', 0),
-        'points_avg': team_stats.get('opp_points_avg', 0),
-        'time_avg': team_stats.get('opp_time_avg', '0:00'),
+        "team_id": team_id,
+        "season": season,
+        "points": team_stats.get("opp_points", 0),
+        "total_yards": team_stats.get("opp_total_yards", 0),
+        "plays_offense": team_stats.get("opp_plays_offense", 0),
+        "yds_per_play_offense": team_stats.get("opp_yds_per_play_offense", 0),
+        "turnovers": team_stats.get("opp_turnovers", 0),
+        "fumbles_lost": team_stats.get("opp_fumbles_lost", 0),
+        "first_down": team_stats.get("opp_first_down", 0),
+        "pass_cmp": team_stats.get("opp_pass_cmp", 0),
+        "pass_att": team_stats.get("opp_pass_att", 0),
+        "pass_yds": team_stats.get("opp_pass_yds", 0),
+        "pass_td": team_stats.get("opp_pass_td", 0),
+        "pass_int": team_stats.get("opp_pass_int", 0),
+        "pass_net_yds_per_att": team_stats.get("opp_pass_net_yds_per_att", 0),
+        "pass_fd": team_stats.get("opp_pass_fd", 0),
+        "rush_att": team_stats.get("opp_rush_att", 0),
+        "rush_yds": team_stats.get("opp_rush_yds", 0),
+        "rush_td": team_stats.get("opp_rush_td", 0),
+        "rush_yds_per_att": team_stats.get("opp_rush_yds_per_att", 0),
+        "rush_fd": team_stats.get("opp_rush_fd", 0),
+        "penalties": team_stats.get("opp_penalties", 0),
+        "penalties_yds": team_stats.get("opp_penalties_yds", 0),
+        "pen_fd": team_stats.get("opp_pen_fd", 0),
+        "drives": team_stats.get("opp_drives", 0),
+        "score_pct": team_stats.get("opp_score_pct", 0),
+        "turnover_pct": team_stats.get("opp_turnover_pct", 0),
+        "plays_per_drive": team_stats.get("opp_plays_per_drive", 0),
+        "yds_per_drive": team_stats.get("opp_yds_per_drive", 0),
+        "points_avg": team_stats.get("opp_points_avg", 0),
+        "time_avg": team_stats.get("opp_time_avg", "0:00"),
         # Additional defensive stats
-        'def_int': int(team_defensive_stats.get('team_total_def_int', 0)),
-        'def_int_yds': int(team_defensive_stats.get('team_total_def_int_yds', 0)),
-        'def_int_td': int(team_defensive_stats.get('team_total_def_int_td', 0)),
-        'def_int_long': int(team_defensive_stats.get('team_total_def_int_long', 0)),
-        'pass_defended': int(team_defensive_stats.get('team_total_pass_defended', 0)),
-        'fumbles_forced': int(team_defensive_stats.get('team_total_fumbles_forced', 0)),
-        'fumbles_rec': int(team_defensive_stats.get('team_total_fumbles_rec', 0)),
-        'fumbles_rec_yds': int(team_defensive_stats.get('team_total_fumbles_rec_yds', 0)),
-        'fumbles_rec_td': int(team_defensive_stats.get('team_total_fumbles_rec_td', 0)),
-        'sacks': float(team_defensive_stats.get('team_total_sacks', 0)),
-        'tackles_combined': int(team_defensive_stats.get('team_total_tackles_combined', 0)),
-        'tackles_solo': int(team_defensive_stats.get('team_total_tackles_solo', 0)),
-        'tackles_assists': int(team_defensive_stats.get('team_total_tackles_assists', 0)),
-        'tackles_loss': int(team_defensive_stats.get('team_total_tackles_loss', 0)),
-        'qb_hits': int(team_defensive_stats.get('team_total_qb_hits', 0)),
-        'safety_md': int(team_defensive_stats.get('team_total_safety_md', 0))
+        "def_int": int(team_defensive_stats.get("team_total_def_int", 0)),
+        "def_int_yds": int(team_defensive_stats.get("team_total_def_int_yds", 0)),
+        "def_int_td": int(team_defensive_stats.get("team_total_def_int_td", 0)),
+        "def_int_long": int(team_defensive_stats.get("team_total_def_int_long", 0)),
+        "pass_defended": int(team_defensive_stats.get("team_total_pass_defended", 0)),
+        "fumbles_forced": int(team_defensive_stats.get("team_total_fumbles_forced", 0)),
+        "fumbles_rec": int(team_defensive_stats.get("team_total_fumbles_rec", 0)),
+        "fumbles_rec_yds": int(
+            team_defensive_stats.get("team_total_fumbles_rec_yds", 0)
+        ),
+        "fumbles_rec_td": int(team_defensive_stats.get("team_total_fumbles_rec_td", 0)),
+        "sacks": float(team_defensive_stats.get("team_total_sacks", 0)),
+        "tackles_combined": int(
+            team_defensive_stats.get("team_total_tackles_combined", 0)
+        ),
+        "tackles_solo": int(team_defensive_stats.get("team_total_tackles_solo", 0)),
+        "tackles_assists": int(
+            team_defensive_stats.get("team_total_tackles_assists", 0)
+        ),
+        "tackles_loss": int(team_defensive_stats.get("team_total_tackles_loss", 0)),
+        "qb_hits": int(team_defensive_stats.get("team_total_qb_hits", 0)),
+        "safety_md": int(team_defensive_stats.get("team_total_safety_md", 0)),
     }
 
-    start_avg = team_stats.get('opp_start_avg', '')
-    if start_avg and 'Own ' in start_avg:
-        record['start_avg'] = float(start_avg.replace('Own ', ''))
+    start_avg = team_stats.get("opp_start_avg", "")
+    if start_avg and "Own " in start_avg:
+        record["start_avg"] = float(start_avg.replace("Own ", ""))
     else:
-        record['start_avg'] = 0
+        record["start_avg"] = 0
 
-    record['third_down_att'] = int(team_conversions.get('opp_third_down_att', 0))
-    record['third_down_success'] = int(team_conversions.get('opp_third_down_success', 0))
-    record['third_down_pct'] = float(team_conversions.get('opp_third_down_pct', '0').rstrip('%'))
-    record['fourth_down_att'] = int(team_conversions.get('opp_fourth_down_att', 0))
-    record['fourth_down_success'] = int(team_conversions.get('opp_fourth_down_success', 0))
-    record['fourth_down_pct'] = float(team_conversions.get('opp_fourth_down_pct', '0').rstrip('%'))
-    record['red_zone_att'] = int(team_conversions.get('opp_red_zone_att', 0))
-    record['red_zone_scores'] = int(team_conversions.get('opp_red_zone_scores', 0))
-    record['red_zone_pct'] = float(team_conversions.get('opp_red_zone_pct', '0').rstrip('%'))
+    record["third_down_att"] = int(team_conversions.get("opp_third_down_att", 0))
+    record["third_down_success"] = int(
+        team_conversions.get("opp_third_down_success", 0)
+    )
+    record["third_down_pct"] = float(
+        team_conversions.get("opp_third_down_pct", "0").rstrip("%")
+    )
+    record["fourth_down_att"] = int(team_conversions.get("opp_fourth_down_att", 0))
+    record["fourth_down_success"] = int(
+        team_conversions.get("opp_fourth_down_success", 0)
+    )
+    record["fourth_down_pct"] = float(
+        team_conversions.get("opp_fourth_down_pct", "0").rstrip("%")
+    )
+    record["red_zone_att"] = int(team_conversions.get("opp_red_zone_att", 0))
+    record["red_zone_scores"] = int(team_conversions.get("opp_red_zone_scores", 0))
+    record["red_zone_pct"] = float(
+        team_conversions.get("opp_red_zone_pct", "0").rstrip("%")
+    )
 
     sql = """
     INSERT INTO team_seasonal_defensive_metrics (
@@ -1068,25 +1180,63 @@ def insert_team_seasonal_defense_and_fumbles_metrics(team_stats: dict, team_defe
     """
 
     params = (
-        record['team_id'], record['season'], record['points'], record['total_yards'],
-        record['plays_offense'], record['yds_per_play_offense'], record['turnovers'],
-        record['fumbles_lost'], record['first_down'], record['pass_cmp'],
-        record['pass_att'], record['pass_yds'], record['pass_td'], record['pass_int'],
-        record['pass_net_yds_per_att'], record['pass_fd'], record['rush_att'],
-        record['rush_yds'], record['rush_td'], record['rush_yds_per_att'],
-        record['rush_fd'], record['penalties'], record['penalties_yds'],
-        record['pen_fd'], record['drives'], record['score_pct'],
-        record['turnover_pct'], record['start_avg'], convert_time_to_seconds(record['time_avg']),
-        record['plays_per_drive'], record['yds_per_drive'], record['points_avg'],
-        record['third_down_att'], record['third_down_success'], record['third_down_pct'],
-        record['fourth_down_att'], record['fourth_down_success'], record['fourth_down_pct'],
-        record['red_zone_att'], record['red_zone_scores'], record['red_zone_pct'],
-        record['def_int'], record['def_int_yds'], record['def_int_td'],
-        record['def_int_long'], record['pass_defended'], record['fumbles_forced'],
-        record['fumbles_rec'], record['fumbles_rec_yds'], record['fumbles_rec_td'],
-        record['sacks'], record['tackles_combined'], record['tackles_solo'],
-        record['tackles_assists'], record['tackles_loss'], record['qb_hits'],
-        record['safety_md']
+        record["team_id"],
+        record["season"],
+        record["points"],
+        record["total_yards"],
+        record["plays_offense"],
+        record["yds_per_play_offense"],
+        record["turnovers"],
+        record["fumbles_lost"],
+        record["first_down"],
+        record["pass_cmp"],
+        record["pass_att"],
+        record["pass_yds"],
+        record["pass_td"],
+        record["pass_int"],
+        record["pass_net_yds_per_att"],
+        record["pass_fd"],
+        record["rush_att"],
+        record["rush_yds"],
+        record["rush_td"],
+        record["rush_yds_per_att"],
+        record["rush_fd"],
+        record["penalties"],
+        record["penalties_yds"],
+        record["pen_fd"],
+        record["drives"],
+        record["score_pct"],
+        record["turnover_pct"],
+        record["start_avg"],
+        convert_time_to_seconds(record["time_avg"]),
+        record["plays_per_drive"],
+        record["yds_per_drive"],
+        record["points_avg"],
+        record["third_down_att"],
+        record["third_down_success"],
+        record["third_down_pct"],
+        record["fourth_down_att"],
+        record["fourth_down_success"],
+        record["fourth_down_pct"],
+        record["red_zone_att"],
+        record["red_zone_scores"],
+        record["red_zone_pct"],
+        record["def_int"],
+        record["def_int_yds"],
+        record["def_int_td"],
+        record["def_int_long"],
+        record["pass_defended"],
+        record["fumbles_forced"],
+        record["fumbles_rec"],
+        record["fumbles_rec_yds"],
+        record["fumbles_rec_td"],
+        record["sacks"],
+        record["tackles_combined"],
+        record["tackles_solo"],
+        record["tackles_assists"],
+        record["tackles_loss"],
+        record["qb_hits"],
+        record["safety_md"],
     )
 
     try:
@@ -1103,7 +1253,6 @@ def insert_team_seasonal_defense_and_fumbles_metrics(team_stats: dict, team_defe
             exc_info=True,
         )
         raise e
-
 
 
 def insert_team_seasonal_scoring_metrics(record: dict, team_id: int, season: int):
@@ -1126,15 +1275,24 @@ def insert_team_seasonal_scoring_metrics(record: dict, team_id: int, season: int
         connection = get_connection()
 
         params = (
-            team_id, season,
-            int(record['team_total_rush_td']), int(record['team_total_rec_td']),
-            int(record['team_total_punt_ret_td']), int(record['team_total_kick_ret_td']),
-            int(record['team_total_fumbles_rec_td']), int(record['team_total_def_int_td']),
-            int(record['team_total_other_td']), int(record['team_total_total_td']),
-            int(record['team_total_two_pt_md']), int(record.get('team_total_def_two_pt', 0)),
-            int(record['team_total_xpm']), int(record['team_total_xpa']),
-            int(record['team_total_fgm']), int(record['team_total_fga']),
-            int(record['team_total_safety_md']), int(record['team_total_scoring'])
+            team_id,
+            season,
+            int(record["team_total_rush_td"]),
+            int(record["team_total_rec_td"]),
+            int(record["team_total_punt_ret_td"]),
+            int(record["team_total_kick_ret_td"]),
+            int(record["team_total_fumbles_rec_td"]),
+            int(record["team_total_def_int_td"]),
+            int(record["team_total_other_td"]),
+            int(record["team_total_total_td"]),
+            int(record["team_total_two_pt_md"]),
+            int(record.get("team_total_def_two_pt", 0)),
+            int(record["team_total_xpm"]),
+            int(record["team_total_xpa"]),
+            int(record["team_total_fgm"]),
+            int(record["team_total_fga"]),
+            int(record["team_total_safety_md"]),
+            int(record["team_total_scoring"]),
         )
 
         with connection.cursor() as cur:
@@ -1151,7 +1309,9 @@ def insert_team_seasonal_scoring_metrics(record: dict, team_id: int, season: int
         raise e
 
 
-def insert_team_seasonal_rankings_metrics(team_stats: dict, team_conversions: dict, team_id: int, season: int):
+def insert_team_seasonal_rankings_metrics(
+    team_stats: dict, team_conversions: dict, team_id: int, season: int
+):
     """Insert team seasonal rankings metrics into our database
 
     Args:
@@ -1186,55 +1346,56 @@ def insert_team_seasonal_rankings_metrics(team_stats: dict, team_conversions: di
         connection = get_connection()
 
         params = (
-            team_id, season,
-            int(team_stats['def_rank_points']),
-            int(team_stats['def_rank_total_yards']),
-            int(team_stats['def_rank_turnovers']),
-            int(team_stats['def_rank_fumbles_lost']),
-            int(team_stats['def_rank_first_down']),
-            int(team_stats['def_rank_pass_att']),
-            int(team_stats['def_rank_pass_yds']),
-            int(team_stats['def_rank_pass_td']),
-            int(team_stats['def_rank_pass_int']),
-            float(team_stats['def_rank_pass_net_yds_per_att']),
-            int(team_stats['def_rank_rush_att']),
-            int(team_stats['def_rank_rush_yds']),
-            int(team_stats['def_rank_rush_td']),
-            float(team_stats['def_rank_rush_yds_per_att']),
-            float(team_stats['def_rank_score_pct']),
-            float(team_stats['def_rank_turnover_pct']),
-            float(team_stats['def_rank_start_avg']),
-            float(team_stats['def_rank_time_avg']),
-            float(team_stats['def_rank_plays_per_drive']),
-            float(team_stats['def_rank_yds_per_drive']),
-            float(team_stats['def_rank_points_avg']),
-            float(team_conversions.get('def_rank_third_down_pct', 0)),
-            float(team_conversions.get('def_rank_fourth_down_pct', 0)),
-            float(team_conversions.get('def_rank_red_zone_pct', 0)),
-            int(team_stats['off_rank_points']),
-            int(team_stats['off_rank_total_yards']),
-            int(team_stats['off_rank_turnovers']),
-            int(team_stats['off_rank_fumbles_lost']),
-            int(team_stats['off_rank_first_down']),
-            int(team_stats['off_rank_pass_att']),
-            int(team_stats['off_rank_pass_yds']),
-            int(team_stats['off_rank_pass_td']),
-            int(team_stats['off_rank_pass_int']),
-            float(team_stats['off_rank_pass_net_yds_per_att']),
-            int(team_stats['off_rank_rush_att']),
-            int(team_stats['off_rank_rush_yds']),
-            int(team_stats['off_rank_rush_td']),
-            float(team_stats['off_rank_rush_yds_per_att']),
-            float(team_stats['off_rank_score_pct']),
-            float(team_stats['off_rank_turnover_pct']),
-            float(team_stats['off_rank_start_avg']),
-            float(team_stats['off_rank_time_avg']),
-            float(team_stats['off_rank_plays_per_drive']),
-            float(team_stats['off_rank_yds_per_drive']),
-            float(team_stats['off_rank_points_avg']),
-            float(team_conversions.get('off_rank_third_down_pct', 0)),
-            float(team_conversions.get('off_rank_fourth_down_pct', 0)), 
-            float(team_conversions.get('off_rank_red_zone_pct', 0))
+            team_id,
+            season,
+            int(team_stats["def_rank_points"]),
+            int(team_stats["def_rank_total_yards"]),
+            int(team_stats["def_rank_turnovers"]),
+            int(team_stats["def_rank_fumbles_lost"]),
+            int(team_stats["def_rank_first_down"]),
+            int(team_stats["def_rank_pass_att"]),
+            int(team_stats["def_rank_pass_yds"]),
+            int(team_stats["def_rank_pass_td"]),
+            int(team_stats["def_rank_pass_int"]),
+            float(team_stats["def_rank_pass_net_yds_per_att"]),
+            int(team_stats["def_rank_rush_att"]),
+            int(team_stats["def_rank_rush_yds"]),
+            int(team_stats["def_rank_rush_td"]),
+            float(team_stats["def_rank_rush_yds_per_att"]),
+            float(team_stats["def_rank_score_pct"]),
+            float(team_stats["def_rank_turnover_pct"]),
+            float(team_stats["def_rank_start_avg"]),
+            float(team_stats["def_rank_time_avg"]),
+            float(team_stats["def_rank_plays_per_drive"]),
+            float(team_stats["def_rank_yds_per_drive"]),
+            float(team_stats["def_rank_points_avg"]),
+            float(team_conversions.get("def_rank_third_down_pct", 0)),
+            float(team_conversions.get("def_rank_fourth_down_pct", 0)),
+            float(team_conversions.get("def_rank_red_zone_pct", 0)),
+            int(team_stats["off_rank_points"]),
+            int(team_stats["off_rank_total_yards"]),
+            int(team_stats["off_rank_turnovers"]),
+            int(team_stats["off_rank_fumbles_lost"]),
+            int(team_stats["off_rank_first_down"]),
+            int(team_stats["off_rank_pass_att"]),
+            int(team_stats["off_rank_pass_yds"]),
+            int(team_stats["off_rank_pass_td"]),
+            int(team_stats["off_rank_pass_int"]),
+            float(team_stats["off_rank_pass_net_yds_per_att"]),
+            int(team_stats["off_rank_rush_att"]),
+            int(team_stats["off_rank_rush_yds"]),
+            int(team_stats["off_rank_rush_td"]),
+            float(team_stats["off_rank_rush_yds_per_att"]),
+            float(team_stats["off_rank_score_pct"]),
+            float(team_stats["off_rank_turnover_pct"]),
+            float(team_stats["off_rank_start_avg"]),
+            float(team_stats["off_rank_time_avg"]),
+            float(team_stats["off_rank_plays_per_drive"]),
+            float(team_stats["off_rank_yds_per_drive"]),
+            float(team_stats["off_rank_points_avg"]),
+            float(team_conversions.get("off_rank_third_down_pct", 0)),
+            float(team_conversions.get("off_rank_fourth_down_pct", 0)),
+            float(team_conversions.get("off_rank_red_zone_pct", 0)),
         )
 
         with connection.cursor() as cur:
@@ -1288,22 +1449,22 @@ def insert_game_conditions(records: list):
 
         params = [
             (
-                int(record.get('season')),
-                int(record.get('week')),
-                int(record.get('home_team_id')),
-                int(record.get('visit_team_id')),
-                record.get('game_date'),
-                int(record.get('game_time')) if record.get('game_time') else None,
-                record.get('kickoff'),
-                record.get('month'),
-                record.get('start'),
-                record.get('surface'),
-                record.get('weather_icon'),
-                float(record.get('temperature')) if record.get('temperature') else None,
-                record.get('precip_probability'),
-                record.get('precip_type'),
-                float(record.get('wind_speed')) if record.get('wind_speed') else None,
-                int(record.get('wind_bearing')) if record.get('wind_bearing') else None
+                int(record.get("season")),
+                int(record.get("week")),
+                int(record.get("home_team_id")),
+                int(record.get("visit_team_id")),
+                record.get("game_date"),
+                int(record.get("game_time")) if record.get("game_time") else None,
+                record.get("kickoff"),
+                record.get("month"),
+                record.get("start"),
+                record.get("surface"),
+                record.get("weather_icon"),
+                float(record.get("temperature")) if record.get("temperature") else None,
+                record.get("precip_probability"),
+                record.get("precip_type"),
+                float(record.get("wind_speed")) if record.get("wind_speed") else None,
+                int(record.get("wind_bearing")) if record.get("wind_bearing") else None,
             )
             for record in records
         ]
@@ -1316,7 +1477,7 @@ def insert_game_conditions(records: list):
     except Exception as e:
         logging.error(
             f"An exception occurred while inserting game condition records: {records}",
-            exc_info=True
+            exc_info=True,
         )
         raise e
 
@@ -1328,7 +1489,7 @@ def update_game_conditions(records: list):
     Args:
         records (list): List of game condition records (dicts)
     """
-    
+
     sql = """
         UPDATE game_conditions
         SET 
@@ -1357,7 +1518,7 @@ def update_game_conditions(records: list):
         params = [
             (
                 record.get("game_date"),
-                int(record.get("game_time")), 
+                int(record.get("game_time")),
                 record.get("kickoff"),
                 record.get("month"),
                 record.get("start"),
@@ -1371,7 +1532,7 @@ def update_game_conditions(records: list):
                 int(record.get("season")),
                 int(record.get("week")),
                 int(record.get("home_team_id")),
-                int(record.get("visit_team_id"))
+                int(record.get("visit_team_id")),
             )
             for record in records
         ]
@@ -1384,6 +1545,6 @@ def update_game_conditions(records: list):
     except Exception as e:
         logging.error(
             f"An exception occurred while updating game condition records: {records}",
-            exc_info=True
+            exc_info=True,
         )
         raise e
