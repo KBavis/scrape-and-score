@@ -562,20 +562,18 @@ def are_odds_modified(persisted_record: dict, current_record: dict) -> bool:
     )
 
 
-"""
-Generate proprer URL needed to fetch relevant player prop metrics for a given week, player, and season 
-
-Args:
-    player_name (str): player_slug to pass as a parameter to our request
-    event_ids (str): all event_ids pertaining to the specified week 
-    market_ids (str): all relevant market IDs to fetch odds for
-
-Returns:
-    odds (dict): players odds 
-"""
-
-
 def get_player_betting_odds(player_name: str, event_ids: str, market_ids: str):
+    """
+    Generate proprer URL needed to fetch relevant player prop metrics for a given week, player, and season 
+
+    Args:
+        player_name (str): player_slug to pass as a parameter to our request
+        event_ids (str): all event_ids pertaining to the specified week 
+        market_ids (str): all relevant market IDs to fetch odds for
+
+    Returns:
+        odds (dict): players odds 
+    """
     base_url = props.get_config("website.betting-pros.urls.historical-odds")
     parsed_url = (
         base_url.replace("{MARKET_IDS}", market_ids)
