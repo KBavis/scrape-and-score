@@ -1,8 +1,8 @@
 import requests
 import logging
 import time
-from proxy import proxy
-from config import get_config
+from scrape_and_score.proxy import proxy
+from scrape_and_score.config import get_config
 
 session = requests.Session()
 

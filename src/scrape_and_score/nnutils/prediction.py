@@ -2,7 +2,7 @@ import torch
 import logging
 from torch import nn
 import pandas as pd
-from service import player_service
+from scrape_and_score.service import player_service
 
 
 def generate_predictions(

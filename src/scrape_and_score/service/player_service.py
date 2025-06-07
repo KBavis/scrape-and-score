@@ -1,6 +1,6 @@
 import logging
 import re
-from db.read.players import (
+from scrape_and_score.db.read.players import (
     fetch_player_id_by_normalized_name,
     fetch_player_name_by_id,
     fetch_player_id_by_normalized_name_season_and_position,

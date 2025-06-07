@@ -1,17 +1,17 @@
 from .scraping_util import fetch_page
-from config import props
+from scrape_and_score.config import props
 from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
 from .pfr import pfr
-from constants import LOCATIONS, CITIES
-from db.read.teams import (
+from scrape_and_score.constants import LOCATIONS, CITIES
+from scrape_and_score.db.read.teams import (
     fetch_team_name_by_id,
     fetch_game_date_from_team_game_log,
     fetch_team_game_log_by_pk,
     fetch_all_teams,
 )
-from db.insert.teams import (
+from scrape_and_score.db.insert.teams import (
     insert_upcoming_team_game_logs,
     update_team_game_log_game_date,
 )

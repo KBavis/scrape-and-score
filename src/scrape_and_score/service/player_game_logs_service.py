@@ -1,14 +1,14 @@
-from config import props
+from scrape_and_score.config import props
 import logging
 import pandas as pd
 from . import team_service, service_util
-from db.insert.players import (
+from scrape_and_score.db.insert.players import (
     insert_qb_player_game_logs,
     insert_rb_player_game_logs,
     insert_wr_or_te_player_game_logs,
     add_fantasy_points,
 )
-from db.read.players import (
+from scrape_and_score.db.read.players import (
     fetch_player_game_log_by_pk,
     fetch_all_player_game_logs_for_recent_week,
     fetch_all_player_game_logs_for_given_year,

@@ -1,5 +1,5 @@
 import logging
-from db.connection import get_connection
+from scrape_and_score.db.connection import get_connection
 
 
 def fetch_all_teams():

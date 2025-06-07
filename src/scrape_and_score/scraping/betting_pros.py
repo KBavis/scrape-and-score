@@ -1,25 +1,25 @@
-from config import props
+from scrape_and_score.config import props
 import requests
-from service import player_service
-from db.read.teams import (
+from scrape_and_score.service import player_service
+from scrape_and_score.db.read.teams import (
     fetch_max_week_persisted_in_team_betting_odds_table,
     fetch_game_conditions_record_by_pk,
 )
-from db.read.players import (
+from scrape_and_score.db.read.players import (
     fetch_players_active_in_specified_year,
     fetch_player_betting_odds_record_by_pk,
 )
-from db.insert.players import (
+from scrape_and_score.db.insert.players import (
     insert_player_props,
     insert_upcoming_player_props,
     update_upcoming_player_props,
 )
-from db.insert.teams import update_game_conditions, insert_game_conditions
+from scrape_and_score.db.insert.teams import update_game_conditions, insert_game_conditions
 import logging
 from . import rotowire as rotowire
 import time
 from datetime import datetime
-from constants import MARKET_ID_MAPPING
+from scrape_and_score.constants import MARKET_ID_MAPPING
 
 
 def fetch_historical_odds(season: int):

@@ -1,8 +1,8 @@
 import logging
 import pandas as pd
-from db.connection import get_connection
+from scrape_and_score.db.connection import get_connection
 import warnings
-from constants import QUERY
+from scrape_and_score.constants import QUERY
 
 
 def fetch_player_by_normalized_name(normalized_name: str):

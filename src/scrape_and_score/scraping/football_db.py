@@ -1,10 +1,10 @@
 import logging
 from bs4 import BeautifulSoup
 from . import scraping_util
-from config import props
-from service import player_service
-from db.read.players import fetch_pks_for_inserted_player_injury_records
-from db.insert.players import update_player_injuries, insert_player_injuries
+from scrape_and_score.config import props
+from scrape_and_score.service import player_service
+from scrape_and_score.db.read.players import fetch_pks_for_inserted_player_injury_records
+from scrape_and_score.db.insert.players import update_player_injuries, insert_player_injuries
 
 
 def scrape_historical(start_year: int, end_year: int):

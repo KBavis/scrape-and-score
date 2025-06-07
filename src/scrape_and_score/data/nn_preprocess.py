@@ -3,10 +3,10 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
 from sklearn.linear_model import LassoCV
 from sklearn.feature_selection import SelectFromModel
-from db.read.players import fetch_independent_and_dependent_variables
+from scrape_and_score.db.read.players import fetch_independent_and_dependent_variables
 import logging
 import re
-from constants import QB_FEATURES, RB_FEATURES, WR_FEATURES, TE_FEATURES
+from scrape_and_score.constants import QB_FEATURES, RB_FEATURES, WR_FEATURES, TE_FEATURES
 import time
 
 # global variable to account for dynamic categorical column names

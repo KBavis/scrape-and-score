@@ -1,26 +1,26 @@
 import logging
 import pandas as pd
-from constants import TEAM_HREFS, LOCATIONS, CITIES
-from service import (
+from scrape_and_score.constants import TEAM_HREFS, LOCATIONS, CITIES
+from scrape_and_score.service import (
     team_service,
     player_service,
     player_game_logs_service,
     team_game_logs_service,
     service_util,
 )
-from config import props
+from scrape_and_score.config import props
 from ..scraping_util import fetch_page
 from datetime import date, datetime
 from bs4 import BeautifulSoup, Comment
 from datetime import datetime
-from db.read.players import (
+from scrape_and_score.db.read.players import (
     fetch_players_on_a_roster_in_specific_year,
     fetch_player_demographic_record,
     fetch_player_date_of_birth,
     fetch_players_on_a_roster_in_specific_year_with_hashed_name,
     fetch_player_ids_of_players_who_have_advanced_metrics_persisted,
 )
-from db.insert.players import (
+from scrape_and_score.db.insert.players import (
     update_player_game_log_with_results,
     update_player_hashed_name,
     update_player_pfr_availablity_status,
@@ -32,8 +32,8 @@ from db.insert.players import (
     insert_player_advanced_passing_metrics,
     insert_player_advanced_rushing_receiving_metrics,
 )
-from db.read.teams import fetch_all_teams
-from db.insert.teams import (
+from scrape_and_score.db.read.teams import fetch_all_teams
+from scrape_and_score.db.insert.teams import (
     update_team_game_log_with_results,
     format_and_insert_team_seasonal_general_metrics,
     insert_team_seasonal_passing_metrics,

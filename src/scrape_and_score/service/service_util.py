@@ -1,4 +1,4 @@
-from config import props
+from scrape_and_score.config import props
 import logging
 
 

@@ -1,15 +1,15 @@
 import logging
 import pandas as pd
-from . import service_util, team_service
-from config import props
-from db.read.teams import (
+from scrape_and_score.service import team_service
+from scrape_and_score.config import props
+from scrape_and_score.db.read.teams import (
     fetch_team_game_log_by_pk,
     fetch_all_teams_game_logs_for_season,
     fetch_pks_for_inserted_team_game_logs,
     fetch_max_week_rankings_calculated_for_season,
     check_bye_week_rankings_exists,
 )
-from db.insert.teams import (
+from scrape_and_score.db.insert.teams import (
     update_team_game_logs,
     insert_team_game_logs,
     insert_bye_week_rankings,

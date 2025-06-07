@@ -1,8 +1,8 @@
-from db.connection import get_connection
+from scrape_and_score.db.connection import get_connection
 import logging
 import pandas as pd
-from service import player_service
-from db.read.players import retrieve_player_demographics_record_by_pk
+from scrape_and_score.service import player_service
+from scrape_and_score.db.read.players import retrieve_player_demographics_record_by_pk
 
 
 def insert_players(players: list):

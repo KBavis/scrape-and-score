@@ -1,10 +1,10 @@
 import pandas as pd
 import requests
 import logging
-from config import props
-from service import team_service
-from db.read.teams import fetch_team_betting_odds_by_pk
-from db.insert.teams import (
+from scrape_and_score.config import props
+from scrape_and_score.service import team_service
+from scrape_and_score.db.read.teams import fetch_team_betting_odds_by_pk
+from scrape_and_score.db.insert.teams import (
     insert_teams_odds,
     insert_game_conditions,
     update_team_betting_odds_records_with_outcomes,

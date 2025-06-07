@@ -1,10 +1,10 @@
 from datetime import datetime
 import logging
 import random
-from service import team_service
-from config import props
+from scrape_and_score.service import team_service
+from scrape_and_score.config import props
 import os
-from db.read.players import (
+from scrape_and_score.db.read.players import (
     get_count_player_demographics_records_for_season,
     get_count_player_teams_records_for_season,
     fetch_player_seasonal_metrics,
@@ -12,11 +12,11 @@ from db.read.players import (
     fetch_player_teams_by_week_season_and_player_id,
     fetch_players_corresponding_to_season_week_team,
 )
-from db.read.teams import (
+from scrape_and_score.db.read.teams import (
     fetch_team_seasonal_metrics,
     fetch_team_game_logs_by_week_and_season,
 )
-from db.insert.players import insert_upcoming_player_game_logs
+from scrape_and_score.db.insert.players import insert_upcoming_player_game_logs
 
 
 def is_player_demographics_persisted(season: int):

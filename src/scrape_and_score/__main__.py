@@ -1,12 +1,12 @@
-from config import configure_logging
-from db import connection
-from db.insert.teams import insert_teams
-from db.read.teams import fetch_all_teams
-from config import load_configs, get_config
+from scrape_and_score.config import configure_logging
+from scrape_and_score.db import connection
+from scrape_and_score.db.insert.teams import insert_teams
+from scrape_and_score.db.read.teams import fetch_all_teams
+from scrape_and_score.config import load_configs, get_config
 from datetime import datetime
-from util import args
+from scrape_and_score.util import args
 import logging
-from workflows import workflows
+from scrape_and_score.workflows import workflows
 
 
 def main():

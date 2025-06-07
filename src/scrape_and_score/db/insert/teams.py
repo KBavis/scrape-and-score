@@ -1,10 +1,10 @@
-from db.connection import get_connection
+from scrape_and_score.db.connection import get_connection
 import logging
 import pandas as pd
 from datetime import datetime
-from db.read.teams import fetch_teams_home_away_wins_and_losses
-from db.insert.utils import convert_time_to_seconds
-from service import team_service
+from scrape_and_score.db.read.teams import fetch_teams_home_away_wins_and_losses
+from scrape_and_score.db.insert.utils import convert_time_to_seconds
+from scrape_and_score.service import team_service
 
 
 def insert_teams(teams: list):

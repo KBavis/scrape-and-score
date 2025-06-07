@@ -2,11 +2,11 @@ import logging
 from rapidfuzz import fuzz
 from datetime import datetime, date
 from bs4 import BeautifulSoup
-from db.read.teams import fetch_team_game_log_by_pk
+from scrape_and_score.db.read.teams import fetch_team_game_log_by_pk
 from haversine import haversine, Unit
-from service import player_service
-from ..util import fetch_page
-from constants import TEAM_HREFS
+from scrape_and_score.service import player_service
+from scrape_and_score.scraping.scraping_util import fetch_page
+from scrape_and_score.constants import TEAM_HREFS
 
 
 def add_qb_specific_game_log_metrics(data: dict, tr: BeautifulSoup):

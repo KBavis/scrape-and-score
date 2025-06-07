@@ -1,5 +1,5 @@
 import logging
-from db.read.teams import fetch_team_by_name, fetch_all_teams
+from scrape_and_score.db.read.teams import fetch_team_by_name, fetch_all_teams
 
 
 def get_team_id_by_name(name: str):

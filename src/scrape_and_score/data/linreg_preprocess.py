@@ -1,4 +1,4 @@
-from db.read.players import fetch_independent_and_dependent_variables
+from scrape_and_score.db.read.players import fetch_independent_and_dependent_variables
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,8 +6,8 @@ import numpy as np
 import logging
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import os
-from config import props
-from constants import RELEVANT_PROPS
+from scrape_and_score.config import props
+from scrape_and_score.constants import RELEVANT_PROPS
 
 
 def pre_process_data():

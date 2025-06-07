@@ -1,17 +1,17 @@
 from . import scraping_util
 from bs4 import BeautifulSoup
-from config import props
+from scrape_and_score.config import props
 import logging
-from service import team_service, player_service
+from scrape_and_score.service import team_service, player_service
 from datetime import datetime
 import re
-from db.read.players import (
+from scrape_and_score.db.read.players import (
     fetch_player_by_normalized_name,
     fetch_player_depth_chart_position_by_pk,
     fetch_player_teams_records_by_player_and_season,
     fetch_player_teams_record_by_pk,
 )
-from db.insert.players import (
+from scrape_and_score.db.insert.players import (
     update_player_depth_chart_postion,
     insert_player_depth_charts,
     insert_players,
