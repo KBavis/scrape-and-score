@@ -181,7 +181,7 @@ def test_directory_missing(mock_exists):
 
 @patch("os.path.exists")
 @patch("os.listdir")
-def test_directory_empty(mock_listdir, mock_exists):
+def test_get_position_features_directory_empty(mock_listdir, mock_exists):
     mock_exists.return_value = True
     mock_listdir.return_value = []
     with raises(Exception, match="Please ensure that you first train"):
@@ -190,7 +190,7 @@ def test_directory_empty(mock_listdir, mock_exists):
 @patch("os.path.exists")
 @patch("os.listdir")
 @patch("os.path.isfile")
-def test_missing_position_files(mock_isfile, mock_listdir, mock_exists):
+def test_get_position_features_missing_position_files(mock_isfile, mock_listdir, mock_exists):
     mock_exists.return_value = True
     mock_listdir.return_value = [
         "QB_features_20250101_120000.csv",
@@ -205,7 +205,7 @@ def test_missing_position_files(mock_isfile, mock_listdir, mock_exists):
 @patch("os.listdir")
 @patch("os.path.isfile")
 @patch("scrape_and_score.workflows.utils.datetime")
-def test_invalid_date_format_files(mock_datetime, mock_isfile, mock_listdir, mock_exists):
+def test_get_position_features_invalid_date_format_files(mock_datetime, mock_isfile, mock_listdir, mock_exists):
     mock_exists.return_value = True
     mock_datetime.now.return_value = datetime(2025, 6, 7, 12, 0, 0)
     mock_datetime.strptime.side_effect = lambda s, f: datetime.strptime(s, f)
