@@ -1,7 +1,7 @@
 import pytest
 import torch
 from torch import nn
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from scrape_and_score.nnutils.optimization import (
     optimization_loop,
     train_loop,
