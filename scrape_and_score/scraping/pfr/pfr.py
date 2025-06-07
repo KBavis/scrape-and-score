@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from constants import TEAM_HREFS, MONTHS, LOCATIONS, CITIES
+from constants import TEAM_HREFS, LOCATIONS, CITIES
 from service import (
     team_service,
     player_service,
