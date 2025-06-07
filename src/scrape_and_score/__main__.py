@@ -15,13 +15,13 @@ def main():
     """
 
     cl_args = args.parse()
+    start_time = datetime.now()
 
     try:
         # init configs, logging, and db connection
         configure_logging()
         load_configs()
         connection.init()
-        start_time = datetime.now()
 
         # account for teams potentially not being persisted yet
         teams = fetch_all_teams()
