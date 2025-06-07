@@ -1,22 +1,19 @@
-from nnutils import optimization
-from scraping.pfr import pfr
-from scraping import rotowire
-from scraping import our_lads, football_db, betting_pros, espn
-from service import team_game_logs_service, player_game_logs_service
-from models.lin_reg import LinReg
-from data import nn_preprocess, linreg_preprocess
+from scrape_and_score.scraping.pfr import pfr
+from scrape_and_score.scraping import our_lads, football_db, betting_pros, espn, rotowire
+from scrape_and_score.service import team_game_logs_service, player_game_logs_service
+from scrape_and_score.models.lin_reg import LinReg
+from scrape_and_score.data import nn_preprocess, linreg_preprocess
+from scrape_and_score.constants import TRAINING_CONFIGS
+from scrape_and_score.models.neural_net import NeuralNetwork
+from scrape_and_score.nnutils import post_training, prediction, optimization
+from scrape_and_score.data.dataset import FantasyDataset
+from scrape_and_score.workflows import utils
+from scrape_and_score.config import props
 import torch
 import os
 import logging
-from data.dataset import FantasyDataset
 from torch.utils.data import DataLoader
 from datetime import datetime
-from constants import TRAINING_CONFIGS
-from models.neural_net import NeuralNetwork
-from nnutils import post_training
-from . import utils
-from nnutils import prediction
-from config import props
 
 
 rb_nn = None
