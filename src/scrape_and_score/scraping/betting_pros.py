@@ -74,7 +74,7 @@ def fetch_historical_odds(season: int):
             )
             insert_player_props(player_props, season)
         else:
-            logging.warn(
+            logging.warning(
                 f"No player props found for player {player_name} and season {season}; skipping insertion"
             )
 
