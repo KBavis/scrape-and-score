@@ -1,0 +1,12 @@
+[project]
+name = "scrape-and-score"
+version = "1.0.0"
+dependencies = []
+
+[tool.setuptools]
+packages = ["scrape_and_score"]
+package-dir = {"" = "src"}
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
