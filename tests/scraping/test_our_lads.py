@@ -25,11 +25,9 @@ def test_generate_player_and_player_teams_records(
 ):
     # arrange
     mock_get_team_id.return_value = 1
-    mock_date_map.return_value = {
-        "09/01/2023": {"strt_wk": 1, "end_wk": 4}
-    }
+    mock_date_map.return_value = {"09/01/2023": {"strt_wk": 1, "end_wk": 4}}
     mock_fetch_page.return_value = "<html></html>"
-    
+
     soup = MagicMock()
     mock_bs.return_value = soup
     soup.find.return_value.find.return_value = [
@@ -60,14 +58,14 @@ def test_generate_player_and_player_teams_records(
 
 @patch("scrape_and_score.scraping.our_lads.update_player_teams_records_end_dates")
 @patch("scrape_and_score.scraping.our_lads.insert_player_teams")
-@patch("scrape_and_score.scraping.our_lads.fetch_player_teams_records_by_player_and_season")
+@patch(
+    "scrape_and_score.scraping.our_lads.fetch_player_teams_records_by_player_and_season"
+)
 def test_upsert_player_teams_records_insert_and_update(
     mock_fetch_records, mock_insert, mock_update
 ):
     # arrange
-    mock_fetch_records.return_value = [
-        {"team_id": 1, "strt_wk": 1, "end_wk": 18}
-    ]
+    mock_fetch_records.return_value = [{"team_id": 1, "strt_wk": 1, "end_wk": 18}]
     relevant_players = ["John Smith"]
     mapping = {"John Smith": 42}
     team_id = 2  # different team, triggers update
@@ -111,7 +109,7 @@ def test_start_and_end_date_players_on_team():
     end_mapping = {}
     date_map = {
         "09/01/2023": {"strt_wk": 1, "end_wk": 4},
-        "10/01/2023": {"strt_wk": 5, "end_wk": 8}
+        "10/01/2023": {"strt_wk": 5, "end_wk": 8},
     }
 
     # act
@@ -131,19 +129,22 @@ def test_start_and_end_date_players_on_team():
     assert "John Smith" in start_mapping
 
 
-
 @patch("scrape_and_score.scraping.our_lads.generate_player_and_player_teams_records")
 @patch("scrape_and_score.scraping.our_lads.extract_archive_dates")
 @patch("scrape_and_score.scraping.our_lads.BeautifulSoup")
 @patch("scrape_and_score.scraping.our_lads.scraping_util.fetch_page")
 @patch("scrape_and_score.scraping.our_lads.props.get_config")
-def test_scrape_and_persist(mock_get_config, mock_fetch_page, mock_bs, mock_extract_dates, mock_generate_records):
-    
+def test_scrape_and_persist(
+    mock_get_config, mock_fetch_page, mock_bs, mock_extract_dates, mock_generate_records
+):
+
     # arrange
     mock_get_config.return_value = [{"name": "Colts", "pfr_acronym": "IND"}]
     mock_fetch_page.return_value = "<html></html>"
     mock_bs.return_value.find_all.return_value = ["option1", "option2"]
-    mock_extract_dates.return_value = [{"season": 2023, "archives": {"09/01/2023": "150"}}]
+    mock_extract_dates.return_value = [
+        {"season": 2023, "archives": {"09/01/2023": "150"}}
+    ]
 
     # act
     our_lads.scrape_and_persist(2023, 2023)
@@ -170,10 +171,9 @@ def test_scrape_and_persist_upcoming(mock_get_config, mock_generate):
     args, _ = mock_generate.call_args
 
     # validate call args
-    assert args[1] == 2024  
-    assert args[2] == 1     
-    assert args[3] is False 
-
+    assert args[1] == 2024
+    assert args[2] == 1
+    assert args[3] is False
 
 
 def test_create_date_week_mapping():
@@ -217,7 +217,9 @@ def test_is_previously_inserted_player_true(mock_fetch, mock_normalize):
     mock_normalize.return_value = "john-smith"
     mock_fetch.return_value = {"player_id": 101}
     player_name_id_mapping = {}
-    result = our_lads.is_previously_inserted_player("John Smith", player_name_id_mapping)
+    result = our_lads.is_previously_inserted_player(
+        "John Smith", player_name_id_mapping
+    )
 
     assert result is True
     assert player_name_id_mapping["John Smith"] == 101
@@ -239,6 +241,6 @@ def test_create_date_week_mapping_keys():
         "10/01/2022",
         "11/01/2022",
         "12/01/2022",
-        "01/01/2023"
+        "01/01/2023",
     ]
     assert list(mapping.keys()) == expected_keys

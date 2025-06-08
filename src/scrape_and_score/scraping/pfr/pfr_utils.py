@@ -321,7 +321,9 @@ def get_team_metrics_html(team_name, year, url):
     return fetch_page(url)
 
 
-def parse_player_and_team_totals(players_table: BeautifulSoup, team_totals: BeautifulSoup):
+def parse_player_and_team_totals(
+    players_table: BeautifulSoup, team_totals: BeautifulSoup
+):
     """
     Parse PFR Player and Team Totals
 

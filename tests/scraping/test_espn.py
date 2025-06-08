@@ -3,11 +3,14 @@ from bs4 import BeautifulSoup
 from unittest.mock import patch
 import scrape_and_score.scraping.espn as espn
 
+
 @patch("scrape_and_score.scraping.espn.extract_team_name")
 @patch("scrape_and_score.scraping.espn.fetch_page")
 @patch("scrape_and_score.scraping.espn.generate_and_persist")
 @patch("scrape_and_score.scraping.espn.props.get_config")
-def test_scrape_upcoming_games_happy(mock_get_config, mock_generate_and_persist, mock_fetch_page, mock_extract_team_name):
+def test_scrape_upcoming_games_happy(
+    mock_get_config, mock_generate_and_persist, mock_fetch_page, mock_extract_team_name
+):
     sample_html = """
     <html>
       <body>
@@ -26,11 +29,15 @@ def test_scrape_upcoming_games_happy(mock_get_config, mock_generate_and_persist,
     </html>
     """
 
-    mock_get_config.return_value = "https://www.espn.com/nfl/schedule/_/week/{}/year/{}/seasontype/2"
+    mock_get_config.return_value = (
+        "https://www.espn.com/nfl/schedule/_/week/{}/year/{}/seasontype/2"
+    )
     mock_fetch_page.return_value = sample_html
     mock_extract_team_name.side_effect = [
-        "miami dolphins", "buffalo bills",
-        "new york jets", "new england patriots"
+        "miami dolphins",
+        "buffalo bills",
+        "new york jets",
+        "new england patriots",
     ]
 
     espn.scrape_upcoming_games(season=2024, week=1)
@@ -41,7 +48,7 @@ def test_scrape_upcoming_games_happy(mock_get_config, mock_generate_and_persist,
     actual_teams = {(r["home_team"], r["away_team"]) for r in records}
     expected_teams = {
         ("buffalo bills", "miami dolphins"),
-        ("new england patriots", "new york jets")
+        ("new england patriots", "new york jets"),
     }
 
     assert actual_teams == expected_teams
@@ -68,7 +75,6 @@ def test_extract_team_name_away_home():
     assert espn.extract_team_name(td, is_home=True) == "dolphins"
 
 
-
 @patch("scrape_and_score.scraping.espn.fetch_game_date_from_team_game_log")
 def test_calculate_rest_days_various(mock_prev_date):
     current = datetime(2024, 9, 1)
@@ -76,7 +82,10 @@ def test_calculate_rest_days_various(mock_prev_date):
     assert espn.calculate_rest_days(1, 2024, 2, current) == 7
 
     mock_prev_date.side_effect = [None, datetime(2023, 12, 25)]
-    assert espn.calculate_rest_days(1, 2024, 1, current) == (current - datetime(2023, 12, 25)).days
+    assert (
+        espn.calculate_rest_days(1, 2024, 1, current)
+        == (current - datetime(2023, 12, 25)).days
+    )
 
     mock_prev_date.side_effect = [None, None]
     assert espn.calculate_rest_days(1, 2024, 1, current) == 100

@@ -33,7 +33,7 @@ def sample_json():
             "over_hit": True,
             "under_hit": False,
             "favorite_covered": True,
-            "underdog_covered": False
+            "underdog_covered": False,
         }
     ]
 
@@ -43,16 +43,25 @@ def sample_json():
 @patch("scrape_and_score.scraping.rotowire.props.get_config")
 @patch("scrape_and_score.scraping.rotowire.requests.get")
 @patch("scrape_and_score.scraping.rotowire.create_team_id_mapping")
-def test_scrape_all(mock_create_team_id_mapping, mock_get, mock_config, mock_insert_conditions, mock_insert_odds, sample_json):
+def test_scrape_all(
+    mock_create_team_id_mapping,
+    mock_get,
+    mock_config,
+    mock_insert_conditions,
+    mock_insert_odds,
+    sample_json,
+):
     # arrange
-    mock_config.side_effect = lambda k: "2023" if k == "nfl.current-year" else "https://fake.history"
+    mock_config.side_effect = lambda k: (
+        "2023" if k == "nfl.current-year" else "https://fake.history"
+    )
     mock_get.return_value.json.return_value = sample_json
     mock_create_team_id_mapping.return_value = {"DAL": 10, "NYG": 20}
 
     # act
     rotowire.scrape_all()
 
-    # assert 
+    # assert
     assert mock_insert_odds.called
     assert mock_insert_conditions.called
 
@@ -65,7 +74,7 @@ def test_are_odds_modified_false():
         "season": 2024,
         "favorite_team_id": 1,
         "game_over_under": 44.0,
-        "spread": -3.5
+        "spread": -3.5,
     }
     current = {
         "home_team_id": 1,
@@ -74,7 +83,7 @@ def test_are_odds_modified_false():
         "year": 2024,
         "favorite_team_id": 1,
         "game_over_under": 44.0,
-        "spread": -3.5
+        "spread": -3.5,
     }
     assert not rotowire.are_odds_modified(persisted, current)
 
@@ -87,7 +96,7 @@ def test_are_odds_modified_true():
         "season": 2024,
         "favorite_team_id": 1,
         "game_over_under": 44.0,
-        "spread": -3.5
+        "spread": -3.5,
     }
     current = {
         "home_team_id": 1,
@@ -96,7 +105,7 @@ def test_are_odds_modified_true():
         "year": 2024,
         "favorite_team_id": 99,
         "game_over_under": 44.0,
-        "spread": -3.5
+        "spread": -3.5,
     }
     assert rotowire.are_odds_modified(persisted, current)
 
@@ -104,24 +113,28 @@ def test_are_odds_modified_true():
 @patch("scrape_and_score.scraping.rotowire.create_team_id_mapping")
 def test_get_game_conditions(mock_create_team_id_mapping):
     mock_create_team_id_mapping.return_value = {"DAL": 10, "NYG": 20}
-    df = pd.DataFrame([{
-        "season": "2024",
-        "week": "2",
-        "home_team_stats_id": "DAL",
-        "visit_team_stats_id": "NYG",
-        "game_date": "2024-09-08",
-        "game_time": "6:00 PM",
-        "kickoff": "18:00",
-        "month": "September",
-        "start": "Night",
-        "surface": "Grass",
-        "weather_icon": "cloudy",
-        "temperature": 72.0,
-        "precip_probability": 0.0,
-        "precip_type": "none",
-        "wind_speed": 8.0,
-        "wind_bearing": "S"
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "season": "2024",
+                "week": "2",
+                "home_team_stats_id": "DAL",
+                "visit_team_stats_id": "NYG",
+                "game_date": "2024-09-08",
+                "game_time": "6:00 PM",
+                "kickoff": "18:00",
+                "month": "September",
+                "start": "Night",
+                "surface": "Grass",
+                "weather_icon": "cloudy",
+                "temperature": 72.0,
+                "precip_probability": 0.0,
+                "precip_type": "none",
+                "wind_speed": 8.0,
+                "wind_bearing": "S",
+            }
+        ]
+    )
     result = rotowire.get_game_conditions(df)
     assert len(result) == 1
     rec = result[0]
@@ -133,22 +146,26 @@ def test_get_game_conditions(mock_create_team_id_mapping):
 @patch("scrape_and_score.scraping.rotowire.create_team_id_mapping")
 def test_get_team_betting_odds_records(mock_create_team_id_mapping):
     mock_create_team_id_mapping.return_value = {"PHI": 5, "DAL": 6}
-    df = pd.DataFrame([{
-        "season": "2025",
-        "week": "3",
-        "home_team_stats_id": "PHI",
-        "visit_team_stats_id": "DAL",
-        "home_team_score": 30,
-        "visit_team_score": 28,
-        "game_over_under": 55,
-        "favorite": "",
-        "spread": -2.5,
-        "total": 60,
-        "over_hit": False,
-        "under_hit": True,
-        "underdog_covered": True,
-        "favorite_covered": False
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "season": "2025",
+                "week": "3",
+                "home_team_stats_id": "PHI",
+                "visit_team_stats_id": "DAL",
+                "home_team_score": 30,
+                "visit_team_score": 28,
+                "game_over_under": 55,
+                "favorite": "",
+                "spread": -2.5,
+                "total": 60,
+                "over_hit": False,
+                "under_hit": True,
+                "underdog_covered": True,
+                "favorite_covered": False,
+            }
+        ]
+    )
     result = rotowire.get_team_betting_odds_records(df)
     assert len(result) == 1
     rec = result[0]
@@ -161,17 +178,21 @@ def test_get_team_betting_odds_records(mock_create_team_id_mapping):
 
 
 def test_generate_update_records():
-    recent_df = pd.DataFrame([{
-        "home_team_stats_id": "SF",
-        "visit_team_stats_id": "LA",
-        "home_team_score": 24,
-        "visit_team_score": 20,
-        "total": 44,
-        "over_hit": True,
-        "under_hit": False,
-        "favorite_covered": True,
-        "underdog_covered": False
-    }])
+    recent_df = pd.DataFrame(
+        [
+            {
+                "home_team_stats_id": "SF",
+                "visit_team_stats_id": "LA",
+                "home_team_score": 24,
+                "visit_team_score": 20,
+                "total": 44,
+                "over_hit": True,
+                "under_hit": False,
+                "favorite_covered": True,
+                "underdog_covered": False,
+            }
+        ]
+    )
     mapping = {"SF": 100, "LA": 200}
     result = rotowire.generate_update_records(recent_df, mapping, year=2024, week=4)
     assert len(result) == 1
@@ -180,4 +201,3 @@ def test_generate_update_records():
     assert rec["visit_team_id"] == 200
     assert rec["year"] == 2024
     assert rec["week"] == 4
-

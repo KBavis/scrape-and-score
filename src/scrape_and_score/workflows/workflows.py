@@ -1,5 +1,11 @@
 from scrape_and_score.scraping.pfr import pfr
-from scrape_and_score.scraping import our_lads, football_db, betting_pros, espn, rotowire
+from scrape_and_score.scraping import (
+    our_lads,
+    football_db,
+    betting_pros,
+    espn,
+    rotowire,
+)
 from scrape_and_score.service import team_game_logs_service, player_game_logs_service
 from scrape_and_score.models.lin_reg import LinReg
 from scrape_and_score.data import nn_preprocess, linreg_preprocess

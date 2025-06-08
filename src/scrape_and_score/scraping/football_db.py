@@ -3,8 +3,13 @@ from bs4 import BeautifulSoup
 from . import scraping_util
 from scrape_and_score.config import props
 from scrape_and_score.service import player_service
-from scrape_and_score.db.read.players import fetch_pks_for_inserted_player_injury_records
-from scrape_and_score.db.insert.players import update_player_injuries, insert_player_injuries
+from scrape_and_score.db.read.players import (
+    fetch_pks_for_inserted_player_injury_records,
+)
+from scrape_and_score.db.insert.players import (
+    update_player_injuries,
+    insert_player_injuries,
+)
 
 
 def scrape_historical(start_year: int, end_year: int):
@@ -174,12 +179,15 @@ def extract_game_status(text: str):
         try:
             after_date = text.split(") ")[1]
             status_html = after_date.split(" @")[0].strip()
-            status = BeautifulSoup(status_html, "html.parser").get_text().strip().lower() # check if any tags stil present before extraction
+            status = (
+                BeautifulSoup(status_html, "html.parser").get_text().strip().lower()
+            )  # check if any tags stil present before extraction
             return status if status else None
         except IndexError:
             return None
 
     return None
+
 
 def generate_and_persist_player_injury_records(
     player_injuries: list,

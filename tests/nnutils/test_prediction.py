@@ -9,12 +9,12 @@ from scrape_and_score.nnutils.prediction import generate_predictions, log_predic
 
 class DummyModel(nn.Module):
     def forward(self, x):
-        return x.sum(dim=1, keepdim=True)  
+        return x.sum(dim=1, keepdim=True)
 
 
 @pytest.fixture
 def dummy_input():
-    return torch.ones((10, 5)) # dummy tensor (10 players, 5 features each)
+    return torch.ones((10, 5))  # dummy tensor (10 players, 5 features each)
 
 
 @pytest.fixture
@@ -33,21 +33,23 @@ def test_generate_predictions(mock_get_name, dummy_input, dummy_players):
     season = 2024
 
     # act
-    predictions = generate_predictions(position, week, season, model, dummy_players, dummy_input)
+    predictions = generate_predictions(
+        position, week, season, model, dummy_players, dummy_input
+    )
 
     # assertions
-    assert len(predictions) == 10 # ensure only 10 predictions generated for 10 players
+    assert len(predictions) == 10  # ensure only 10 predictions generated for 10 players
     assert predictions[0].startswith("1.")
     assert "Player_101" in predictions[0]
 
 
 @patch("scrape_and_score.nnutils.prediction.player_service.get_player_name_by_id")
 def test_generate_predictions_limit_top_40(mock_get_name):
-    
+
     # arrange & setup mocks
     mock_get_name.side_effect = lambda player_id: f"Player_{player_id}"
-    dummy_players = pd.Series(range(1, 101)) # 100 player IDs
-    dummy_input = torch.ones((100, 5)) # 100 players w/ 5 features each
+    dummy_players = pd.Series(range(1, 101))  # 100 player IDs
+    dummy_input = torch.ones((100, 5))  # 100 players w/ 5 features each
     model = DummyModel()
 
     predictions = generate_predictions("QB", 3, 2024, model, dummy_players, dummy_input)
@@ -68,7 +70,7 @@ def test_log_predictions(mock_print):
         "RB": [
             "1. Player_X: 22.1",
             "2. Player_Y: 21.0",
-        ]
+        ],
     }
 
     log_predictions(dummy_predictions, week=4, season=2023)

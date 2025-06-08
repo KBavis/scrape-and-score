@@ -5,7 +5,7 @@ from unittest.mock import patch
 from scrape_and_score.nnutils.optimization import (
     optimization_loop,
     train_loop,
-    test_loop as run_test_loop
+    test_loop as run_test_loop,
 )
 
 
@@ -59,12 +59,20 @@ def test_optimization_loop_runs_and_early_stops(dummy_dataloader, dummy_model):
     device = "cpu"
     learning_rate = 0.01
 
-    with patch("scrape_and_score.nnutils.optimization.train_loop") as mock_train_loop, patch("scrape_and_score.nnutils.optimization.test_loop") as mock_test_loop:
+    with patch(
+        "scrape_and_score.nnutils.optimization.train_loop"
+    ) as mock_train_loop, patch(
+        "scrape_and_score.nnutils.optimization.test_loop"
+    ) as mock_test_loop:
         # simulate decreasing losses with a plateau
-        losses = [10.0, 9.0, 8.0, 7.0, 7.0, 7.0, 7.0, 7.0, 7.0]  
-        mock_test_loop.side_effect = lambda *args, **kwargs: losses.pop(0) if losses else 7.0
+        losses = [10.0, 9.0, 8.0, 7.0, 7.0, 7.0, 7.0, 7.0, 7.0]
+        mock_test_loop.side_effect = lambda *args, **kwargs: (
+            losses.pop(0) if losses else 7.0
+        )
 
-        optimization_loop(dummy_dataloader, dummy_dataloader, dummy_model, device, learning_rate)
+        optimization_loop(
+            dummy_dataloader, dummy_dataloader, dummy_model, device, learning_rate
+        )
 
         assert mock_train_loop.call_count > 0
         assert mock_test_loop.call_count == mock_train_loop.call_count

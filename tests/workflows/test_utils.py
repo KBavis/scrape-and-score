@@ -8,7 +8,7 @@ from scrape_and_score.workflows.utils import (
     get_position_features,
     extract_file_contents,
     filter_completed_games,
-    filter_duplicate_games
+    filter_duplicate_games,
 )
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -18,7 +18,9 @@ SEASON = 2023
 WEEK = 5
 
 
-@patch("scrape_and_score.workflows.utils.get_count_player_demographics_records_for_season")
+@patch(
+    "scrape_and_score.workflows.utils.get_count_player_demographics_records_for_season"
+)
 def test_is_player_demographics_persisted(mock_get_count):
     mock_get_count.return_value = 5
     assert is_player_demographics_persisted(SEASON) is True
@@ -39,16 +41,19 @@ def test_is_player_records_persisted(mock_get_count):
 @patch("scrape_and_score.workflows.utils.fetch_team_seasonal_metrics")
 @patch("scrape_and_score.workflows.utils.team_service.get_team_id_by_name")
 @patch("scrape_and_score.workflows.utils.props.get_config")
-def test_are_team_seasonal_metrics_persisted(mock_config, mock_get_id, mock_fetch_metrics):
+def test_are_team_seasonal_metrics_persisted(
+    mock_config, mock_get_id, mock_fetch_metrics
+):
     mock_config.return_value = [{"name": "TeamA"}, {"name": "TeamB"}]
 
-    # all metrics exist 
+    # all metrics exist
     mock_get_id.side_effect = [1, 2]
     mock_fetch_metrics.return_value = {"stat": 123}
     assert are_team_seasonal_metrics_persisted(SEASON) is True
 
     # one metric missing
-    mock_get_id.side_effect = [1, 2] # reset side effect 
+    mock_get_id.side_effect = [1, 2]  # reset side effect
+
     def fetch_metrics_side_effect(team_id, season):
         return None if team_id == 1 else {"stat": 123}
 
@@ -66,7 +71,9 @@ def test_are_player_seasonal_metrics_persisted(mock_fetch):
 
 
 @patch("scrape_and_score.workflows.utils.insert_upcoming_player_game_logs")
-@patch("scrape_and_score.workflows.utils.fetch_player_teams_by_week_season_and_player_id")
+@patch(
+    "scrape_and_score.workflows.utils.fetch_player_teams_by_week_season_and_player_id"
+)
 @patch("scrape_and_score.workflows.utils.fetch_team_game_logs_by_week_and_season")
 @patch("scrape_and_score.workflows.utils.fetch_player_game_log_by_pk")
 def test_add_stubbed_player_game_logs(
@@ -107,7 +114,7 @@ def test_filter_duplicate_games():
     team_game_logs = [
         {"team_id": 1, "opp": 2},
         {"team_id": 2, "opp": 1},  # duplicate
-        {"team_id": 3, "opp": 4}
+        {"team_id": 3, "opp": 4},
     ]
     filtered = filter_duplicate_games(team_game_logs)
     assert len(filtered) == 2
@@ -115,7 +122,9 @@ def test_filter_duplicate_games():
     assert 1 in team_ids and 3 in team_ids
 
 
-@patch("scrape_and_score.workflows.utils.fetch_players_corresponding_to_season_week_team")
+@patch(
+    "scrape_and_score.workflows.utils.fetch_players_corresponding_to_season_week_team"
+)
 @patch("scrape_and_score.workflows.utils.fetch_team_game_logs_by_week_and_season")
 def test_generate_game_mapping(mock_fetch_team_logs, mock_fetch_players):
     mock_fetch_team_logs.return_value = [
@@ -135,14 +144,16 @@ def test_generate_game_mapping(mock_fetch_team_logs, mock_fetch_players):
 @patch("os.listdir")
 @patch("os.path.exists")
 @patch("scrape_and_score.workflows.utils.datetime")
-def test_get_position_features_success(mock_datetime, mock_exists, mock_listdir, mock_isfile, mock_extract):
+def test_get_position_features_success(
+    mock_datetime, mock_exists, mock_listdir, mock_isfile, mock_extract
+):
 
-    # arrange  
+    # arrange
     mock_exists.return_value = True
     now = datetime(2025, 6, 7, 12, 0, 0)
     mock_datetime.now.return_value = now
     mock_datetime.strptime.side_effect = lambda s, f: datetime.strptime(s, f)
-    
+
     # create files for all positions, with two files for QB to test closest time selection
     dt_old = now - timedelta(days=1)
     dt_new = now - timedelta(hours=1)
@@ -153,7 +164,7 @@ def test_get_position_features_success(mock_datetime, mock_exists, mock_listdir,
         make_file_name("WR", now),
         make_file_name("TE", now),
         "ignore.txt",  # irrelevant file
-        "WR_wrongformat.csv"  # irrelevant format
+        "WR_wrongformat.csv",  # irrelevant format
     ]
     mock_listdir.return_value = files
     mock_isfile.return_value = True
@@ -162,10 +173,11 @@ def test_get_position_features_success(mock_datetime, mock_exists, mock_listdir,
     def extract_side_effect(file, dir):
         pos = file.split("_")[0]
         return [f"{pos}_feature1", f"{pos}_feature2"]
+
     mock_extract.side_effect = extract_side_effect
 
     features = get_position_features()
-    
+
     # check that each position has features and QB features come from closest datetime file (dt_new)
     assert set(features.keys()) == {"QB", "RB", "WR", "TE"}
     assert features["QB"] == ["QB_feature1", "QB_feature2"]
@@ -173,11 +185,13 @@ def test_get_position_features_success(mock_datetime, mock_exists, mock_listdir,
     assert features["WR"] == ["WR_feature1", "WR_feature2"]
     assert features["TE"] == ["TE_feature1", "TE_feature2"]
 
+
 @patch("os.path.exists")
 def test_directory_missing(mock_exists):
     mock_exists.return_value = False
     with raises(Exception, match="Please ensure that the directory"):
         get_position_features()
+
 
 @patch("os.path.exists")
 @patch("os.listdir")
@@ -187,10 +201,13 @@ def test_get_position_features_directory_empty(mock_listdir, mock_exists):
     with raises(Exception, match="Please ensure that you first train"):
         get_position_features()
 
+
 @patch("os.path.exists")
 @patch("os.listdir")
 @patch("os.path.isfile")
-def test_get_position_features_missing_position_files(mock_isfile, mock_listdir, mock_exists):
+def test_get_position_features_missing_position_files(
+    mock_isfile, mock_listdir, mock_exists
+):
     mock_exists.return_value = True
     mock_listdir.return_value = [
         "QB_features_20250101_120000.csv",
@@ -201,15 +218,18 @@ def test_get_position_features_missing_position_files(mock_isfile, mock_listdir,
     with raises(Exception, match="Unable to retrieve features for positions:"):
         get_position_features()
 
+
 @patch("os.path.exists")
 @patch("os.listdir")
 @patch("os.path.isfile")
 @patch("scrape_and_score.workflows.utils.datetime")
-def test_get_position_features_invalid_date_format_files(mock_datetime, mock_isfile, mock_listdir, mock_exists):
+def test_get_position_features_invalid_date_format_files(
+    mock_datetime, mock_isfile, mock_listdir, mock_exists
+):
     mock_exists.return_value = True
     mock_datetime.now.return_value = datetime(2025, 6, 7, 12, 0, 0)
     mock_datetime.strptime.side_effect = lambda s, f: datetime.strptime(s, f)
-    
+
     mock_listdir.return_value = [
         "QB_features_invaliddate.csv",
         "RB_features_20250101_120000.csv",

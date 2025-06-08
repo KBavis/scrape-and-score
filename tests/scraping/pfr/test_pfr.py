@@ -6,8 +6,12 @@ from scrape_and_score.scraping.pfr import pfr
 @patch("scrape_and_score.scraping.pfr.pfr.props.get_config")
 @patch("scrape_and_score.scraping.pfr.pfr.fetch_team_game_logs")
 @patch("scrape_and_score.scraping.pfr.pfr.fetch_player_metrics")
-def test_scrape_all(mock_fetch_player_metrics, mock_fetch_team_game_logs, mock_get_config):
-    mock_get_config.side_effect = lambda k: "2023" if k == "nfl.current-year" else "https://team-url"
+def test_scrape_all(
+    mock_fetch_player_metrics, mock_fetch_team_game_logs, mock_get_config
+):
+    mock_get_config.side_effect = lambda k: (
+        "2023" if k == "nfl.current-year" else "https://team-url"
+    )
     mock_fetch_team_game_logs.return_value = ["team_data"]
     mock_fetch_player_metrics.return_value = ["player_data"]
 
@@ -19,7 +23,7 @@ def test_scrape_all(mock_fetch_player_metrics, mock_fetch_team_game_logs, mock_g
 
 
 def test_parse_advanced_passing_table():
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -30,7 +34,7 @@ def test_parse_advanced_passing_table():
             </tr>
         </tbody>
     </table>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     table = soup.find("table")
     result = pfr.parse_advanced_passing_table(table)
@@ -41,7 +45,7 @@ def test_parse_advanced_passing_table():
 
 
 def test_parse_advanced_rushing_receiving_table():
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -52,7 +56,7 @@ def test_parse_advanced_rushing_receiving_table():
             </tr>
         </tbody>
     </table>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     table = soup.find("table")
     result = pfr.parse_advanced_rushing_receiving_table(table)
@@ -69,12 +73,12 @@ def test_extract_team_game_log_updates_no_games():
 
 
 def test_parse_conversions():
-    html = '''
+    html = """
     <tbody>
         <tr><th>Team Stats</th><td data-stat="third_down_pct">40%</td></tr>
         <tr><th>Opp. Stats</th><td data-stat="third_down_pct">35%</td></tr>
     </tbody>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     result = pfr.parse_conversions(soup)
     assert result["team_third_down_pct"] == "40%"
@@ -82,12 +86,12 @@ def test_parse_conversions():
 
 
 def test_parse_stats():
-    html = '''
+    html = """
     <tbody>
         <tr><th>Team Stats</th><td data-stat="total_yds">400</td><td data-stat="points">27</td></tr>
         <tr><th>Opp. Stats</th><td data-stat="total_yds">350</td><td data-stat="points">24</td></tr>
     </tbody>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     tbody = soup.find("tbody")
     result = pfr.parse_stats(tbody)
@@ -96,47 +100,52 @@ def test_parse_stats():
     assert result["opp_total_yds"] == "350"
     assert result["opp_points"] == "24"
 
+
 def test_parse_stats_missing_data_stat():
-    html = '''
+    html = """
     <tbody>
         <tr><th>Team Stats</th><td>Not a stat</td></tr>
         <tr><th>Opp. Stats</th><td data-stat="total_yds">350</td></tr>
     </tbody>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     tbody = soup.find("tbody")
     result = pfr.parse_stats(tbody)
     assert "opp_total_yds" in result
     assert "team_" not in result  # stat without data-stat should be skipped
 
+
 def test_parse_stats_empty_value():
-    html = '''
+    html = """
     <tbody>
         <tr><th>Team Stats</th><td data-stat="total_yds"></td></tr>
         <tr><th>Opp. Stats</th><td data-stat="total_yds">350</td></tr>
     </tbody>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     tbody = soup.find("tbody")
     result = pfr.parse_stats(tbody)
     assert "team_total_yds" not in result
     assert result["opp_total_yds"] == "350"
 
+
 def test_parse_stats_malformed_html():
-    html = '''
+    html = """
     <tbody>
         <tr><td data-stat="total_yds">400</td></tr>
         <tr><th>Opp. Stats</th><td data-stat="total_yds">350</td></tr>
     </tbody>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     tbody = soup.find("tbody")
     result = pfr.parse_stats(tbody)
-    assert result == {"opp_total_yds": "350"}  # only opp. stats row should be parsed because the first row has no <th>
+    assert result == {
+        "opp_total_yds": "350"
+    }  # only opp. stats row should be parsed because the first row has no <th>
 
 
 def test_parse_team_totals():
-    html = '''<tfoot><tr><td data-stat="xpa">10</td><td data-stat="xpm">8</td></tr></tfoot>'''
+    html = """<tfoot><tr><td data-stat="xpa">10</td><td data-stat="xpm">8</td></tr></tfoot>"""
     wrapper_html = f"<table>{html}</table>"
     soup = BeautifulSoup(wrapper_html, "html.parser")
     tfoot = soup.find("tfoot")
@@ -145,14 +154,21 @@ def test_parse_team_totals():
 
 
 def test_construct_player_urls_with_hash():
-    players = [{"player_name": "Tom Brady", "position": "QB", "hashed_name": "B/BradTo00", "pfr_available": 1}]
+    players = [
+        {
+            "player_name": "Tom Brady",
+            "position": "QB",
+            "hashed_name": "B/BradTo00",
+            "pfr_available": 1,
+        }
+    ]
     result = pfr.construct_player_urls(players, 2023)
     assert result[0]["url"].endswith("/gamelog/2023")
     assert "Tom Brady" in result[0]["player"]
 
 
 def test_parse_player_and_team_totals():
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -162,11 +178,16 @@ def test_parse_player_and_team_totals():
         </tbody>
     </table>
     <tfoot><tr><td data-stat="pass_cmp">20</td></tr></tfoot>
-    '''
+    """
     soup = BeautifulSoup(html, "html.parser")
     players_table = soup.find("table")
     team_totals = soup.find("tfoot")
-    with patch("scrape_and_score.scraping.pfr.pfr_utils.player_service.normalize_name", return_value="tom-brady"):
-        player_metrics, team_metrics = pfr.parse_player_and_team_totals(players_table, team_totals)
+    with patch(
+        "scrape_and_score.scraping.pfr.pfr_utils.player_service.normalize_name",
+        return_value="tom-brady",
+    ):
+        player_metrics, team_metrics = pfr.parse_player_and_team_totals(
+            players_table, team_totals
+        )
     assert player_metrics["tom-brady"]["pass_td"] == "3"
     assert team_metrics["team_total_pass_cmp"] == "20"

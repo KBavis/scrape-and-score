@@ -8,6 +8,7 @@ import requests
 def url():
     return "https://example.com"
 
+
 @patch("scrape_and_score.scraping.scraping_util.session.get")
 @patch("scrape_and_score.scraping.scraping_util.time.sleep", return_value=None)
 @patch("scrape_and_score.scraping.scraping_util.get_config", return_value=0)
@@ -32,11 +33,14 @@ def test_fetch_page_success(mock_get_proxy, mock_get_config, mock_sleep, mock_ge
     assert "proxies" in kwargs
     mock_sleep.assert_called_once_with(0)
 
+
 @patch("scrape_and_score.scraping.scraping_util.session.get")
 @patch("scrape_and_score.scraping.scraping_util.time.sleep", return_value=None)
 @patch("scrape_and_score.scraping.scraping_util.get_config", return_value=0)
 @patch("scrape_and_score.scraping.scraping_util.proxy.get_proxy", return_value=None)
-def test_fetch_page_request_exception(mock_get_proxy, mock_get_config, mock_sleep, mock_get, url):
+def test_fetch_page_request_exception(
+    mock_get_proxy, mock_get_config, mock_sleep, mock_get, url
+):
     mock_get.side_effect = requests.RequestException("Network failure")
 
     result = fetch_page(url)
