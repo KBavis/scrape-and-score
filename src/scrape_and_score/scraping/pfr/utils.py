@@ -448,7 +448,7 @@ def parse_stats(team_stats_tbody: BeautifulSoup):
             stat = td.get("data-stat")
 
             # skip row names
-            if stat == "player":
+            if not stat or stat == "player":
                 continue
 
             key = prefix + stat
