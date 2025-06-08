@@ -125,13 +125,10 @@ A future goal is to train a base model on data spanning 2000–2025 using genera
 
 Most users aren’t comfortable with the command line. To increase usability, I plan to containerize the app with Docker and serve it via a static website. This would allow users to skip data collection and directly use the predictive model.
 
-### Unit Tests
-
-Early on, I started writing unit tests, but repeated refactors left them broken and outdated. Rebuilding a strong suite of unit tests is a priority to ensure long-term maintainability.
 
 ### Scraping Reliability
 
-Some sites frequently change their HTML structures, which can break scrapers. A future improvement would be to make the scraping configuration more robust and flexible to reduce maintenance overhead.
+Some sites frequently change their HTML structures, which can break scrapers. A future improvement would be to make the scraping configuration more robust and flexible to reduce maintenance overhead. 
 
 ---
 
