@@ -43,7 +43,7 @@ from scrape_and_score.db.insert.teams import (
     insert_team_seasonal_scoring_metrics,
     insert_team_seasonal_rankings_metrics,
 )
-from .utils import (
+from .pfr_utils import (
     check_name_similarity,
     filter_update_team_game_logs,
     get_additional_metrics,

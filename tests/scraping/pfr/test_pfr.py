@@ -166,7 +166,7 @@ def test_parse_player_and_team_totals():
     soup = BeautifulSoup(html, "html.parser")
     players_table = soup.find("table")
     team_totals = soup.find("tfoot")
-    with patch("scrape_and_score.scraping.pfr.utils.player_service.normalize_name", return_value="tom-brady"):
+    with patch("scrape_and_score.scraping.pfr.pfr_utils.player_service.normalize_name", return_value="tom-brady"):
         player_metrics, team_metrics = pfr.parse_player_and_team_totals(players_table, team_totals)
     assert player_metrics["tom-brady"]["pass_td"] == "3"
     assert team_metrics["team_total_pass_cmp"] == "20"
