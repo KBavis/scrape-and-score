@@ -28,8 +28,6 @@ def test_scrape_upcoming_games_happy(mock_get_config, mock_generate_and_persist,
 
     mock_get_config.return_value = "https://www.espn.com/nfl/schedule/_/week/{}/year/{}/seasontype/2"
     mock_fetch_page.return_value = sample_html
-
-    # Order: away, home, away, home (if that's how your source code calls extract_team_name)
     mock_extract_team_name.side_effect = [
         "miami dolphins", "buffalo bills",
         "new york jets", "new england patriots"
@@ -74,15 +72,12 @@ def test_extract_team_name_away_home():
 @patch("scrape_and_score.scraping.espn.fetch_game_date_from_team_game_log")
 def test_calculate_rest_days_various(mock_prev_date):
     current = datetime(2024, 9, 1)
-    # Week >1 default REST
     mock_prev_date.return_value = datetime(2024, 8, 25)
     assert espn.calculate_rest_days(1, 2024, 2, current) == 7
 
-    # Week 1 fallback to last season
     mock_prev_date.side_effect = [None, datetime(2023, 12, 25)]
     assert espn.calculate_rest_days(1, 2024, 1, current) == (current - datetime(2023, 12, 25)).days
 
-    # Both missing prev_week and fallback -> return 100
     mock_prev_date.side_effect = [None, None]
     assert espn.calculate_rest_days(1, 2024, 1, current) == 100
 
