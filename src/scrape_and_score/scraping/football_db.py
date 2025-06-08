@@ -162,22 +162,24 @@ def extract_game_status(text: str):
         text (str): game status parsed from HTML
 
     Returns:
-        str : game status
+        str : game status or None
     """
 
     text = text.strip()
 
     if text == "--":
         return None
+
     if ") " in text and " @" in text:
         try:
             after_date = text.split(") ")[1]
-            status = after_date.split(" @")[0].strip().lower()
-            return status
+            status_html = after_date.split(" @")[0].strip()
+            status = BeautifulSoup(status_html, "html.parser").get_text().strip().lower() # check if any tags stil present before extraction
+            return status if status else None
         except IndexError:
             return None
-    return None
 
+    return None
 
 def generate_and_persist_player_injury_records(
     player_injuries: list,
